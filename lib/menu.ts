@@ -233,18 +233,6 @@ export const categories = [
 
 export const activeTables = ["A1", "A2", "A3", "B1", "B2", "B3"];
 
-export const demoLunch = {
-  available: true,
-  label: "Datos de demostración",
-  schedule: "Lun–Vie · 13:00–17:00",
-  price: 125,
-  courses: [
-    ["Entrada", "Sopa de tortilla", "Consomé del día"],
-    ["Plato fuerte", "Milanesa con papas", "Enchiladas verdes"],
-    ["Agua", "Jamaica", "Horchata"]
-  ]
-};
-
 export const money = (value: number) =>
   new Intl.NumberFormat("es-MX", {
     style: "currency",

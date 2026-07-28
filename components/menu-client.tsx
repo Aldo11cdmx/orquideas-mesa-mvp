@@ -15,11 +15,12 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
-import { categories, demoLunch, money, products } from "@/lib/menu";
+import { categories, money, products } from "@/lib/menu";
 import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
-import type { CartItem, Order, Product } from "@/lib/types";
+import type { CartItem, DailyMenuConfig, Order, Product } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
+const dailyCourseOrder = ["Entrada", "Plato fuerte", "Bebida"] as const;
 
 export function MenuClient({ tableCode }: { tableCode: string }) {
   const [mode, setMode] = useState<MenuMode>("fixed");
@@ -31,7 +32,27 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [sending, setSending] = useState(false);
   const [generalNotes, setGeneralNotes] = useState("");
+  const [dailyMenu, setDailyMenu] = useState<DailyMenuConfig | null>(null);
+  const [dailyMenuLoading, setDailyMenuLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
+
+  useEffect(() => {
+    let active = true;
+    void fetch("/api/daily-menu")
+      .then(async (response) => {
+        if (!response.ok) return null;
+        return (await response.json()) as DailyMenuConfig | null;
+      })
+      .then((menu) => {
+        if (active) setDailyMenu(menu);
+      })
+      .finally(() => {
+        if (active) setDailyMenuLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, []);
 
   useEffect(() => {
     channelRef.current = connectOrderChannel(({ type, order: incoming }) => {
@@ -102,6 +123,34 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     setSelected(null);
   }
 
+  function addDailyMenu(
+    menu: DailyMenuConfig,
+    selections: Record<string, string>,
+    quantity: number
+  ) {
+    const notes = Object.entries(selections)
+      .sort(
+        ([left], [right]) =>
+          dailyCourseOrder.indexOf(left as (typeof dailyCourseOrder)[number]) -
+          dailyCourseOrder.indexOf(right as (typeof dailyCourseOrder)[number])
+      )
+      .map(([course, choice]) => `${course}: ${choice}`)
+      .join(" · ")
+      .slice(0, 250);
+    addItem(
+      {
+        id: "comida-corrida",
+        name: "Comida corrida",
+        description: "Menú completo del día",
+        price: menu.price,
+        category: "Comida corrida",
+        image: "/menu/ensalada.png"
+      },
+      quantity,
+      notes
+    );
+  }
+
   async function submitOrder() {
     if (sending || cart.length === 0) return;
     if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
@@ -156,7 +205,18 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   }
 
   if (order) {
-    return <OrderTracking order={order} tableCode={tableCode} />;
+    return (
+      <OrderTracking
+        order={order}
+        tableCode={tableCode}
+        onOrderAgain={() => {
+          setOrder(null);
+          setMode("fixed");
+          setCart([]);
+          setGeneralNotes("");
+        }}
+      />
+    );
   }
 
   return (
@@ -210,7 +270,12 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         </section>
 
         {mode === "lunch" ? (
-          <LunchMenu />
+          <LunchMenu
+            menu={dailyMenu}
+            loading={dailyMenuLoading}
+            onAdd={addDailyMenu}
+            onShowFixed={() => setMode("fixed")}
+          />
         ) : (
           <>
             <div className="sticky top-0 z-20 -mx-4 mt-5 bg-[var(--cream)]/95 px-4 pb-3 pt-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
@@ -616,7 +681,15 @@ function CartDrawer({
   );
 }
 
-function OrderTracking({ order, tableCode }: { order: Order; tableCode: string }) {
+function OrderTracking({
+  order,
+  tableCode,
+  onOrderAgain
+}: {
+  order: Order;
+  tableCode: string;
+  onOrderAgain: () => void;
+}) {
   const steps = ["sent", "accepted", "preparing", "ready", "delivered"] as const;
   const current = steps.indexOf(order.status === "cancelled" ? "sent" : order.status);
   return (
@@ -697,44 +770,164 @@ function OrderTracking({ order, tableCode }: { order: Order; tableCode: string }
             <Clock3 size={18} />
             El estado se actualiza automáticamente.
           </div>
+          {(order.status === "delivered" || order.status === "cancelled") && (
+            <button
+              className="focus-ring mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--terracotta)] px-5 font-bold text-white"
+              onClick={onOrderAgain}
+            >
+              <Plus size={20} />
+              {order.status === "delivered" ? "Pedir algo más" : "Volver al menú"}
+            </button>
+          )}
         </div>
       </section>
     </main>
   );
 }
 
-function LunchMenu() {
+function LunchMenu({
+  menu,
+  loading,
+  onAdd,
+  onShowFixed
+}: {
+  menu: DailyMenuConfig | null;
+  loading: boolean;
+  onAdd: (
+    menu: DailyMenuConfig,
+    selections: Record<string, string>,
+    quantity: number
+  ) => void;
+  onShowFixed: () => void;
+}) {
+  if (loading) {
+    return (
+      <div className="paper mt-6 rounded-[2rem] p-10 text-center text-[var(--muted)]">
+        Cargando la comida corrida de hoy…
+      </div>
+    );
+  }
+
+  if (!menu || !menu.availableToday) {
+    return (
+      <section className="paper mt-6 rounded-[2rem] p-7 text-center">
+        <Clock3 className="mx-auto text-[var(--terracotta)]" size={34} />
+        <h2 className="mt-4 font-display text-3xl font-bold">Hoy no hay comida corrida publicada</h2>
+        <p className="mt-2 text-sm text-[var(--muted)]">
+          Puedes ordenar cualquiera de los productos del menú fijo.
+        </p>
+        <button
+          className="focus-ring mt-5 rounded-2xl bg-[var(--green)] px-6 py-3 font-bold text-white"
+          onClick={onShowFixed}
+        >
+          Ver menú fijo
+        </button>
+      </section>
+    );
+  }
+
+  return (
+    <ConfiguredLunchMenu
+      key={`${menu.serviceDate}-${menu.updatedAt || ""}`}
+      menu={menu}
+      onAdd={onAdd}
+    />
+  );
+}
+
+function ConfiguredLunchMenu({
+  menu,
+  onAdd
+}: {
+  menu: DailyMenuConfig;
+  onAdd: (
+    menu: DailyMenuConfig,
+    selections: Record<string, string>,
+    quantity: number
+  ) => void;
+}) {
+  const courses = dailyCourseOrder.map(
+    (course) => [course, menu.courses[course] || []] as const
+  );
+  const [quantity, setQuantity] = useState(1);
+  const [selections, setSelections] = useState<Record<string, string>>(() =>
+    Object.fromEntries(
+      dailyCourseOrder.map((course) => [course, menu.courses[course]?.[0] || ""])
+    )
+  );
+
   return (
     <section className="mt-6">
       <div className="paper overflow-hidden rounded-[2rem]">
         <div className="bg-[var(--terracotta)] px-6 py-7 text-white">
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-            {demoLunch.label}
+            Disponible hoy
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold">Comida corrida del día</h2>
           <p className="mt-2 flex items-center gap-2 text-sm">
-            <Clock3 size={16} /> {demoLunch.schedule}
+            <Clock3 size={16} /> {menu.availableFrom}–{menu.availableUntil}
           </p>
-          <p className="mt-5 text-3xl font-bold">{money(demoLunch.price)}</p>
+          <p className="mt-5 text-3xl font-bold">{money(menu.price)}</p>
         </div>
         <div className="p-6">
           <div className="mb-5 flex items-start gap-3 rounded-2xl bg-[#f4dfb4]/60 p-4 text-sm">
             <Sparkles className="shrink-0 text-[var(--terracotta)]" size={20} />
-            Esta sección usa opciones de demostración porque la comida corrida no apareció en las
-            capturas recibidas.
+            Elige una opción de cada tiempo. Cocina recibirá tus elecciones junto con el pedido.
           </div>
-          {demoLunch.courses.map(([course, ...options]) => (
-            <div className="border-b border-[var(--line)] py-4 last:border-0" key={course}>
-              <h3 className="font-display text-xl font-bold">{course}</h3>
-              <p className="mt-1 text-sm text-[var(--muted)]">{options.join(" · ")}</p>
-            </div>
+          {courses.map(([course, options]) => (
+            <fieldset className="border-b border-[var(--line)] py-4 last:border-0" key={course}>
+              <legend className="font-display text-xl font-bold">{course}</legend>
+              <div className="mt-3 grid gap-2 sm:grid-cols-2">
+                {options.map((option) => (
+                  <label
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 ${
+                      selections[course] === option
+                        ? "border-[var(--green)] bg-[#e7efe9]"
+                        : "border-[var(--line)]"
+                    }`}
+                    key={option}
+                  >
+                    <span>{option}</span>
+                    <input
+                      checked={selections[course] === option}
+                      name={`daily-${course}`}
+                      type="radio"
+                      value={option}
+                      onChange={() =>
+                        setSelections((current) => ({ ...current, [course]: option }))
+                      }
+                    />
+                  </label>
+                ))}
+              </div>
+            </fieldset>
           ))}
-          <button
-            className="focus-ring mt-6 w-full rounded-2xl bg-[#d8d5cc] px-5 py-4 font-bold text-[#777]"
-            disabled
-          >
-            Configuración pendiente del dueño
-          </button>
+          <div className="mt-6 grid gap-3 sm:grid-cols-[auto_1fr]">
+            <div className="flex items-center justify-center rounded-xl border border-[var(--line)]">
+              <button
+                className="focus-ring grid h-14 w-12 place-items-center"
+                aria-label="Restar comida corrida"
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
+              >
+                <Minus size={18} />
+              </button>
+              <strong className="w-10 text-center">{quantity}</strong>
+              <button
+                className="focus-ring grid h-14 w-12 place-items-center text-[var(--terracotta)]"
+                aria-label="Sumar comida corrida"
+                onClick={() => setQuantity((value) => Math.min(10, value + 1))}
+              >
+                <Plus size={18} />
+              </button>
+            </div>
+            <button
+              className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--terracotta)] px-5 font-bold text-white"
+              onClick={() => onAdd(menu, selections, quantity)}
+            >
+              <span>Agregar al pedido</span>
+              <span>{money(menu.price * quantity)}</span>
+            </button>
+          </div>
         </div>
       </div>
     </section>

@@ -16,7 +16,7 @@ import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
 import { categories, demoLunch, money, products } from "@/lib/menu";
-import { connectOrderChannel, readDemoOrders, saveDemoOrder } from "@/lib/order-store";
+import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
 import type { CartItem, Order, Product } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
@@ -107,11 +107,13 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
     setSending(true);
     const idempotencyKey = crypto.randomUUID();
-    let created: Order;
+    const controller = new AbortController();
+    const timeout = window.setTimeout(() => controller.abort(), 15000);
     try {
       const response = await fetch("/api/orders", {
         method: "POST",
         headers: { "content-type": "application/json" },
+        signal: controller.signal,
         body: JSON.stringify({
           tableCode,
           items: cart.map(({ productId, quantity, notes, option }) => ({
@@ -124,30 +126,33 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           idempotencyKey
         })
       });
-      if (!response.ok) throw new Error("Supabase schema not ready");
-      created = await response.json();
-    } catch {
-      const now = new Date().toISOString();
-      created = {
-        id: idempotencyKey,
-        folio: `D-${idempotencyKey.slice(-4).toUpperCase()}`,
-        tableCode,
-        status: "sent",
-        items: cart,
-        notes: generalNotes,
-        subtotal,
-        total: subtotal,
-        createdAt: now,
-        updatedAt: now,
-        source: "demo"
-      };
-      saveDemoOrder(created);
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || "No fue posible registrar el pedido");
+      }
+
+      const created = payload as Order;
+      setOrder(created);
+      setCartOpen(false);
+      setCart([]);
+      setGeneralNotes("");
+      setSending(false);
+
+      // Realtime is an enhancement; the order is already persisted in PostgreSQL.
+      // Do not keep the customer waiting if Broadcast is unavailable.
+      void channelRef.current?.send({ type: "new", order: created });
+    } catch (error) {
+      const message =
+        error instanceof DOMException && error.name === "AbortError"
+          ? "La cocina tardó demasiado en responder. Intenta nuevamente."
+          : error instanceof Error
+            ? error.message
+            : "No fue posible enviar el pedido";
+      window.alert(message);
+      setSending(false);
+    } finally {
+      window.clearTimeout(timeout);
     }
-    setOrder(created);
-    setCartOpen(false);
-    setCart([]);
-    await channelRef.current?.send({ type: "new", order: created });
-    setSending(false);
   }
 
   if (order) {
@@ -384,14 +389,14 @@ function ProductDialog({
   const [notes, setNotes] = useState("");
   const [option, setOption] = useState(product.options?.[0]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end bg-[#10211b]/55 sm:items-center sm:justify-center">
+    <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#10211b]/55 lg:items-center lg:justify-center lg:p-5">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-title"
-        className="animate-pop max-h-[92vh] w-full overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] sm:max-w-3xl sm:rounded-[2rem]"
+        className="animate-pop max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] lg:max-w-4xl lg:rounded-[2rem]"
       >
-        <div className="relative grid sm:grid-cols-[0.85fr_1.15fr]">
+        <div className="relative grid min-w-0 lg:grid-cols-[0.9fr_1.1fr]">
           <button
             className="focus-ring absolute left-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/90"
             aria-label="Cerrar"
@@ -402,10 +407,10 @@ function ProductDialog({
           <ProductImage
             src={product.image}
             alt={product.name}
-            className="aspect-[4/3] min-h-64 sm:min-h-full"
+            className="h-56 w-full sm:h-72 lg:h-full lg:min-h-[34rem]"
           />
-          <div className="p-5 sm:p-8">
-            <h2 id="product-title" className="font-display text-3xl font-bold">
+          <div className="min-w-0 p-5 sm:p-7 lg:p-8">
+            <h2 id="product-title" className="break-words font-display text-2xl font-bold sm:text-3xl">
               {product.name}
             </h2>
             <p className="mt-3 leading-6 text-[var(--muted)]">{product.description}</p>
@@ -446,8 +451,8 @@ function ProductDialog({
                 onChange={(event) => setNotes(event.target.value)}
               />
             </label>
-            <div className="mt-5 flex gap-3">
-              <div className="flex items-center rounded-xl border border-[var(--line)]">
+            <div className="mt-5 grid gap-3 sm:grid-cols-[auto_1fr]">
+              <div className="flex items-center justify-center rounded-xl border border-[var(--line)]">
                 <button
                   className="focus-ring grid h-12 w-11 place-items-center"
                   aria-label="Restar"

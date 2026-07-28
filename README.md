@@ -53,6 +53,22 @@ Sin la migración, la app entra en modo demo automáticamente:
 | `STAFF_DEMO_PIN` | PIN del servidor para cocina |
 | `NEXT_PUBLIC_APP_URL` | URL base usada para generar los QR |
 
+## Despliegue en Vercel
+
+1. Sube el repositorio a GitHub. Los archivos `.env*` están ignorados y
+   `.env.example` contiene únicamente marcadores de posición.
+2. Importa el repositorio desde Vercel.
+3. En **Settings → Environment Variables**, agrega:
+   - `NEXT_PUBLIC_SUPABASE_URL`
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - `STAFF_DEMO_PIN`
+   - `NEXT_PUBLIC_APP_URL` con el dominio definitivo de Vercel.
+4. Mantén el preset **Next.js** y el comando de compilación `npm run build`.
+5. Despliega y vuelve a generar o imprimir los QR desde `/qr`.
+
+No agregues `.env.local`, una llave `service_role` ni contraseñas al
+repositorio. La llave pública/anon se configura directamente en Vercel.
+
 ## Seguridad implementada
 
 - Total recalculado en PostgreSQL; no se acepta el precio del cliente.

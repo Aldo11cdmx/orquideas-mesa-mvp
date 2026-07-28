@@ -5,9 +5,9 @@
   "type": "module",
   "scripts": {
     "dev": "next dev",
-    "build": "vinext build && node scripts/copy-hosting.mjs",
-    "build:next": "next build",
-    "start": "node dist/standalone/server.js",
+    "build": "next build",
+    "build:sites": "vinext build && node scripts/copy-hosting.mjs",
+    "start": "next start",
     "lint": "eslint .",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

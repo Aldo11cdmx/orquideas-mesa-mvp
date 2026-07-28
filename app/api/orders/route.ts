@@ -38,9 +38,9 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
-    console.error("place_order failed", error.code);
+    console.error("place_order failed", error.code, error.message);
     return NextResponse.json(
-      { error: "La base de datos aún no tiene la migración instalada" },
+      { error: "No fue posible registrar el pedido en cocina" },
       { status: 503 }
     );
   }
@@ -55,8 +55,9 @@ export async function GET(request: NextRequest) {
   const supabase = createServerClient();
   const { data, error } = await supabase.rpc("kitchen_orders", { p_pin: pin });
   if (error) {
+    console.error("kitchen_orders failed", error.code, error.message);
     return NextResponse.json(
-      { error: "La base de datos aún no tiene la migración instalada" },
+      { error: "No fue posible consultar los pedidos de cocina" },
       { status: 503 }
     );
   }

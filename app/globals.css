@@ -62,7 +62,7 @@ button {
 .menu-photo img {
   position: absolute;
   inset: 0 auto 0 0;
-  width: 190%;
+  width: 200%;
   height: 100%;
   max-width: none;
   object-fit: cover;

@@ -360,7 +360,9 @@ declare
 begin
   select id into v_restaurant_id
   from public.restaurants
-  where active and demo_pin_hash is not null and demo_pin_hash = crypt(p_pin, demo_pin_hash)
+  where active
+    and demo_pin_hash is not null
+    and demo_pin_hash = extensions.crypt(p_pin, demo_pin_hash)
   limit 1;
   if v_restaurant_id is null then raise exception 'invalid_pin'; end if;
 
@@ -389,7 +391,9 @@ declare
 begin
   select id into v_restaurant_id
   from public.restaurants
-  where active and demo_pin_hash is not null and demo_pin_hash = crypt(p_pin, demo_pin_hash)
+  where active
+    and demo_pin_hash is not null
+    and demo_pin_hash = extensions.crypt(p_pin, demo_pin_hash)
   limit 1;
   if v_restaurant_id is null then raise exception 'invalid_pin'; end if;
 

@@ -1,8 +1,8 @@
 # Orquídeas · Pedidos desde mesa
 
-MVP mobile-first para recibir pedidos desde un QR de mesa y atenderlos desde una
-tablet. Incluye menú, carrito, seguimiento, tablero de cocina, administración,
-hoja QR y modo demo.
+Sistema mobile-first para recibir pedidos desde un QR de mesa y atenderlos desde
+una tablet. Incluye menú, carrito, seguimiento, tablero de cocina,
+administración y hoja QR.
 
 > **Identidad provisional:** las capturas recibidas no mostraron el nombre ni el
 > logotipo del restaurante. “Orquídeas · Cocina de barrio” se usa como identidad
@@ -18,13 +18,13 @@ npm run dev
 
 Abre:
 
-- `/demo`: guion de demostración.
+- `/`: centro de operación.
 - `/mesa/A1`: experiencia del cliente.
 - `/cocina`: tablero para tablet.
 - `/admin`: gestión básica.
 - `/qr`: hoja imprimible de las seis mesas.
 
-PIN de cocina y administración: `2026` (solo demostración).
+PIN actual de cocina y administración: `2026`.
 
 ## Supabase
 

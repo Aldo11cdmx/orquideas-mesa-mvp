@@ -195,7 +195,7 @@ export function KitchenBoard() {
           </div>
           <h1 className="mt-5 font-display text-3xl font-bold">Acceso a cocina</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Ingresa el PIN de demostración para ver y atender pedidos.
+            Ingresa el PIN del personal para ver y atender pedidos.
           </p>
           <label className="mt-6 block text-sm font-bold">
             PIN
@@ -256,8 +256,8 @@ export function KitchenBoard() {
       <div className="mx-auto max-w-[1500px] p-4 lg:p-5">
         {backend === "demo" && (
           <div className="mb-4 rounded-2xl bg-[#f4dfb4] px-4 py-3 text-sm text-[#694500]">
-            Modo demo activo: ejecuta la migración de Supabase para recuperar pedidos después de
-            recargar.
+            Conexión temporal activa: revisa la configuración de Supabase para recuperar pedidos
+            después de recargar.
           </div>
         )}
         <div className="mb-5 flex flex-wrap items-center gap-3">

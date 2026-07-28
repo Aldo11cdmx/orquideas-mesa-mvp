@@ -14,9 +14,9 @@ export default function TableNotFound() {
         </p>
         <Link
           className="focus-ring mt-8 inline-flex rounded-full bg-[var(--green)] px-6 py-3 font-bold text-white"
-          href="/demo"
+          href="/"
         >
-          Ir a la demostración
+          Ir al inicio
         </Link>
       </div>
     </main>

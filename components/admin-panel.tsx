@@ -174,7 +174,7 @@ function MenuAdmin({
           </p>
           <h1 className="font-display text-4xl font-bold">Productos</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Los cambios de este panel demo se guardan en este navegador.
+            Los cambios de productos de esta sección se guardan en este navegador.
           </p>
         </div>
         <button

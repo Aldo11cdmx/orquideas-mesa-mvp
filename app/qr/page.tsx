@@ -10,7 +10,7 @@ export default function QRPage() {
     <main className="mx-auto max-w-5xl p-5 sm:p-8">
       <div className="no-print flex flex-wrap items-center justify-between gap-4">
         <div>
-          <Link className="flex items-center gap-2 text-sm font-bold" href="/demo">
+          <Link className="flex items-center gap-2 text-sm font-bold" href="/">
             <ArrowLeft size={17} /> Volver
           </Link>
           <h1 className="mt-3 font-display text-4xl font-bold">Códigos QR de mesas</h1>

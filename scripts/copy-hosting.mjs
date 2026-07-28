@@ -16,7 +16,10 @@ for (const root of [
     const source = await readFile(target, "utf8");
     await writeFile(
       target,
-      source.replaceAll("import.meta.url", 'new URL("file:///C:/worker.js")')
+      source.replace(
+        /([A-Za-z_$][\w$]*)\(import\.meta\.url\)/,
+        "(()=>{throw Error('Dynamic require unavailable')})"
+      )
     );
   }
 }

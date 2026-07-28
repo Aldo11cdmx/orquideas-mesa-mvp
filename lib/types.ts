@@ -45,3 +45,14 @@ export type Order = {
   accessToken?: string;
   source?: "supabase" | "demo";
 };
+
+export type DailyMenuConfig = {
+  active: boolean;
+  availableToday: boolean;
+  serviceDate: string;
+  availableFrom: string;
+  availableUntil: string;
+  price: number;
+  courses: Record<string, string[]>;
+  updatedAt?: string;
+};

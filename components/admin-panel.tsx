@@ -17,7 +17,7 @@ import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import { readDemoOrders } from "@/lib/order-store";
-import type { Product } from "@/lib/types";
+import type { DailyMenuConfig, Product } from "@/lib/types";
 
 const ADMIN_PRODUCTS = "orquideas-admin-products";
 
@@ -30,15 +30,23 @@ export function AdminPanel() {
 
   useEffect(() => {
     const saved = localStorage.getItem(ADMIN_PRODUCTS);
+    const savedPin = sessionStorage.getItem("orquideas-admin-pin");
     queueMicrotask(() => {
       if (saved) setProducts(JSON.parse(saved));
-      if (sessionStorage.getItem("orquideas-admin-pin")) setReady(true);
+      if (savedPin) {
+        setPin(savedPin);
+        setReady(true);
+      }
     });
   }, []);
 
-  function login(event: React.FormEvent) {
+  async function login(event: React.FormEvent) {
     event.preventDefault();
-    if (pin !== "2026") return window.alert("PIN incorrecto");
+    const response = await fetch(`/api/admin/daily-menu?pin=${encodeURIComponent(pin)}`);
+    if (!response.ok) {
+      const payload = await response.json().catch(() => null);
+      return window.alert(payload?.error || "PIN incorrecto");
+    }
     sessionStorage.setItem("orquideas-admin-pin", pin);
     setReady(true);
   }
@@ -126,7 +134,7 @@ export function AdminPanel() {
               }
             />
           )}
-          {tab === "daily" && <DailyAdmin />}
+          {tab === "daily" && <DailyAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin />}
           {tab === "history" && <HistoryAdmin />}
           {tab === "summary" && <SummaryAdmin />}
@@ -292,33 +300,225 @@ function EditProduct({
   );
 }
 
-function DailyAdmin() {
+const defaultDailyMenu: DailyMenuConfig = {
+  active: true,
+  availableToday: true,
+  serviceDate: "",
+  availableFrom: "13:00",
+  availableUntil: "17:00",
+  price: 125,
+  courses: {
+    Entrada: ["Sopa de tortilla", "Consomé del día"],
+    "Plato fuerte": ["Milanesa con papas", "Enchiladas verdes"],
+    Bebida: ["Agua de jamaica", "Agua de horchata"]
+  }
+};
+
+const mexicoToday = () => {
+  const parts = new Intl.DateTimeFormat("en-US", {
+    timeZone: "America/Mexico_City",
+    year: "numeric",
+    month: "2-digit",
+    day: "2-digit"
+  }).formatToParts(new Date());
+  const value = (type: Intl.DateTimeFormatPartTypes) =>
+    parts.find((part) => part.type === type)?.value || "";
+  return `${value("year")}-${value("month")}-${value("day")}`;
+};
+
+function DailyAdmin({ pin }: { pin: string }) {
+  const [draft, setDraft] = useState<DailyMenuConfig>({
+    ...defaultDailyMenu,
+    serviceDate: mexicoToday()
+  });
+  const [loading, setLoading] = useState(true);
+  const [saving, setSaving] = useState(false);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    let active = true;
+    void fetch(`/api/admin/daily-menu?pin=${encodeURIComponent(pin)}`)
+      .then(async (response) => {
+        if (!response.ok) throw new Error("No fue posible cargar la comida corrida");
+        return (await response.json()) as DailyMenuConfig;
+      })
+      .then((menu) => {
+        if (active && menu) setDraft(menu);
+      })
+      .catch((error) => {
+        if (active) setNotice(error instanceof Error ? error.message : "No fue posible cargar");
+      })
+      .finally(() => {
+        if (active) setLoading(false);
+      });
+    return () => {
+      active = false;
+    };
+  }, [pin]);
+
+  async function save(event: React.FormEvent) {
+    event.preventDefault();
+    setSaving(true);
+    setNotice("");
+    const response = await fetch("/api/admin/daily-menu", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, ...draft })
+    });
+    const payload = await response.json().catch(() => null);
+    setSaving(false);
+    if (!response.ok) {
+      setNotice(payload?.error || "No fue posible guardar");
+      return;
+    }
+    setDraft(payload as DailyMenuConfig);
+    setNotice("Menú guardado y publicado correctamente.");
+  }
+
+  function setCourse(course: string, text: string) {
+    const options = text
+      .split("\n")
+      .map((option) => option.trim())
+      .filter(Boolean);
+    setDraft((current) => ({
+      ...current,
+      courses: { ...current.courses, [course]: options }
+    }));
+  }
+
   return (
     <div>
+      <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
+        Configuración del día
+      </p>
       <h1 className="font-display text-4xl font-bold">Comida corrida</h1>
-      <div className="paper mt-5 max-w-2xl rounded-3xl p-6">
-        <span className="rounded-full bg-[#f4dfb4] px-3 py-1 text-xs font-bold">
-          Datos de demostración
-        </span>
-        <div className="mt-5 grid gap-4 sm:grid-cols-2">
-          {["Fecha", "Horario", "Precio", "Entrada o sopa", "Plato fuerte", "Bebida"].map(
-            (label) => (
-              <label className="text-sm font-bold" key={label}>
-                {label}
+      <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+        Solo cambia las opciones del día y presiona “Guardar y publicar”. Escribe una opción por
+        renglón.
+      </p>
+      <form className="paper mt-5 max-w-3xl rounded-3xl p-5 sm:p-6" onSubmit={save}>
+        {loading ? (
+          <p className="py-12 text-center text-[var(--muted)]">Cargando configuración…</p>
+        ) : (
+          <>
+            <button
+              className={`focus-ring flex w-full items-center justify-between rounded-2xl p-4 text-left font-bold ${
+                draft.active
+                  ? "bg-[#dce8c8] text-[#274a27]"
+                  : "bg-[#f1d0ca] text-[#7a2c22]"
+              }`}
+              type="button"
+              onClick={() => setDraft({ ...draft, active: !draft.active })}
+            >
+              <span>
+                <span className="block text-xs uppercase tracking-wider">Estado</span>
+                {draft.active ? "Disponible para los clientes" : "No disponible"}
+              </span>
+              {draft.active ? <ToggleRight size={34} /> : <ToggleLeft size={34} />}
+            </button>
+
+            <div className="mt-5 grid gap-4 sm:grid-cols-2">
+              <label className="text-sm font-bold">
+                Fecha del menú
+                <div className="mt-2 flex gap-2">
+                  <input
+                    className="h-12 min-w-0 flex-1 rounded-xl border border-[var(--line)] px-3 font-normal"
+                    required
+                    type="date"
+                    value={draft.serviceDate}
+                    onChange={(event) =>
+                      setDraft({ ...draft, serviceDate: event.target.value })
+                    }
+                  />
+                  <button
+                    className="rounded-xl bg-[#eee8dc] px-3 text-xs font-bold"
+                    type="button"
+                    onClick={() => setDraft({ ...draft, serviceDate: mexicoToday() })}
+                  >
+                    Hoy
+                  </button>
+                </div>
+              </label>
+              <label className="text-sm font-bold">
+                Precio por persona
                 <input
                   className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] px-3 font-normal"
-                  defaultValue={
-                    label === "Horario" ? "13:00–17:00" : label === "Precio" ? "125" : ""
+                  min="1"
+                  required
+                  step="0.5"
+                  type="number"
+                  value={draft.price}
+                  onChange={(event) =>
+                    setDraft({ ...draft, price: Number(event.target.value) })
                   }
                 />
               </label>
-            )
-          )}
-        </div>
-        <button className="focus-ring mt-5 flex h-12 items-center gap-2 rounded-xl bg-[var(--green)] px-5 font-bold text-white">
-          <Save size={17} /> Guardar configuración
-        </button>
-      </div>
+              <label className="text-sm font-bold">
+                Desde
+                <input
+                  className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] px-3 font-normal"
+                  required
+                  type="time"
+                  value={draft.availableFrom}
+                  onChange={(event) =>
+                    setDraft({ ...draft, availableFrom: event.target.value })
+                  }
+                />
+              </label>
+              <label className="text-sm font-bold">
+                Hasta
+                <input
+                  className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] px-3 font-normal"
+                  required
+                  type="time"
+                  value={draft.availableUntil}
+                  onChange={(event) =>
+                    setDraft({ ...draft, availableUntil: event.target.value })
+                  }
+                />
+              </label>
+            </div>
+
+            <div className="mt-6 grid gap-4">
+              {(["Entrada", "Plato fuerte", "Bebida"] as const).map((course) => (
+                <label className="text-sm font-bold" key={course}>
+                  {course}
+                  <span className="ml-2 font-normal text-[var(--muted)]">
+                    una opción por renglón
+                  </span>
+                  <textarea
+                    className="mt-2 min-h-28 w-full resize-y rounded-xl border border-[var(--line)] p-3 font-normal"
+                    required
+                    value={(draft.courses[course] || []).join("\n")}
+                    onChange={(event) => setCourse(course, event.target.value)}
+                  />
+                </label>
+              ))}
+            </div>
+
+            {notice && (
+              <div
+                className={`mt-5 rounded-xl p-3 text-sm font-bold ${
+                  notice.includes("correctamente")
+                    ? "bg-[#dce8c8] text-[#274a27]"
+                    : "bg-[#f1d0ca] text-[#7a2c22]"
+                }`}
+              >
+                {notice}
+              </div>
+            )}
+            <button
+              className="focus-ring mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-5 font-bold text-white disabled:opacity-60"
+              disabled={
+                saving ||
+                Object.values(draft.courses).some((options) => options.length === 0)
+              }
+            >
+              <Save size={18} /> {saving ? "Guardando…" : "Guardar y publicar"}
+            </button>
+          </>
+        )}
+      </form>
     </div>
   );
 }

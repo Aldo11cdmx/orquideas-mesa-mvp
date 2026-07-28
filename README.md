@@ -29,8 +29,11 @@ PIN de cocina y administración: `2026` (solo demostración).
 ## Supabase
 
 1. Crea o abre el proyecto.
-2. En **SQL Editor**, ejecuta
-   [`supabase/migrations/001_initial.sql`](supabase/migrations/001_initial.sql).
+2. En **SQL Editor**, ejecuta las migraciones en orden:
+   - [`supabase/migrations/001_initial.sql`](supabase/migrations/001_initial.sql)
+   - [`supabase/migrations/002_fix_staff_pin.sql`](supabase/migrations/002_fix_staff_pin.sql)
+   - [`supabase/migrations/003_daily_menu.sql`](supabase/migrations/003_daily_menu.sql)
+   - [`supabase/migrations/004_daily_menu_timezone.sql`](supabase/migrations/004_daily_menu_timezone.sql)
 3. Configura las variables de `.env.example`.
 4. Reinicia o vuelve a desplegar.
 
@@ -103,6 +106,6 @@ El flujo automatizado de navegador verifica:
 ## Pendientes del dueño
 
 - Confirmar nombre comercial, logotipo y colores oficiales.
-- Confirmar la carta de comida corrida, horario y precio.
+- Capturar desde Administración la comida corrida de cada día antes del servicio.
 - Confirmar si los precios promocionales de DiDi aplican en consumo en mesa.
 - Cambiar el PIN demo y crear usuarios de cocina/admin con Supabase Auth.

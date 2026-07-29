@@ -1,24 +1,23 @@
 # Supabase
 
-Ejecuta `migrations/001_initial.sql` una sola vez desde **SQL Editor**.
+Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
+**SQL Editor**. La migración `005_imperio_final_menu.sql` es el parche más
+reciente e instala el menú final de Imperio.
 
-La migración:
+Las migraciones:
 
-- crea el modelo completo y los índices;
-- activa RLS;
-- niega lecturas directas de pedidos anónimos;
-- publica únicamente RPCs validados;
-- recalcula precios dentro de PostgreSQL;
-- usa `idempotency_key` para evitar duplicados;
-- limita cantidades y frecuencia de pedidos;
-- valida mesas y productos activos;
-- guarda nombre y precio como fotografía histórica;
-- prepara políticas para migrar cocina/admin a Supabase Auth.
+- crean el modelo y los índices;
+- activan RLS;
+- validan mesas, productos, cantidades y precios;
+- evitan pedidos duplicados;
+- guardan el historial de cada pedido;
+- habilitan la comida corrida diaria;
+- sincronizan los estados para clientes, cocina y meseros.
 
-PIN inicial de demostración: `2026`. Cámbialo antes de uso real:
+Para cambiar el PIN del personal:
 
 ```sql
 update public.restaurants
 set demo_pin_hash = crypt('NUEVO_PIN', gen_salt('bf'))
-where slug = 'orquideas';
+where id = '00000000-0000-0000-0000-000000000001';
 ```

@@ -1,16 +1,19 @@
 @import "tailwindcss";
 
 :root {
-  --cream: #f6f0e4;
-  --paper: #fffdf8;
-  --ink: #18332b;
-  --muted: #68746d;
-  --green: #153f35;
-  --green-2: #245f4e;
-  --terracotta: #c95938;
-  --gold: #e6b95c;
-  --line: #ddd6c8;
-  --shadow: 0 14px 40px rgb(34 48 41 / 10%);
+  --cream: #e7e5e1;
+  --paper: #faf9f7;
+  --ink: #292725;
+  --muted: #6d6862;
+  --green: #35322f;
+  --green-2: #4a4642;
+  --terracotta: #765039;
+  --gold: #c9a57f;
+  --brown: #765039;
+  --charcoal: #35322f;
+  --mist: #d9d6d1;
+  --line: #c9c5bf;
+  --shadow: 0 14px 40px rgb(53 50 47 / 12%);
 }
 
 * {
@@ -27,7 +30,7 @@ body {
   margin: 0;
   min-height: 100vh;
   background:
-    radial-gradient(circle at 12% 5%, rgb(230 185 92 / 12%), transparent 24rem),
+    radial-gradient(circle at 12% 5%, rgb(118 80 57 / 10%), transparent 24rem),
     var(--cream);
   font-family: Arial, Helvetica, sans-serif;
 }
@@ -61,12 +64,12 @@ button {
 
 .menu-photo img {
   position: absolute;
-  inset: 0 auto 0 0;
-  width: 200%;
+  inset: 0;
+  width: 100%;
   height: 100%;
-  max-width: none;
+  max-width: 100%;
   object-fit: cover;
-  object-position: left center;
+  object-position: center;
 }
 
 .focus-ring:focus-visible {

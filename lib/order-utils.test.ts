@@ -7,17 +7,17 @@ describe("calculateTrustedTotal", () => {
     expect(
       calculateTrustedTotal(
         [
-          { productId: "texas", quantity: 2 },
-          { productId: "nachos", quantity: 1 }
+          { productId: "chilaquiles-sencillos", quantity: 2 },
+          { productId: "club-sandwich", quantity: 1 }
         ],
         products
       )
-    ).toBe(235);
+    ).toBe(185);
   });
 
   it("rejects excessive quantities", () => {
     expect(() =>
-      calculateTrustedTotal([{ productId: "texas", quantity: 11 }], products)
+      calculateTrustedTotal([{ productId: "chilaquiles-sencillos", quantity: 11 }], products)
     ).toThrow("invalid_quantity");
   });
 

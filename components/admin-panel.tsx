@@ -306,11 +306,12 @@ const defaultDailyMenu: DailyMenuConfig = {
   serviceDate: "",
   availableFrom: "13:00",
   availableUntil: "17:00",
-  price: 125,
+  price: 75,
   courses: {
-    Entrada: ["Sopa de tortilla", "Consomé del día"],
-    "Plato fuerte": ["Milanesa con papas", "Enchiladas verdes"],
-    Bebida: ["Agua de jamaica", "Agua de horchata"]
+    Entrada: ["Consomé del día", "Sopa del día", "Crema del día"],
+    Guarnición: ["Arroz", "Pasta"],
+    "Plato fuerte": ["Pechuga empanizada", "Enchiladas verdes"],
+    Bebida: ["Agua de fruta del día"]
   }
 };
 
@@ -480,7 +481,7 @@ function DailyAdmin({ pin }: { pin: string }) {
             </div>
 
             <div className="mt-6 grid gap-4">
-              {(["Entrada", "Plato fuerte", "Bebida"] as const).map((course) => (
+              {(["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const).map((course) => (
                 <label className="text-sm font-bold" key={course}>
                   {course}
                   <span className="ml-2 font-normal text-[var(--muted)]">

@@ -19,6 +19,8 @@ export type Product = {
   isNew?: boolean;
   soldOut?: boolean;
   options?: string[];
+  availableFrom?: string;
+  availableUntil?: string;
 };
 
 export type CartItem = {

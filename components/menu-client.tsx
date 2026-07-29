@@ -15,17 +15,24 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
-import { categories, money, products } from "@/lib/menu";
+import {
+  categories,
+  isProductAvailable,
+  mexicoCityMinutes,
+  money,
+  products,
+  timeToMinutes
+} from "@/lib/menu";
 import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
 import type { CartItem, DailyMenuConfig, Order, Product } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
-const dailyCourseOrder = ["Entrada", "Plato fuerte", "Bebida"] as const;
+const dailyCourseOrder = ["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const;
 
 export function MenuClient({ tableCode }: { tableCode: string }) {
   const [mode, setMode] = useState<MenuMode>("fixed");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Populares");
+  const [category, setCategory] = useState("Favoritos");
   const [selected, setSelected] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -34,7 +41,15 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [generalNotes, setGeneralNotes] = useState("");
   const [dailyMenu, setDailyMenu] = useState<DailyMenuConfig | null>(null);
   const [dailyMenuLoading, setDailyMenuLoading] = useState(true);
+  const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
+
+  useEffect(() => {
+    const updateClock = () => setServiceMinutes(mexicoCityMinutes());
+    updateClock();
+    const timer = window.setInterval(updateClock, 60000);
+    return () => window.clearInterval(timer);
+  }, []);
 
   useEffect(() => {
     let active = true;
@@ -99,7 +114,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         !normalized ||
         `${product.name} ${product.description}`.toLocaleLowerCase("es").includes(normalized);
       const matchesCategory =
-        category === "Populares" ? product.popular : product.category === category;
+        category === "Favoritos" ? product.popular : product.category === category;
       return matchesQuery && matchesCategory;
     });
   }, [category, query]);
@@ -144,7 +159,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         description: "Menú completo del día",
         price: menu.price,
         category: "Comida corrida",
-        image: "/menu/ensalada.png"
+        image: "/menu/imperio/pechuga-rellena.jpg"
       },
       quantity,
       notes
@@ -153,7 +168,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   async function submitOrder() {
     if (sending || cart.length === 0) return;
-    if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
+    if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina y meseros?`)) return;
     setSending(true);
     const idempotencyKey = crypto.randomUUID();
     const controller = new AbortController();
@@ -193,7 +208,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     } catch (error) {
       const message =
         error instanceof DOMException && error.name === "AbortError"
-          ? "La cocina tardó demasiado en responder. Intenta nuevamente."
+          ? "El sistema tardó demasiado en responder. Intenta nuevamente."
           : error instanceof Error
             ? error.message
             : "No fue posible enviar el pedido";
@@ -212,6 +227,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         onOrderAgain={() => {
           setOrder(null);
           setMode("fixed");
+          setCategory("Favoritos");
           setCart([]);
           setGeneralNotes("");
         }}
@@ -225,21 +241,21 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         <div className="mx-auto max-w-6xl px-4 pb-5 pt-4 sm:px-6">
           <div className="flex items-center justify-between">
             <Brand compact />
-            <div className="rounded-full bg-[#e3eee8] px-3 py-2 text-xs font-bold text-[var(--green)]">
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#3a8b65]" />
+            <div className="rounded-full bg-[var(--mist)] px-3 py-2 text-xs font-bold text-[var(--brown)]">
+              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brown)]" />
               Servicio en mesa
             </div>
           </div>
           <div className="mt-6 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--terracotta)]">
+              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brown)]">
                 Bienvenido
               </p>
               <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
                 Estás ordenando desde la mesa {tableCode}
               </h1>
             </div>
-            <div className="hidden rounded-2xl bg-[var(--green)] px-5 py-3 text-center text-white sm:block">
+            <div className="hidden rounded-2xl bg-[var(--charcoal)] px-5 py-3 text-center text-white sm:block">
               <span className="text-xs uppercase tracking-wider">Mesa</span>
               <strong className="block text-2xl">{tableCode}</strong>
             </div>
@@ -248,17 +264,17 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="mt-5 rounded-2xl bg-[#e9e2d5] p-1" aria-label="Tipo de menú">
+        <section className="mt-5 rounded-2xl bg-[var(--mist)] p-1" aria-label="Tipo de menú">
           <div className="grid grid-cols-2">
             {[
-              ["fixed", "Menú fijo"],
-              ["lunch", "Comida corrida"]
+              ["fixed", "Desayunos y carta · 9 a 5"],
+              ["lunch", "Comida corrida · 1 a 5"]
             ].map(([value, label]) => (
               <button
                 key={value}
                 className={`focus-ring rounded-xl px-3 py-3 text-sm font-bold transition ${
                   mode === value
-                    ? "bg-[var(--paper)] text-[var(--green)] shadow-sm"
+                    ? "bg-[var(--paper)] text-[var(--brown)] shadow-sm"
                     : "text-[var(--muted)]"
                 }`}
                 onClick={() => setMode(value as MenuMode)}
@@ -273,18 +289,29 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           <LunchMenu
             menu={dailyMenu}
             loading={dailyMenuLoading}
+            serviceMinutes={serviceMinutes}
             onAdd={addDailyMenu}
             onShowFixed={() => setMode("fixed")}
           />
         ) : (
           <>
             <div className="sticky top-0 z-20 -mx-4 mt-5 bg-[var(--cream)]/95 px-4 pb-3 pt-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
+              <div className="mb-3 grid gap-2 sm:grid-cols-2">
+                <div className="rounded-2xl bg-[var(--charcoal)] px-4 py-3 text-sm text-white">
+                  <strong className="block">Desayunos</strong>
+                  <span className="text-white/70">Todos los días · 9:00 a.m.–5:00 p.m.</span>
+                </div>
+                <div className="rounded-2xl bg-[var(--brown)] px-4 py-3 text-sm text-white">
+                  <strong className="block">Comidas a la carta</strong>
+                  <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>
+                </div>
+              </div>
               <label className="paper flex items-center gap-3 rounded-2xl px-4 py-3">
                 <Search size={19} aria-hidden="true" />
                 <span className="sr-only">Buscar platillos</span>
                 <input
                   className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[#8b938f]"
-                  placeholder="Busca hamburguesas, boneless…"
+                  placeholder="Busca chilaquiles, molletes, café…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
@@ -300,7 +327,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                     key={item}
                     className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold ${
                       category === item
-                        ? "bg-[var(--green)] text-white"
+                        ? "bg-[var(--brown)] text-white"
                         : "border border-[var(--line)] bg-[var(--paper)]"
                     }`}
                     onClick={() => setCategory(item)}
@@ -313,7 +340,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
             <div className="mb-4 mt-3 flex items-end justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--terracotta)]">
+                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brown)]">
                   Hecho al momento
                 </p>
                 <h2 className="font-display text-3xl font-bold">{category}</h2>
@@ -324,12 +351,17 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
             {visible.length ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {visible.map((product) => (
-                  <ProductCard key={product.id} product={product} onOpen={setSelected} />
+                  <ProductCard
+                    key={product.id}
+                    product={product}
+                    currentMinutes={serviceMinutes}
+                    onOpen={setSelected}
+                  />
                 ))}
               </div>
             ) : (
               <div className="paper rounded-3xl px-6 py-14 text-center">
-                <Search className="mx-auto text-[var(--terracotta)]" size={34} />
+                <Search className="mx-auto text-[var(--brown)]" size={34} />
                 <h3 className="mt-4 font-display text-2xl font-bold">No encontramos ese platillo</h3>
                 <p className="mt-2 text-sm text-[var(--muted)]">
                   Intenta con otro nombre o cambia de categoría.
@@ -343,7 +375,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       {itemCount > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:p-5">
           <button
-            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--terracotta)] px-5 py-4 font-bold text-white shadow-2xl"
+            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl"
             onClick={() => setCartOpen(true)}
           >
             <span className="flex items-center gap-3">
@@ -381,17 +413,20 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
 function ProductCard({
   product,
+  currentMinutes,
   onOpen
 }: {
   product: Product;
+  currentMinutes: number | null;
   onOpen: (product: Product) => void;
 }) {
+  const available = isProductAvailable(product, currentMinutes);
   return (
     <article className="paper group overflow-hidden rounded-3xl">
       <button
         className="focus-ring block w-full text-left"
         onClick={() => onOpen(product)}
-        disabled={product.soldOut}
+        disabled={product.soldOut || !available}
       >
         <ProductImage src={product.image} alt="" className="aspect-[16/10] w-full" />
         <div className="p-4">
@@ -409,6 +444,11 @@ function ProductCard({
             {product.soldOut && (
               <span className="rounded-full bg-[#f1d0ca] px-2 py-1 text-[10px] font-bold uppercase text-[#7a2c22]">
                 Agotado
+              </span>
+            )}
+            {!product.soldOut && !available && (
+              <span className="rounded-full bg-[var(--mist)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+                Fuera de horario
               </span>
             )}
           </div>
@@ -429,8 +469,12 @@ function ProductCard({
               <span className="rounded-full bg-[#e0ddd6] px-3 py-2 text-xs font-bold text-[#777]">
                 Agotado
               </span>
+            ) : !available ? (
+              <span className="rounded-full bg-[var(--mist)] px-3 py-2 text-xs font-bold text-[var(--brown)]">
+                {product.availableFrom}–{product.availableUntil}
+              </span>
             ) : (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--terracotta)] text-white transition group-hover:scale-105">
+              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--brown)] text-white transition group-hover:scale-105">
                 <Plus size={20} />
               </span>
             )}
@@ -650,7 +694,7 @@ function CartDrawer({
             <textarea
               className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-[var(--line)] bg-white p-3 font-normal outline-none focus:border-[var(--green)]"
               maxLength={250}
-              placeholder="Algo que cocina deba saber…"
+              placeholder="Algo que debamos saber…"
               value={notes}
               onChange={(event) => onNotes(event.target.value)}
             />
@@ -671,7 +715,7 @@ function CartDrawer({
             ) : (
               <>
                 <ShoppingBag size={20} />
-                Enviar pedido a cocina
+                Enviar pedido
               </>
             )}
           </button>
@@ -703,7 +747,7 @@ function OrderTracking({
           <p className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-[#e5cd90]">
             Pedido recibido
           </p>
-          <h1 className="mt-1 font-display text-4xl font-bold">¡Ya está en cocina!</h1>
+          <h1 className="mt-1 font-display text-4xl font-bold">¡Ya recibimos tu pedido!</h1>
           <div className="mt-5 flex items-center gap-4">
             <StatusPill status={order.status} />
             <span className="text-sm">Folio {order.folio}</span>
@@ -788,11 +832,13 @@ function OrderTracking({
 function LunchMenu({
   menu,
   loading,
+  serviceMinutes,
   onAdd,
   onShowFixed
 }: {
   menu: DailyMenuConfig | null;
   loading: boolean;
+  serviceMinutes: number | null;
   onAdd: (
     menu: DailyMenuConfig,
     selections: Record<string, string>,
@@ -830,6 +876,7 @@ function LunchMenu({
     <ConfiguredLunchMenu
       key={`${menu.serviceDate}-${menu.updatedAt || ""}`}
       menu={menu}
+      serviceMinutes={serviceMinutes}
       onAdd={onAdd}
     />
   );
@@ -837,9 +884,11 @@ function LunchMenu({
 
 function ConfiguredLunchMenu({
   menu,
+  serviceMinutes,
   onAdd
 }: {
   menu: DailyMenuConfig;
+  serviceMinutes: number | null;
   onAdd: (
     menu: DailyMenuConfig,
     selections: Record<string, string>,
@@ -855,13 +904,17 @@ function ConfiguredLunchMenu({
       dailyCourseOrder.map((course) => [course, menu.courses[course]?.[0] || ""])
     )
   );
+  const isOpen =
+    serviceMinutes === null ||
+    (serviceMinutes >= timeToMinutes(menu.availableFrom) &&
+      serviceMinutes < timeToMinutes(menu.availableUntil));
 
   return (
     <section className="mt-6">
       <div className="paper overflow-hidden rounded-[2rem]">
-        <div className="bg-[var(--terracotta)] px-6 py-7 text-white">
+        <div className="bg-[var(--brown)] px-6 py-7 text-white">
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-            Disponible hoy
+            {isOpen ? "Disponible ahora" : "Disponible hoy de 1:00 a 5:00 p.m."}
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold">Comida corrida del día</h2>
           <p className="mt-2 flex items-center gap-2 text-sm">
@@ -871,8 +924,8 @@ function ConfiguredLunchMenu({
         </div>
         <div className="p-6">
           <div className="mb-5 flex items-start gap-3 rounded-2xl bg-[#f4dfb4]/60 p-4 text-sm">
-            <Sparkles className="shrink-0 text-[var(--terracotta)]" size={20} />
-            Elige una opción de cada tiempo. Cocina recibirá tus elecciones junto con el pedido.
+            <Sparkles className="shrink-0 text-[var(--brown)]" size={20} />
+            Elige una opción de cada tiempo. Cocina y el mesero recibirán tus elecciones.
           </div>
           {courses.map(([course, options]) => (
             <fieldset className="border-b border-[var(--line)] py-4 last:border-0" key={course}>
@@ -913,7 +966,7 @@ function ConfiguredLunchMenu({
               </button>
               <strong className="w-10 text-center">{quantity}</strong>
               <button
-                className="focus-ring grid h-14 w-12 place-items-center text-[var(--terracotta)]"
+                className="focus-ring grid h-14 w-12 place-items-center text-[var(--brown)]"
                 aria-label="Sumar comida corrida"
                 onClick={() => setQuantity((value) => Math.min(10, value + 1))}
               >
@@ -921,10 +974,11 @@ function ConfiguredLunchMenu({
               </button>
             </div>
             <button
-              className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--terracotta)] px-5 font-bold text-white"
+              className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={!isOpen}
               onClick={() => onAdd(menu, selections, quantity)}
             >
-              <span>Agregar al pedido</span>
+              <span>{isOpen ? "Agregar al pedido" : "Disponible de 1 a 5"}</span>
               <span>{money(menu.price * quantity)}</span>
             </button>
           </div>

@@ -4,6 +4,7 @@ import {
   CheckCircle2,
   ChefHat,
   ExternalLink,
+  HandPlatter,
   QrCode,
   ShieldCheck,
   Smartphone,
@@ -15,8 +16,9 @@ const steps = [
   ["Cocina", "Abre el tablero en la tablet e ingresa el PIN del personal.", Tablet],
   ["Alertas", "Activa las alertas de pedidos nuevos.", ChefHat],
   ["Mesa", "El cliente escanea el QR colocado en su mesa.", Smartphone],
-  ["Pedido", "Elige sus platillos y los envía directamente a cocina.", CheckCircle2],
-  ["Seguimiento", "Cocina actualiza el estado hasta Entregado.", ArrowRight]
+  ["Pedido", "Elige sus platillos y los envía al instante.", CheckCircle2],
+  ["Aviso", "El pedido aparece al mismo tiempo en cocina y meseros.", HandPlatter],
+  ["Seguimiento", "El cliente sigue el estado hasta que se entrega.", ArrowRight]
 ] as const;
 
 export function OperationsHome() {
@@ -25,23 +27,23 @@ export function OperationsHome() {
       <header className="border-b border-[var(--line)] bg-[var(--paper)]">
         <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-5 py-4">
           <Brand compact />
-          <span className="rounded-full bg-[#dce8c8] px-3 py-2 text-xs font-bold text-[#274a27]">
+          <span className="rounded-full bg-[var(--mist)] px-3 py-2 text-xs font-bold text-[var(--brown)]">
             Sistema en operación
           </span>
         </div>
       </header>
-      <section className="relative overflow-hidden bg-[var(--green)] text-white">
+      <section className="relative overflow-hidden bg-[var(--charcoal)] text-white">
         <div className="absolute -right-24 -top-24 h-80 w-80 rounded-full border-[70px] border-white/5" />
         <div className="relative mx-auto max-w-6xl px-5 py-16 sm:py-24">
           <p className="text-xs font-bold uppercase tracking-[0.24em] text-[#e5cd90]">
             Del QR a la cocina
           </p>
           <h1 className="mt-4 max-w-3xl font-display text-5xl font-bold leading-[0.98] sm:text-7xl">
-            Pedidos desde mesa, listos para cocina.
+            Desayunos y comida corrida desde tu mesa.
           </h1>
           <p className="mt-6 max-w-2xl text-lg leading-7 text-[#d7e2dd]">
-            Cada mesa tiene su propio QR. Los pedidos llegan a la tablet y el cliente puede seguir
-            su estado sin recargar.
+            Cada mesa tiene su propio QR. El pedido llega a cocina y meseros mientras el cliente
+            sigue su estado.
           </p>
           <div className="mt-8 flex flex-wrap gap-3">
             <Link
@@ -56,6 +58,12 @@ export function OperationsHome() {
             >
               Abrir cocina <ChefHat size={18} />
             </Link>
+            <Link
+              className="focus-ring flex items-center gap-2 rounded-full border border-white/25 px-6 py-4 font-bold"
+              href="/meseros"
+            >
+              Abrir meseros <HandPlatter size={18} />
+            </Link>
           </div>
         </div>
       </section>
@@ -66,7 +74,7 @@ export function OperationsHome() {
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--terracotta)]">
               Flujo de servicio
             </p>
-            <h2 className="mt-2 font-display text-4xl font-bold">Operación en cinco pasos</h2>
+            <h2 className="mt-2 font-display text-4xl font-bold">Operación en seis pasos</h2>
             <ol className="mt-7 space-y-3">
               {steps.map(([title, body, Icon], index) => (
                 <li className="paper flex gap-4 rounded-2xl p-4" key={title}>
@@ -109,6 +117,12 @@ export function OperationsHome() {
               href="/admin"
             >
               Abrir administración <ArrowRight size={18} />
+            </Link>
+            <Link
+              className="focus-ring mt-3 flex min-h-14 items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-5 font-bold"
+              href="/meseros"
+            >
+              Abrir tablero de meseros <HandPlatter size={18} />
             </Link>
           </aside>
         </div>

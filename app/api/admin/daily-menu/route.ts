@@ -12,6 +12,7 @@ const dailyMenuSchema = z.object({
   price: z.number().min(1).max(10000),
   courses: z.object({
     Entrada: z.array(z.string().trim().min(1).max(80)).min(1).max(8),
+    "Guarnición": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     "Plato fuerte": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     Bebida: z.array(z.string().trim().min(1).max(80)).min(1).max(8)
   })

@@ -312,7 +312,7 @@ const defaultDailyMenu: DailyMenuConfig = {
   availableToday: true,
   serviceDate: "",
   availableFrom: "13:00",
-  availableUntil: "17:00",
+  availableUntil: "21:00",
   price: 75,
   courses: {
     Entrada: ["Consomé del día", "Sopa del día", "Crema del día"],

@@ -8,12 +8,12 @@ export const restaurant = {
 
 const breakfastHours = {
   availableFrom: "09:00",
-  availableUntil: "17:00"
+  availableUntil: "21:00"
 };
 
 const lunchHours = {
   availableFrom: "13:00",
-  availableUntil: "17:00"
+  availableUntil: "21:00"
 };
 
 const breakfastPackage = ["Fruta de temporada", "Café de la casa"];

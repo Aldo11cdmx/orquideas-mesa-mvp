@@ -5,8 +5,8 @@ atenderlos en tiempo real desde los tableros de cocina y meseros.
 
 ## Horarios
 
-- Desayunos y carta: 9:00 a.m.–5:00 p.m.
-- Comida corrida y comidas a la carta: 1:00–5:00 p.m.
+- Desayunos y carta: 9:00 a.m.–9:00 p.m.
+- Comida corrida y comidas a la carta: 1:00–9:00 p.m.
 
 ## Pantallas
 
@@ -36,6 +36,7 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 6. `supabase/migrations/006_product_image_coherence.sql`
 7. `supabase/migrations/007_breakfast_packages_and_sales_report.sql`
 8. `supabase/migrations/008_omelette_and_trial_period.sql`
+9. `supabase/migrations/009_extend_service_hours.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
 rutas de las fotografías y configura la comida corrida en $75. La sexta
@@ -44,6 +45,7 @@ La séptima convierte los desayunos indicados en paquetes con fruta y café y
 habilita el corte de caja por periodos.
 La octava corrige el platillo a omelette de champiñones en $65 y registra el
 periodo de prueba no bloqueante de 14 días.
+La novena extiende el servicio de todos los menús hasta las 9:00 p.m.
 
 ## Variables
 

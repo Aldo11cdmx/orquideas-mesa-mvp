@@ -84,18 +84,6 @@ export const products: Product[] = [
     ...breakfastHours
   },
   {
-    id: "molletes-champinones",
-    name: "Molletes de champiñones",
-    description: "Pan con frijoles y champiñones salteados. Paquete con fruta y café.",
-    price: 80,
-    category: "Desayunos",
-    image: "/menu/imperio/molletes.jpg",
-    isNew: true,
-    optionGroups: [cheeseGroup],
-    packageIncludes: breakfastPackage,
-    ...breakfastHours
-  },
-  {
     id: "enchiladas-verdes",
     name: "Enchiladas verdes",
     description: "Tres piezas rellenas de pollo. Paquete con fruta y café.",
@@ -195,11 +183,11 @@ export const products: Product[] = [
   {
     id: "omelette-champinones",
     name: "Omelette de champiñones",
-    description: "Relleno de queso y jamón con frijoles. Paquete con fruta y café.",
+    description: "Omelette de champiñones con frijoles. Paquete con fruta y café.",
     price: 65,
     category: "Desayunos",
     image: "/menu/imperio/omelette-champinones.jpg",
-    optionGroups: [cheeseGroup],
+    optionGroups: [salsaGroup, cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },

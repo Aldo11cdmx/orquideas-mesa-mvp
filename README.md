@@ -35,12 +35,15 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 5. `supabase/migrations/005_imperio_final_menu.sql`
 6. `supabase/migrations/006_product_image_coherence.sql`
 7. `supabase/migrations/007_breakfast_packages_and_sales_report.sql`
+8. `supabase/migrations/008_omelette_and_trial_period.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
 rutas de las fotografías y configura la comida corrida en $75. La sexta
 sincroniza las imágenes específicas de bebidas, panes, guarniciones y platos fuertes.
-La séptima convierte los desayunos indicados en paquetes con fruta y café,
-agrega los molletes de champiñones y habilita el corte de caja por periodos.
+La séptima convierte los desayunos indicados en paquetes con fruta y café y
+habilita el corte de caja por periodos.
+La octava corrige el platillo a omelette de champiñones en $65 y registra el
+periodo de prueba no bloqueante de 14 días.
 
 ## Variables
 

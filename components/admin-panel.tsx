@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
+import { TrialBanner } from "@/components/trial-banner";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, Product, SalesReport } from "@/lib/types";
 
@@ -121,6 +122,8 @@ export function AdminPanel() {
           ))}
         </nav>
         <section>
+          <TrialBanner compact />
+          <div className="mt-5">
           {tab === "menu" && (
             <MenuAdmin
               products={products}
@@ -140,7 +143,8 @@ export function AdminPanel() {
           )}
           {tab === "daily" && <DailyAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin />}
-          {tab === "sales" && <SalesAdmin pin={pin} />}
+            {tab === "sales" && <SalesAdmin pin={pin} />}
+          </div>
         </section>
       </div>
       {editing && (

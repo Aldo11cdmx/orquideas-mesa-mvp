@@ -91,3 +91,11 @@ export type SalesReport = {
   }>;
   orders: Order[];
 };
+
+export type TrialStatus = {
+  startedAt: string;
+  endsAt: string;
+  active: boolean;
+  daysRemaining: number;
+  hoursRemaining: number;
+};

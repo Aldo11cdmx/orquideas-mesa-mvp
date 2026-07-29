@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `007_breakfast_packages_and_sales_report.sql` es
-el parche más reciente. Agrega los paquetes de desayuno y el corte de caja real.
+**SQL Editor**. La migración `008_omelette_and_trial_period.sql` es el parche
+más reciente. Corrige el omelette y agrega el periodo de prueba de 14 días.
 
 Las migraciones:
 

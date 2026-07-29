@@ -418,7 +418,11 @@ function KitchenCard({
                 <span className="text-[var(--terracotta)]">{item.quantity}×</span>
                 <span>{item.name}</span>
               </div>
-              {item.option && <p className="ml-6 mt-1 text-xs">Salsa: {item.option}</p>}
+              {item.option && (
+                <p className="ml-6 mt-1 rounded-lg bg-[#edf3ec] px-2 py-1.5 text-xs font-bold text-[var(--green)]">
+                  Elecciones: {item.option}
+                </p>
+              )}
               {item.notes && (
                 <p className="ml-6 mt-1 rounded-lg bg-[#f4dfb4] p-2 text-xs font-bold text-[#694500]">
                   {item.notes}

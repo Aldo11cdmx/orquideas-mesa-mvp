@@ -16,125 +16,159 @@ const lunchHours = {
   availableUntil: "17:00"
 };
 
-const salsaOptions = ["Salsa verde", "Salsa roja"];
+const breakfastPackage = ["Fruta de temporada", "Café de la casa"];
+const salsaGroup = {
+  id: "salsa",
+  label: "Elige tu salsa",
+  choices: ["Salsa verde", "Salsa roja", "Salsa suiza"],
+  required: true
+};
+const cheeseGroup = {
+  id: "queso",
+  label: "Elige el terminado",
+  choices: ["Queso fresco", "Manchego gratinado"],
+  required: true
+};
+const eggGroup = {
+  id: "huevos",
+  label: "¿Cómo quieres tus huevos?",
+  choices: ["Revueltos", "Estrellados", "A la mexicana"],
+  required: true
+};
 
 export const products: Product[] = [
   {
     id: "chilaquiles-sencillos",
     name: "Chilaquiles sencillos",
-    description: "Totopos bañados en salsa, con crema, queso y cebolla.",
+    description: "Totopos con crema y cebolla. Paquete con fruta y café.",
     price: 60,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-sencillos.jpg",
     popular: true,
-    options: salsaOptions,
+    optionGroups: [salsaGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "huevos-al-gusto",
     name: "Huevos al gusto",
-    description: "Dos huevos acompañados de frijoles refritos.",
+    description: "Dos huevos con frijoles refritos. Paquete con fruta y café.",
     price: 60,
     category: "Desayunos",
     image: "/menu/imperio/huevos-al-gusto.jpg",
-    options: ["Revueltos", "Estrellados", "A la mexicana"],
+    optionGroups: [eggGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "chilaquiles-huevo",
     name: "Chilaquiles con 1 huevo",
-    description: "Chilaquiles bañados en salsa con un huevo al gusto.",
+    description: "Chilaquiles con un huevo al gusto. Paquete con fruta y café.",
     price: 65,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
-    options: salsaOptions,
+    optionGroups: [salsaGroup, cheeseGroup, eggGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "molletes",
     name: "Molletes tradicionales",
-    description: "Pan con frijoles, tocino, chorizo y quesos gratinados.",
+    description: "Pan con frijoles, tocino y chorizo. Paquete con fruta y café.",
     price: 70,
     category: "Desayunos",
     image: "/menu/imperio/molletes.jpg",
     popular: true,
+    optionGroups: [cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "enchiladas-verdes",
     name: "Enchiladas verdes",
-    description: "Tres piezas rellenas de pollo y bañadas en salsa verde.",
+    description: "Tres piezas rellenas de pollo. Paquete con fruta y café.",
     price: 85,
     category: "Desayunos",
     image: "/menu/imperio/enchiladas-suizas.jpg",
+    optionGroups: [salsaGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "enfrijoladas",
     name: "Enfrijoladas veracruzanas",
-    description: "Rellenas de pollo y queso, cubiertas con frijol y chorizo.",
+    description: "Rellenas de pollo, cubiertas con frijol y chorizo. Incluye fruta y café.",
     price: 85,
     category: "Desayunos",
     image: "/menu/imperio/enfrijoladas.jpg",
     popular: true,
+    optionGroups: [cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "chilaquiles-carne",
     name: "Chilaquiles con carne asada",
-    description: "Chilaquiles servidos con carne asada.",
+    description: "Chilaquiles con carne asada. Paquete con fruta y café.",
     price: 85,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
-    options: salsaOptions,
+    optionGroups: [salsaGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "chilaquiles-pechuga",
     name: "Chilaquiles con pechuga empanizada",
-    description: "Chilaquiles acompañados de fajitas de pechuga empanizada.",
+    description: "Chilaquiles con pechuga empanizada. Paquete con fruta y café.",
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-pechuga.jpg",
     popular: true,
-    options: salsaOptions,
+    optionGroups: [salsaGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "enchiladas-suizas",
     name: "Enchiladas suizas",
-    description: "Rellenas de pollo, gratinadas con queso manchego y crema.",
+    description: "Rellenas de pollo y gratinadas con manchego. Incluye fruta y café.",
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/enchiladas-suizas.jpg",
     popular: true,
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "enmoladas",
     name: "Enmoladas",
-    description: "Cuatro enchiladas rellenas de pollo y bañadas en mole tradicional.",
+    description: "Cuatro enchiladas rellenas de pollo y bañadas en mole. Incluye fruta y café.",
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/enmoladas.jpg",
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "chilaquiles-suizos",
     name: "Chilaquiles suizos",
-    description: "Con fajitas de pechuga, queso manchego gratinado y salsa suiza.",
+    description: "Con pechuga, salsa suiza y manchego gratinado. Incluye fruta y café.",
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-sencillos.jpg",
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
     id: "chilaquiles-divorciados",
     name: "Chilaquiles divorciados",
-    description: "Dos huevos con chilaquiles en salsa verde y roja.",
+    description: "Dos huevos con salsa verde y roja. Paquete con fruta y café.",
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
+    optionGroups: [eggGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {
@@ -149,11 +183,12 @@ export const products: Product[] = [
   {
     id: "omelette-champinones",
     name: "Omelette de champiñones",
-    description: "Relleno de queso y jamón, acompañado de frijoles refritos.",
+    description: "Omelette de champiñones con frijoles. Paquete con fruta y café.",
     price: 65,
     category: "Desayunos",
     image: "/menu/imperio/omelette-champinones.jpg",
-    options: salsaOptions,
+    optionGroups: [salsaGroup, cheeseGroup],
+    packageIncludes: breakfastPackage,
     ...breakfastHours
   },
   {

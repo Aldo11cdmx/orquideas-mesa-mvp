@@ -11,6 +11,7 @@ import {
   Tablet
 } from "lucide-react";
 import { Brand } from "@/components/brand";
+import { TrialBanner } from "@/components/trial-banner";
 
 const steps = [
   ["Cocina", "Abre el tablero en la tablet e ingresa el PIN del personal.", Tablet],
@@ -70,7 +71,8 @@ export function OperationsHome() {
       </section>
 
       <div className="mx-auto max-w-6xl px-5 py-16">
-        <div className="grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
+        <TrialBanner />
+        <div className="mt-8 grid gap-8 lg:grid-cols-[1.25fr_0.75fr]">
           <section>
             <p className="text-xs font-bold uppercase tracking-[0.2em] text-[var(--terracotta)]">
               Flujo de servicio

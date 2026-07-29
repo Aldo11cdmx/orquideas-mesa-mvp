@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `006_product_image_coherence.sql` es el parche más
-reciente y sincroniza las fotografías específicas de cada producto.
+**SQL Editor**. La migración `008_omelette_and_trial_period.sql` es el parche
+más reciente. Corrige el omelette y agrega el periodo de prueba de 14 días.
 
 Las migraciones:
 

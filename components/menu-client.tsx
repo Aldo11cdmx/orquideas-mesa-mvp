@@ -237,34 +237,41 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   return (
     <main className="min-h-screen pb-28">
-      <header className="bg-[var(--paper)]">
-        <div className="mx-auto max-w-6xl px-4 pb-5 pt-4 sm:px-6">
+      <header className="premium-header relative overflow-hidden text-white">
+        <div className="absolute -right-20 -top-36 h-80 w-80 rounded-full border-[64px] border-white/[0.035]" />
+        <div className="absolute bottom-0 left-1/3 h-px w-1/2 bg-gradient-to-r from-transparent via-[var(--gold)]/40 to-transparent" />
+        <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-5 sm:px-6 sm:pb-10">
           <div className="flex items-center justify-between">
-            <Brand compact />
-            <div className="rounded-full bg-[var(--mist)] px-3 py-2 text-xs font-bold text-[var(--brown)]">
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[var(--brown)]" />
+            <Brand compact inverse />
+            <div className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-sm backdrop-blur">
+              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#9acb8a] shadow-[0_0_0_4px_rgba(154,203,138,0.12)]" />
               Servicio en mesa
             </div>
           </div>
-          <div className="mt-6 flex items-end justify-between gap-4">
+          <div className="mt-9 flex items-end justify-between gap-4">
             <div>
-              <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brown)]">
-                Bienvenido
+              <p className="eyebrow text-[var(--gold)]">
+                Cocina hecha al momento
               </p>
-              <h1 className="mt-1 font-display text-3xl font-bold sm:text-4xl">
-                Estás ordenando desde la mesa {tableCode}
+              <h1 className="mt-2 max-w-2xl font-display text-4xl font-bold leading-[0.98] sm:text-5xl">
+                ¿Qué se te antoja hoy?
               </h1>
+              <p className="mt-3 text-sm text-white/65">
+                Ordena desde la mesa {tableCode} y sigue tu pedido en tiempo real.
+              </p>
             </div>
-            <div className="hidden rounded-2xl bg-[var(--charcoal)] px-5 py-3 text-center text-white sm:block">
-              <span className="text-xs uppercase tracking-wider">Mesa</span>
-              <strong className="block text-2xl">{tableCode}</strong>
+            <div className="hidden min-w-24 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                Mesa
+              </span>
+              <strong className="mt-1 block font-display text-3xl">{tableCode}</strong>
             </div>
           </div>
         </div>
       </header>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
-        <section className="mt-5 rounded-2xl bg-[var(--mist)] p-1" aria-label="Tipo de menú">
+        <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">
           <div className="grid grid-cols-2">
             {[
               ["fixed", "Desayunos y carta · 9 a 5"],
@@ -295,7 +302,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           />
         ) : (
           <>
-            <div className="sticky top-0 z-20 -mx-4 mt-5 bg-[var(--cream)]/95 px-4 pb-3 pt-3 backdrop-blur-sm sm:-mx-6 sm:px-6">
+            <div className="sticky top-0 z-20 -mx-4 mt-5 border-b border-[var(--line)]/50 bg-[var(--cream)]/90 px-4 pb-4 pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
               <div className="mb-3 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[var(--charcoal)] px-4 py-3 text-sm text-white">
                   <strong className="block">Desayunos</strong>
@@ -340,9 +347,9 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
             <div className="mb-4 mt-3 flex items-end justify-between">
               <div>
-                <p className="text-xs font-bold uppercase tracking-[0.18em] text-[var(--brown)]">
-                  Hecho al momento
-                </p>
+              <p className="eyebrow text-[var(--brown)]">
+                Hecho al momento
+              </p>
                 <h2 className="font-display text-3xl font-bold">{category}</h2>
               </div>
               <span className="text-sm text-[var(--muted)]">{visible.length} opciones</span>
@@ -422,14 +429,20 @@ function ProductCard({
 }) {
   const available = isProductAvailable(product, currentMinutes);
   return (
-    <article className="paper group overflow-hidden rounded-3xl">
+    <article className="paper menu-card group relative overflow-hidden rounded-[1.75rem]">
       <button
-        className="focus-ring block w-full text-left"
+        className="focus-ring block w-full text-left disabled:opacity-65"
         onClick={() => onOpen(product)}
         disabled={product.soldOut || !available}
       >
-        <ProductImage src={product.image} alt="" className="aspect-[16/10] w-full" />
-        <div className="p-4">
+        <div className="relative">
+          <ProductImage src={product.image} alt={product.name} className="aspect-[4/3] w-full" />
+          <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-[#24211f]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-lg backdrop-blur-md">
+            {product.category}
+          </span>
+          <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
+        </div>
+        <div className="p-5">
           <div className="mb-2 flex min-h-6 flex-wrap gap-2">
             {product.popular && (
               <span className="rounded-full bg-[#f4dfb4] px-2 py-1 text-[10px] font-bold uppercase text-[#694500]">
@@ -452,12 +465,12 @@ function ProductCard({
               </span>
             )}
           </div>
-          <h3 className="font-display text-xl font-bold leading-tight">{product.name}</h3>
+          <h3 className="font-display text-[1.35rem] font-bold leading-[1.05]">{product.name}</h3>
           <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[var(--muted)]">
             {product.description}
           </p>
-          <div className="mt-4 flex items-center justify-between">
-            <p className="font-bold">
+          <div className="mt-5 flex items-center justify-between border-t border-[var(--line)]/65 pt-4">
+            <p className="text-lg font-extrabold text-[var(--brown-dark)]">
               {money(product.price)}
               {product.compareAt && (
                 <span className="ml-2 text-xs font-normal text-[#929a96] line-through">
@@ -474,7 +487,7 @@ function ProductCard({
                 {product.availableFrom}–{product.availableUntil}
               </span>
             ) : (
-              <span className="grid h-10 w-10 place-items-center rounded-full bg-[var(--brown)] text-white transition group-hover:scale-105">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--brown)] text-white shadow-lg transition group-hover:scale-105 group-hover:bg-[var(--brown-dark)]">
                 <Plus size={20} />
               </span>
             )}
@@ -483,6 +496,14 @@ function ProductCard({
       </button>
     </article>
   );
+}
+
+function optionPrompt(product: Product) {
+  if (product.id === "malteada" || product.id === "licuado") return "Elige tu sabor";
+  if (product.id === "taco-bistec-longaniza") return "Elige la preparación";
+  if (product.id === "ensalada-fresca") return "Elige la proteína";
+  if (product.id === "huevos-al-gusto") return "¿Cómo quieres tus huevos?";
+  return "Elige salsa de tu preferencia";
 }
 
 function ProductDialog({
@@ -498,16 +519,16 @@ function ProductDialog({
   const [notes, setNotes] = useState("");
   const [option, setOption] = useState(product.options?.[0]);
   return (
-    <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#10211b]/55 lg:items-center lg:justify-center lg:p-5">
+    <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-title"
-        className="animate-pop max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] lg:max-w-4xl lg:rounded-[2rem]"
+        className="animate-pop max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"
       >
         <div className="relative grid min-w-0 lg:grid-cols-[0.9fr_1.1fr]">
           <button
-            className="focus-ring absolute left-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-white/90"
+            className="focus-ring absolute left-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-2xl bg-white/90 shadow-lg backdrop-blur"
             aria-label="Cerrar"
             onClick={onClose}
           >
@@ -518,14 +539,15 @@ function ProductDialog({
             alt={product.name}
             className="h-56 w-full sm:h-72 lg:h-full lg:min-h-[34rem]"
           />
-          <div className="min-w-0 p-5 sm:p-7 lg:p-8">
-            <h2 id="product-title" className="break-words font-display text-2xl font-bold sm:text-3xl">
+          <div className="min-w-0 p-5 sm:p-7 lg:flex lg:min-h-[34rem] lg:flex-col lg:justify-center lg:p-10">
+            <p className="eyebrow mb-3 text-[var(--brown)]">{product.category}</p>
+            <h2 id="product-title" className="break-words font-display text-3xl font-bold leading-none sm:text-4xl">
               {product.name}
             </h2>
             <p className="mt-3 leading-6 text-[var(--muted)]">{product.description}</p>
             {product.options && (
               <fieldset className="mt-6">
-                <legend className="font-bold">Elige salsa de tu preferencia</legend>
+                <legend className="font-bold">{optionPrompt(product)}</legend>
                 <p className="mb-3 text-xs text-[var(--muted)]">Selecciona 1 · Obligatorio</p>
                 <div className="grid gap-2 sm:grid-cols-2">
                   {product.options.map((item) => (
@@ -533,7 +555,7 @@ function ProductDialog({
                       key={item}
                       className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 ${
                         option === item
-                          ? "border-[var(--green)] bg-[#e7efe9]"
+                          ? "border-[var(--brown)] bg-[#eee2d8] shadow-sm"
                           : "border-[var(--line)]"
                       }`}
                     >
@@ -579,7 +601,7 @@ function ProductDialog({
                 </button>
               </div>
               <button
-                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--terracotta)] px-5 font-bold text-white"
+                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]"
                 onClick={() => onAdd(product, quantity, notes.trim(), option)}
               >
                 <span>Agregar</span>
@@ -612,12 +634,12 @@ function CartDrawer({
 }) {
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#10211b]/55">
+    <div className="fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="cart-title"
-        className="animate-pop flex h-full w-full max-w-lg flex-col bg-[var(--paper)]"
+        className="animate-pop flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"
       >
         <div className="flex items-center gap-3 border-b border-[var(--line)] px-5 py-4">
           <button
@@ -639,7 +661,7 @@ function CartDrawer({
         <div className="flex-1 overflow-y-auto p-5">
           <div className="space-y-3">
             {cart.map((item, index) => (
-              <article key={`${item.productId}-${index}`} className="rounded-2xl bg-[#f1ebdf] p-4">
+              <article key={`${item.productId}-${index}`} className="paper rounded-2xl p-4 shadow-sm">
                 <div className="flex gap-3">
                   <ProductImage
                     src={item.image}
@@ -700,7 +722,7 @@ function CartDrawer({
             />
           </label>
         </div>
-        <div className="border-t border-[var(--line)] bg-white p-5">
+        <div className="border-t border-[var(--line)] bg-[var(--paper)] p-5 shadow-[0_-16px_36px_rgba(48,44,41,0.08)]">
           <div className="mb-4 flex items-center justify-between text-lg">
             <span>Total estimado</span>
             <strong className="text-xl">{money(subtotal)}</strong>

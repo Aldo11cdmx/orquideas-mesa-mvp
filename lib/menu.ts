@@ -36,7 +36,7 @@ export const products: Product[] = [
     description: "Dos huevos acompañados de frijoles refritos.",
     price: 60,
     category: "Desayunos",
-    image: "/menu/imperio/chilaquiles-huevo.jpg",
+    image: "/menu/imperio/huevos-al-gusto.jpg",
     options: ["Revueltos", "Estrellados", "A la mexicana"],
     ...breakfastHours
   },
@@ -143,7 +143,7 @@ export const products: Product[] = [
     description: "Acompañada de papas fritas, ensalada y frijoles.",
     price: 90,
     category: "Desayunos",
-    image: "/menu/imperio/pollo-plancha.jpg",
+    image: "/menu/imperio/arrachera.jpg",
     ...breakfastHours
   },
   {
@@ -152,7 +152,7 @@ export const products: Product[] = [
     description: "Relleno de queso y jamón, acompañado de frijoles refritos.",
     price: 65,
     category: "Desayunos",
-    image: "/menu/imperio/chilaquiles-huevo.jpg",
+    image: "/menu/imperio/omelette-champinones.jpg",
     options: salsaOptions,
     ...breakfastHours
   },
@@ -162,7 +162,7 @@ export const products: Product[] = [
     description: "Taco servido con una porción de papas fritas.",
     price: 26,
     category: "A la carta",
-    image: "/menu/imperio/chilaquiles-huevo.jpg",
+    image: "/menu/imperio/taco-bistec.jpg",
     options: ["Bistec", "Longaniza"],
     ...breakfastHours
   },
@@ -172,7 +172,7 @@ export const products: Product[] = [
     description: "Papas doradas preparadas al momento.",
     price: 45,
     category: "A la carta",
-    image: "/menu/imperio/club-sandwich.jpg",
+    image: "/menu/imperio/papas-francesas.jpg",
     ...breakfastHours
   },
   {
@@ -210,7 +210,7 @@ export const products: Product[] = [
     description: "Servido con mantequilla y mermelada de fresa.",
     price: 25,
     category: "Panes y más",
-    image: "/menu/imperio/cuernito.jpg",
+    image: "/menu/imperio/bisquet.jpg",
     ...breakfastHours
   },
   {
@@ -219,7 +219,7 @@ export const products: Product[] = [
     description: "Orden de tres piezas preparada al momento.",
     price: 40,
     category: "Panes y más",
-    image: "/menu/imperio/hotcakes-waffles.jpg",
+    image: "/menu/imperio/pan-frances.jpg",
     ...breakfastHours
   },
   {
@@ -255,7 +255,7 @@ export const products: Product[] = [
     description: "Refresco frío en presentación de 355 ml.",
     price: 28,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/refresco-cola.jpg",
     ...breakfastHours
   },
   {
@@ -264,7 +264,7 @@ export const products: Product[] = [
     description: "Preparado con leche y fruta.",
     price: 30,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/malteada-fresa.jpg",
     options: ["Plátano", "Fresa", "Mamey"],
     ...breakfastHours
   },
@@ -274,7 +274,7 @@ export const products: Product[] = [
     description: "Café caliente preparado al momento.",
     price: 25,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/cafe-leche.jpg",
     ...breakfastHours
   },
   {
@@ -283,7 +283,7 @@ export const products: Product[] = [
     description: "Cremosa malteada fría.",
     price: 40,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/malteada-fresa.jpg",
     options: ["Fresa", "Chocolate", "Vainilla"],
     ...breakfastHours
   },
@@ -293,7 +293,7 @@ export const products: Product[] = [
     description: "Jugo de piña, espinaca y apio, 500 ml.",
     price: 35,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/jugo-verde.jpg",
     ...breakfastHours
   },
   {
@@ -302,7 +302,7 @@ export const products: Product[] = [
     description: "Agua fresca preparada con el sabor disponible del día.",
     price: 25,
     category: "Bebidas",
-    image: "/menu/imperio/bebidas.jpg",
+    image: "/menu/imperio/agua-fruta.jpg",
     ...breakfastHours
   },
   {
@@ -311,7 +311,7 @@ export const products: Product[] = [
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pechuga-rellena.jpg",
+    image: "/menu/imperio/pollo-empanizado.jpg",
     ...lunchHours
   },
   {
@@ -329,7 +329,7 @@ export const products: Product[] = [
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pechuga-rellena.jpg",
+    image: "/menu/imperio/milanesa-res.jpg",
     ...lunchHours
   },
   {
@@ -348,7 +348,7 @@ export const products: Product[] = [
     description: "Acompañado de papas fritas y ensalada.",
     price: 95,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pechuga-rellena.jpg",
+    image: "/menu/imperio/pescado-empanizado.jpg",
     ...lunchHours
   },
   {
@@ -366,7 +366,7 @@ export const products: Product[] = [
     description: "Acompañada de papas a la francesa, ensalada y frijoles.",
     price: 100,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pollo-plancha.jpg",
+    image: "/menu/imperio/arrachera.jpg",
     ...lunchHours
   },
   {

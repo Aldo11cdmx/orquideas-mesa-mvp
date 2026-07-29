@@ -59,9 +59,11 @@ export function AdminPanel() {
   if (!ready) {
     return (
       <main className="grid min-h-screen place-items-center px-5">
-        <form className="paper w-full max-w-sm rounded-[2rem] p-7" onSubmit={login}>
+        <form className="paper w-full max-w-sm rounded-[2rem] p-8 shadow-2xl" onSubmit={login}>
           <Brand />
-          <Settings2 className="mt-8 text-[var(--terracotta)]" size={40} />
+          <div className="mt-8 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--charcoal)] text-[var(--gold)] shadow-lg">
+            <Settings2 size={28} />
+          </div>
           <h1 className="mt-4 font-display text-3xl font-bold">Administración</h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
             Configura el menú y consulta el resumen del servicio.
@@ -76,7 +78,7 @@ export function AdminPanel() {
               onChange={(event) => setPin(event.target.value)}
             />
           </label>
-          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--green)] font-bold text-white">
+          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--brown)] font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]">
             Entrar
           </button>
         </form>
@@ -94,7 +96,7 @@ export function AdminPanel() {
 
   return (
     <main className="min-h-screen">
-      <header className="border-b border-[var(--line)] bg-[var(--paper)] px-5 py-4">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Brand compact />
           <span className="rounded-full bg-[#e4ece6] px-4 py-2 text-xs font-bold">
@@ -103,7 +105,7 @@ export function AdminPanel() {
         </div>
       </header>
       <div className="mx-auto grid max-w-7xl gap-5 p-4 md:grid-cols-[210px_1fr] md:p-6">
-        <nav className="paper flex gap-2 overflow-x-auto rounded-2xl p-2 md:block md:h-fit">
+        <nav className="paper flex gap-2 overflow-x-auto rounded-3xl p-2 md:sticky md:top-24 md:block md:h-fit">
           {nav.map(([id, label, Icon]) => (
             <button
               key={id}
@@ -128,8 +130,8 @@ export function AdminPanel() {
                   name: "",
                   description: "",
                   price: 0,
-                  category: "Mega hamburguesas",
-                  image: "/menu/texas.png"
+                  category: "Desayunos",
+                  image: "/menu/imperio/chilaquiles-sencillos.jpg"
                 })
               }
             />
@@ -186,7 +188,7 @@ function MenuAdmin({
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
         {products.map((product) => (
-          <article className="paper flex gap-3 rounded-2xl p-3" key={product.id}>
+          <article className="paper menu-card relative flex gap-3 rounded-2xl p-3" key={product.id}>
             <ProductImage
               src={product.image}
               alt=""
@@ -238,7 +240,7 @@ function EditProduct({
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#10211b]/55 p-4">
       <form
-        className="paper max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-6"
+        className="paper max-h-[95vh] w-full max-w-lg overflow-y-auto rounded-[2rem] p-7 shadow-2xl"
         onSubmit={(event) => {
           event.preventDefault();
           onSave(draft);

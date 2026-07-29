@@ -214,9 +214,9 @@ function StaffBoard({ role }: { role: StaffRole }) {
   if (!unlocked) {
     return (
       <main className="grid min-h-screen place-items-center px-5">
-        <form className="paper w-full max-w-sm rounded-[2rem] p-7" onSubmit={unlock}>
+        <form className="paper w-full max-w-sm rounded-[2rem] p-8 shadow-2xl" onSubmit={unlock}>
           <Brand />
-          <div className="mt-8 grid h-14 w-14 place-items-center rounded-full bg-[#e4ece6]">
+          <div className="mt-8 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--charcoal)] text-[var(--gold)] shadow-lg">
             {role === "kitchen" ? <ChefHat size={28} /> : <HandPlatter size={28} />}
           </div>
           <h1 className="mt-5 font-display text-3xl font-bold">
@@ -237,7 +237,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
               onChange={(event) => setPin(event.target.value)}
             />
           </label>
-          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--green)] font-bold text-white">
+          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--brown)] font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]">
             Abrir tablero
           </button>
         </form>
@@ -246,8 +246,8 @@ function StaffBoard({ role }: { role: StaffRole }) {
   }
 
   return (
-    <main className="min-h-screen bg-[#e9e5dc]">
-      <header className="border-b border-[var(--line)] bg-[var(--paper)] px-5 py-4">
+    <main className="min-h-screen">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-5">
             <Brand compact />
@@ -329,7 +329,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
             const ColumnIcon = column.icon;
             const columnOrders = filtered.filter((order) => column.statuses.includes(order.status));
             return (
-              <section key={column.id} className="min-w-0 rounded-3xl bg-[#dcd7cd] p-3">
+              <section key={column.id} className="staff-column min-w-0 rounded-[1.75rem] p-3">
                 <div className="flex items-center justify-between px-2 py-2">
                   <h2 className="flex items-center gap-2 font-display text-xl font-bold">
                     <ColumnIcon size={20} /> {column.title}
@@ -389,11 +389,11 @@ function KitchenCard({
   const action = next[order.status];
   return (
     <article
-      className={`paper animate-pop overflow-hidden rounded-2xl ${
+      className={`paper order-card animate-pop overflow-hidden rounded-2xl ${
         order.status === "sent" ? "ring-2 ring-[var(--gold)]" : ""
       }`}
     >
-      <div className="flex items-start justify-between bg-[var(--green)] p-4 text-white">
+      <div className="premium-header flex items-start justify-between p-4 text-white">
         <div>
           <p className="text-xs uppercase tracking-wider text-[#d9c17f]">Mesa</p>
           <strong className="font-display text-4xl">{order.tableCode}</strong>
@@ -438,7 +438,7 @@ function KitchenCard({
         </div>
         {action && (
           <button
-            className="focus-ring mt-4 min-h-12 w-full rounded-xl bg-[var(--terracotta)] px-4 font-bold text-white"
+            className="focus-ring mt-4 min-h-12 w-full rounded-xl bg-[var(--brown)] px-4 font-bold text-white shadow-md hover:bg-[var(--brown-dark)]"
             onClick={() => onStatus(order, action.status)}
           >
             {action.label}

@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `005_imperio_final_menu.sql` es el parche más
-reciente e instala el menú final de Imperio.
+**SQL Editor**. La migración `006_product_image_coherence.sql` es el parche más
+reciente y sincroniza las fotografías específicas de cada producto.
 
 Las migraciones:
 

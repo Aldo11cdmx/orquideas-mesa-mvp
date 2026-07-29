@@ -33,9 +33,11 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 3. `supabase/migrations/003_daily_menu.sql`
 4. `supabase/migrations/004_daily_menu_timezone.sql`
 5. `supabase/migrations/005_imperio_final_menu.sql`
+6. `supabase/migrations/006_product_image_coherence.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
-rutas de las fotografías y configura la comida corrida en $75.
+rutas de las fotografías y configura la comida corrida en $75. La sexta
+sincroniza las imágenes específicas de bebidas, panes, guarniciones y platos fuertes.
 
 ## Variables
 

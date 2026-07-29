@@ -40,7 +40,7 @@ export async function POST(request: NextRequest) {
   if (error) {
     console.error("place_order failed", error.code, error.message);
     return NextResponse.json(
-      { error: "No fue posible registrar el pedido en cocina" },
+      { error: "No fue posible registrar el pedido" },
       { status: 503 }
     );
   }
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
   if (error) {
     console.error("kitchen_orders failed", error.code, error.message);
     return NextResponse.json(
-      { error: "No fue posible consultar los pedidos de cocina" },
+      { error: "No fue posible consultar los pedidos" },
       { status: 503 }
     );
   }

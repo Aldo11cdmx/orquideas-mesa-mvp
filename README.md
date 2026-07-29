@@ -1,89 +1,62 @@
-# Orquídeas · Pedidos desde mesa
+# Imperio · Pedidos desde mesa
 
-Sistema mobile-first para recibir pedidos desde un QR de mesa y atenderlos desde
-una tablet. Incluye menú, carrito, seguimiento, tablero de cocina,
-administración y hoja QR.
+Sistema mobile-first para recibir pedidos desde los códigos QR de las mesas y
+atenderlos en tiempo real desde los tableros de cocina y meseros.
 
-> **Identidad provisional:** las capturas recibidas no mostraron el nombre ni el
-> logotipo del restaurante. “Orquídeas · Cocina de barrio” se usa como identidad
-> temporal, inspirada en la dirección confirmada. Los platillos, precios y
-> fotografías sí provienen de las capturas del menú.
+## Horarios
 
-## Inicio rápido
+- Desayunos y carta: 9:00 a.m.–5:00 p.m.
+- Comida corrida y comidas a la carta: 1:00–5:00 p.m.
+
+## Pantallas
+
+- `/`: centro de operación.
+- `/mesa/A1`: experiencia del cliente.
+- `/cocina`: preparación de pedidos.
+- `/meseros`: seguimiento y entrega en mesa.
+- `/admin`: configuración de productos y comida corrida.
+- `/qr`: hoja imprimible para las seis mesas.
+
+## Inicio local
 
 ```bash
 npm install
 npm run dev
 ```
 
-Abre:
-
-- `/`: centro de operación.
-- `/mesa/A1`: experiencia del cliente.
-- `/cocina`: tablero para tablet.
-- `/admin`: gestión básica.
-- `/qr`: hoja imprimible de las seis mesas.
-
-PIN actual de cocina y administración: `2026`.
-
 ## Supabase
 
-1. Crea o abre el proyecto.
-2. En **SQL Editor**, ejecuta las migraciones en orden:
-   - [`supabase/migrations/001_initial.sql`](supabase/migrations/001_initial.sql)
-   - [`supabase/migrations/002_fix_staff_pin.sql`](supabase/migrations/002_fix_staff_pin.sql)
-   - [`supabase/migrations/003_daily_menu.sql`](supabase/migrations/003_daily_menu.sql)
-   - [`supabase/migrations/004_daily_menu_timezone.sql`](supabase/migrations/004_daily_menu_timezone.sql)
-3. Configura las variables de `.env.example`.
-4. Reinicia o vuelve a desplegar.
+En **SQL Editor**, ejecuta las migraciones en orden:
 
-No se utiliza `service_role` en el navegador. La creación del pedido pasa por
-una función `security definer` que valida la mesa, disponibilidad, cantidades,
-idempotencia y precios vigentes dentro de PostgreSQL.
+1. `supabase/migrations/001_initial.sql`
+2. `supabase/migrations/002_fix_staff_pin.sql`
+3. `supabase/migrations/003_daily_menu.sql`
+4. `supabase/migrations/004_daily_menu_timezone.sql`
+5. `supabase/migrations/005_imperio_final_menu.sql`
 
-Sin la migración, la app entra en modo demo automáticamente:
-
-- conserva datos en el navegador;
-- sincroniza pantallas abiertas mediante Supabase Broadcast;
-- no garantiza recuperación entre dispositivos después de recargar.
+La quinta migración instala el menú final, actualiza los precios, registra las
+rutas de las fotografías y configura la comida corrida en $75.
 
 ## Variables
 
 | Variable | Uso |
 | --- | --- |
 | `NEXT_PUBLIC_SUPABASE_URL` | URL pública del proyecto |
-| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Publishable/anon key |
-| `STAFF_DEMO_PIN` | PIN del servidor para cocina |
-| `NEXT_PUBLIC_APP_URL` | URL base usada para generar los QR |
+| `NEXT_PUBLIC_SUPABASE_ANON_KEY` | Llave pública del proyecto |
+| `STAFF_DEMO_PIN` | PIN del servidor para personal |
+| `NEXT_PUBLIC_APP_URL` | URL base usada para QR y metadatos |
 
-## Despliegue en Vercel
+No agregues `.env.local`, llaves privadas ni contraseñas al repositorio.
 
-1. Sube el repositorio a GitHub. Los archivos `.env*` están ignorados y
-   `.env.example` contiene únicamente marcadores de posición.
-2. Importa el repositorio desde Vercel.
-3. En **Settings → Environment Variables**, agrega:
-   - `NEXT_PUBLIC_SUPABASE_URL`
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
-   - `STAFF_DEMO_PIN`
-   - `NEXT_PUBLIC_APP_URL` con el dominio definitivo de Vercel.
-4. Mantén el preset **Next.js** y el comando de compilación `npm run build`.
-5. Despliega y vuelve a generar o imprimir los QR desde `/qr`.
+## Seguridad
 
-No agregues `.env.local`, una llave `service_role` ni contraseñas al
-repositorio. La llave pública/anon se configura directamente en Vercel.
-
-## Seguridad implementada
-
-- Total recalculado en PostgreSQL; no se acepta el precio del cliente.
-- Copia histórica de nombre y precio en `order_items`.
-- Mesa y productos activos validados en servidor.
-- Cantidad limitada a 10 por renglón y 30 renglones por pedido.
-- `idempotency_key` único para evitar dobles pedidos.
-- Rate limit básico por mesa.
-- Observaciones recortadas y validadas.
-- Pedidos sin lectura directa anónima; acceso mediante RPC con token o PIN.
-- RLS e índices incluidos.
-- Estructura preparada para sustituir el PIN por Supabase Auth.
+- Los precios se recalculan dentro de PostgreSQL.
+- Las mesas, los productos y las cantidades se validan en servidor.
+- Cada envío usa una llave de idempotencia para evitar duplicados.
+- Los clientes sólo pueden consultar su propio pedido mediante un token.
+- Los tableros del personal requieren el PIN configurado.
+- Supabase Realtime avisa los cambios y una consulta periódica recupera
+  cualquier alerta que se haya retrasado.
 
 ## Verificación
 
@@ -92,20 +65,8 @@ npm run lint
 npm run typecheck
 npm test
 npm run build
+npm run build:sites
 ```
 
-El flujo automatizado de navegador verifica:
-
-- pedido desde A1;
-- recepción en cocina;
-- transición a preparando y listo;
-- estado actualizado en el celular;
-- producto agotado;
-- mesa inexistente.
-
-## Pendientes del dueño
-
-- Confirmar nombre comercial, logotipo y colores oficiales.
-- Capturar desde Administración la comida corrida de cada día antes del servicio.
-- Confirmar si los precios promocionales de DiDi aplican en consumo en mesa.
-- Cambiar el PIN demo y crear usuarios de cocina/admin con Supabase Auth.
+Antes de abrir el servicio, administración debe publicar los guisados y
+opciones de la comida corrida del día.

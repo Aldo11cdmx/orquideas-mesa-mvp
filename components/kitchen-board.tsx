@@ -6,6 +6,7 @@ import {
   BellRing,
   CheckCircle2,
   ChefHat,
+  HandPlatter,
   Clock3,
   RefreshCw,
   Search,
@@ -25,7 +26,7 @@ import {
 } from "@/lib/order-store";
 import type { Order, OrderStatus } from "@/lib/types";
 
-const columns: Array<{
+const kitchenColumns: Array<{
   id: string;
   title: string;
   statuses: OrderStatus[];
@@ -36,7 +37,23 @@ const columns: Array<{
   { id: "ready", title: "Listos", statuses: ["ready"], icon: CheckCircle2 }
 ];
 
+const waiterColumns: typeof kitchenColumns = [
+  { id: "new", title: "Pedidos nuevos", statuses: ["sent", "accepted"], icon: BellRing },
+  { id: "preparing", title: "En cocina", statuses: ["preparing"], icon: ChefHat },
+  { id: "ready", title: "Para entregar", statuses: ["ready"], icon: HandPlatter }
+];
+
+type StaffRole = "kitchen" | "waiter";
+
 export function KitchenBoard() {
+  return <StaffBoard role="kitchen" />;
+}
+
+export function WaiterBoard() {
+  return <StaffBoard role="waiter" />;
+}
+
+function StaffBoard({ role }: { role: StaffRole }) {
   const [pin, setPin] = useState("");
   const [unlocked, setUnlocked] = useState(false);
   const [orders, setOrders] = useState<Order[]>([]);
@@ -48,6 +65,7 @@ export function KitchenBoard() {
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
+  const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
   useEffect(() => {
     soundRef.current = sound;
@@ -149,6 +167,14 @@ export function KitchenBoard() {
       .catch(() => sessionStorage.removeItem("orquideas-staff-pin"));
   }, [loadOrders]);
 
+  useEffect(() => {
+    if (!unlocked || !pin) return;
+    const timer = window.setInterval(() => {
+      void loadOrders(pin);
+    }, 8000);
+    return () => window.clearInterval(timer);
+  }, [loadOrders, pin, unlocked]);
+
   const filtered = useMemo(
     () =>
       orders.filter((order) => {
@@ -191,11 +217,13 @@ export function KitchenBoard() {
         <form className="paper w-full max-w-sm rounded-[2rem] p-7" onSubmit={unlock}>
           <Brand />
           <div className="mt-8 grid h-14 w-14 place-items-center rounded-full bg-[#e4ece6]">
-            <ChefHat size={28} />
+            {role === "kitchen" ? <ChefHat size={28} /> : <HandPlatter size={28} />}
           </div>
-          <h1 className="mt-5 font-display text-3xl font-bold">Acceso a cocina</h1>
+          <h1 className="mt-5 font-display text-3xl font-bold">
+            Acceso para {role === "kitchen" ? "cocina" : "meseros"}
+          </h1>
           <p className="mt-2 text-sm text-[var(--muted)]">
-            Ingresa el PIN del personal para ver y atender pedidos.
+            Ingresa el PIN del personal para ver los pedidos de todas las mesas.
           </p>
           <label className="mt-6 block text-sm font-bold">
             PIN
@@ -228,7 +256,9 @@ export function KitchenBoard() {
               <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
                 Operación
               </p>
-              <h1 className="font-display text-2xl font-bold">Tablero de cocina</h1>
+              <h1 className="font-display text-2xl font-bold">
+                {role === "kitchen" ? "Tablero de cocina" : "Tablero de meseros"}
+              </h1>
             </div>
           </div>
           <div className="flex items-center gap-2">
@@ -295,7 +325,7 @@ export function KitchenBoard() {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {columns.map((column) => {
+          {boardColumns.map((column) => {
             const ColumnIcon = column.icon;
             const columnOrders = filtered.filter((order) => column.statuses.includes(order.status));
             return (
@@ -314,6 +344,7 @@ export function KitchenBoard() {
                       key={order.id}
                       order={order}
                       now={now}
+                      role={role}
                       onStatus={changeStatus}
                     />
                   ))}
@@ -336,19 +367,25 @@ export function KitchenBoard() {
 function KitchenCard({
   order,
   now,
+  role,
   onStatus
 }: {
   order: Order;
   now: number;
+  role: StaffRole;
   onStatus: (order: Order, status: OrderStatus) => void;
 }) {
   const minutes = Math.max(0, Math.floor((now - +new Date(order.createdAt)) / 60000));
-  const next: Partial<Record<OrderStatus, { label: string; status: OrderStatus }>> = {
-    sent: { label: "Aceptar pedido", status: "accepted" },
-    accepted: { label: "Comenzar preparación", status: "preparing" },
-    preparing: { label: "Marcar listo", status: "ready" },
-    ready: { label: "Entregar", status: "delivered" }
-  };
+  const next: Partial<Record<OrderStatus, { label: string; status: OrderStatus }>> =
+    role === "kitchen"
+      ? {
+          sent: { label: "Aceptar pedido", status: "accepted" },
+          accepted: { label: "Comenzar preparación", status: "preparing" },
+          preparing: { label: "Marcar listo", status: "ready" }
+        }
+      : {
+          ready: { label: "Marcar como entregado", status: "delivered" }
+        };
   const action = next[order.status];
   return (
     <article
@@ -407,12 +444,14 @@ function KitchenCard({
             {action.label}
           </button>
         )}
-        <button
-          className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
-          onClick={() => onStatus(order, "cancelled")}
-        >
-          <XCircle size={15} /> Cancelar
-        </button>
+        {role === "kitchen" && (
+          <button
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
+            onClick={() => onStatus(order, "cancelled")}
+          >
+            <XCircle size={15} /> Cancelar
+          </button>
+        )}
       </div>
     </article>
   );

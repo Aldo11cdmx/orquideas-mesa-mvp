@@ -2,12 +2,12 @@ import type { MetadataRoute } from "next";
 
 export default function manifest(): MetadataRoute.Manifest {
   return {
-    name: "Orquídeas · Pedidos",
-    short_name: "Orquídeas",
+    name: "Imperio · Pedidos",
+    short_name: "Imperio",
     start_url: "/",
     display: "standalone",
-    background_color: "#f6f0e4",
-    theme_color: "#153f35",
+    background_color: "#e7e5e1",
+    theme_color: "#35322f",
     icons: []
   };
 }

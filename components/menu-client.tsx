@@ -32,7 +32,7 @@ const dailyCourseOrder = ["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as
 export function MenuClient({ tableCode }: { tableCode: string }) {
   const [mode, setMode] = useState<MenuMode>("fixed");
   const [query, setQuery] = useState("");
-  const [category, setCategory] = useState("Favoritos");
+  const [category, setCategory] = useState("Desayunos");
   const [selected, setSelected] = useState<Product | null>(null);
   const [cart, setCart] = useState<CartItem[]>([]);
   const [cartOpen, setCartOpen] = useState(false);
@@ -114,7 +114,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         !normalized ||
         `${product.name} ${product.description}`.toLocaleLowerCase("es").includes(normalized);
       const matchesCategory =
-        category === "Favoritos" ? product.popular : product.category === category;
+        normalized ||
+        (category === "Favoritos" ? product.popular : product.category === category);
       return matchesQuery && matchesCategory;
     });
   }, [category, query]);
@@ -227,7 +228,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         onOrderAgain={() => {
           setOrder(null);
           setMode("fixed");
-          setCategory("Favoritos");
+          setCategory("Desayunos");
           setCart([]);
           setGeneralNotes("");
         }}
@@ -274,7 +275,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">
           <div className="grid grid-cols-2">
             {[
-              ["fixed", "Desayunos y carta · 9 a 5"],
+              ["fixed", "Paquetes y carta · 9 a 5"],
               ["lunch", "Comida corrida · 1 a 5"]
             ].map(([value, label]) => (
               <button
@@ -305,8 +306,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
             <div className="sticky top-0 z-20 -mx-4 mt-5 border-b border-[var(--line)]/50 bg-[var(--cream)]/90 px-4 pb-4 pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
               <div className="mb-3 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[var(--charcoal)] px-4 py-3 text-sm text-white">
-                  <strong className="block">Desayunos</strong>
-                  <span className="text-white/70">Todos los días · 9:00 a.m.–5:00 p.m.</span>
+                  <strong className="block">Paquetes de desayuno</strong>
+                  <span className="text-white/70">Con fruta y café · 9:00 a.m.–5:00 p.m.</span>
                 </div>
                 <div className="rounded-2xl bg-[var(--brown)] px-4 py-3 text-sm text-white">
                   <strong className="block">Comidas a la carta</strong>
@@ -454,6 +455,11 @@ function ProductCard({
                 Nuevo
               </span>
             )}
+            {product.packageIncludes?.length && (
+              <span className="rounded-full bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
+                Paquete completo
+              </span>
+            )}
             {product.soldOut && (
               <span className="rounded-full bg-[#f1d0ca] px-2 py-1 text-[10px] font-bold uppercase text-[#7a2c22]">
                 Agotado
@@ -469,6 +475,18 @@ function ProductCard({
           <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[var(--muted)]">
             {product.description}
           </p>
+          {product.packageIncludes?.length && (
+            <div className="mt-3 flex flex-wrap gap-1.5">
+              {product.packageIncludes.map((item) => (
+                <span
+                  className="rounded-full border border-[var(--line)] bg-[var(--cream)] px-2.5 py-1 text-[11px] font-bold text-[var(--brown)]"
+                  key={item}
+                >
+                  ✓ {item}
+                </span>
+              ))}
+            </div>
+          )}
           <div className="mt-5 flex items-center justify-between border-t border-[var(--line)]/65 pt-4">
             <p className="text-lg font-extrabold text-[var(--brown-dark)]">
               {money(product.price)}
@@ -517,7 +535,28 @@ function ProductDialog({
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
-  const [option, setOption] = useState(product.options?.[0]);
+  const groups = product.optionGroups || (
+    product.options?.length
+      ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }]
+      : []
+  );
+  const [selections, setSelections] = useState<Record<string, string>>(() =>
+    Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))
+  );
+  const selectionSummary = groups
+    .map((group) => {
+      const shortLabel =
+        group.id === "salsa"
+          ? "Salsa"
+          : group.id === "queso"
+            ? "Queso"
+            : group.id === "huevos"
+              ? "Huevos"
+              : "Opción";
+      return `${shortLabel}: ${selections[group.id]}`;
+    })
+    .join(" · ")
+    .slice(0, 80);
   return (
     <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
       <section
@@ -545,33 +584,56 @@ function ProductDialog({
               {product.name}
             </h2>
             <p className="mt-3 leading-6 text-[var(--muted)]">{product.description}</p>
-            {product.options && (
-              <fieldset className="mt-6">
-                <legend className="font-bold">{optionPrompt(product)}</legend>
-                <p className="mb-3 text-xs text-[var(--muted)]">Selecciona 1 · Obligatorio</p>
+            {product.packageIncludes?.length && (
+              <div className="mt-5 rounded-2xl border border-[#c9d7ca] bg-[#edf3ec] p-4">
+                <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--green)]">
+                  Tu paquete ya incluye
+                </p>
+                <div className="mt-2 flex flex-wrap gap-2">
+                  {product.packageIncludes.map((item) => (
+                    <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold" key={item}>
+                      ✓ {item}
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
+            {groups.map((group, groupIndex) => (
+              <fieldset className="mt-5" key={group.id}>
+                <legend className="flex items-center gap-2 font-bold">
+                  <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--brown)] text-xs text-white">
+                    {groupIndex + 1}
+                  </span>
+                  {group.label}
+                </legend>
+                <p className="mb-3 ml-8 text-xs text-[var(--muted)]">
+                  Selecciona 1 {group.required !== false && "· Obligatorio"}
+                </p>
                 <div className="grid gap-2 sm:grid-cols-2">
-                  {product.options.map((item) => (
+                  {group.choices.map((item) => (
                     <label
                       key={item}
-                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 ${
-                        option === item
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
+                        selections[group.id] === item
                           ? "border-[var(--brown)] bg-[#eee2d8] shadow-sm"
-                          : "border-[var(--line)]"
+                          : "border-[var(--line)] hover:bg-[var(--cream)]"
                       }`}
                     >
                       {item}
                       <input
                         type="radio"
-                        name="sauce"
+                        name={group.id}
                         value={item}
-                        checked={option === item}
-                        onChange={() => setOption(item)}
+                        checked={selections[group.id] === item}
+                        onChange={() =>
+                          setSelections((current) => ({ ...current, [group.id]: item }))
+                        }
                       />
                     </label>
                   ))}
                 </div>
               </fieldset>
-            )}
+            ))}
             <label className="mt-5 block text-sm font-bold">
               Observaciones
               <textarea
@@ -602,7 +664,9 @@ function ProductDialog({
               </div>
               <button
                 className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]"
-                onClick={() => onAdd(product, quantity, notes.trim(), option)}
+                onClick={() =>
+                  onAdd(product, quantity, notes.trim(), selectionSummary || undefined)
+                }
               >
                 <span>Agregar</span>
                 <span>{money(product.price * quantity)}</span>

@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `006_product_image_coherence.sql` es el parche más
-reciente y sincroniza las fotografías específicas de cada producto.
+**SQL Editor**. La migración `007_breakfast_packages_and_sales_report.sql` es
+el parche más reciente. Agrega los paquetes de desayuno y el corte de caja real.
 
 Las migraciones:
 

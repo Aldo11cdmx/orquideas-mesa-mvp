@@ -19,8 +19,17 @@ export type Product = {
   isNew?: boolean;
   soldOut?: boolean;
   options?: string[];
+  optionGroups?: ProductOptionGroup[];
+  packageIncludes?: string[];
   availableFrom?: string;
   availableUntil?: string;
+};
+
+export type ProductOptionGroup = {
+  id: string;
+  label: string;
+  choices: string[];
+  required?: boolean;
 };
 
 export type CartItem = {
@@ -57,4 +66,28 @@ export type DailyMenuConfig = {
   price: number;
   courses: Record<string, string[]>;
   updatedAt?: string;
+};
+
+export type SalesReport = {
+  from: string;
+  to: string;
+  summary: {
+    orderCount: number;
+    grossSales: number;
+    itemsSold: number;
+    averageTicket: number;
+    pendingOrders: number;
+    pendingAmount: number;
+  };
+  topProducts: Array<{
+    name: string;
+    quantity: number;
+    revenue: number;
+  }>;
+  dailySales: Array<{
+    day: string;
+    orderCount: number;
+    total: number;
+  }>;
+  orders: Order[];
 };

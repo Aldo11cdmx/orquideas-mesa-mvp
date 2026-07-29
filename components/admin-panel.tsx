@@ -1,23 +1,26 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
+import { useEffect, useState } from "react";
 import {
   BarChart3,
-  History,
+  CalendarDays,
+  CircleDollarSign,
   LayoutGrid,
+  PackageCheck,
   Pencil,
   Plus,
+  RefreshCw,
   Save,
   Settings2,
   Store,
+  TrendingUp,
   ToggleLeft,
   ToggleRight
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { categories, money, products as seedProducts } from "@/lib/menu";
-import { readDemoOrders } from "@/lib/order-store";
-import type { DailyMenuConfig, Product } from "@/lib/types";
+import type { DailyMenuConfig, Product, SalesReport } from "@/lib/types";
 
 const ADMIN_PRODUCTS = "orquideas-admin-products";
 
@@ -90,8 +93,7 @@ export function AdminPanel() {
     ["menu", "Menú", LayoutGrid],
     ["daily", "Comida corrida", Store],
     ["tables", "Mesas", Settings2],
-    ["history", "Historial", History],
-    ["summary", "Resumen", BarChart3]
+    ["sales", "Corte de caja", BarChart3]
   ] as const;
 
   return (
@@ -138,8 +140,7 @@ export function AdminPanel() {
           )}
           {tab === "daily" && <DailyAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin />}
-          {tab === "history" && <HistoryAdmin />}
-          {tab === "summary" && <SummaryAdmin />}
+          {tab === "sales" && <SalesAdmin pin={pin} />}
         </section>
       </div>
       {editing && (
@@ -549,77 +550,272 @@ function TablesAdmin() {
   );
 }
 
-function HistoryAdmin() {
-  const orders = readDemoOrders();
+type SalesPeriod = "day" | "week" | "month";
+
+function salesRange(period: SalesPeriod) {
+  const now = new Date();
+  const from = new Date(now);
+  const to = new Date(now);
+  to.setHours(24, 0, 0, 0);
+
+  if (period === "day") {
+    from.setHours(0, 0, 0, 0);
+  } else if (period === "week") {
+    from.setDate(from.getDate() - 6);
+    from.setHours(0, 0, 0, 0);
+  } else {
+    from.setDate(1);
+    from.setHours(0, 0, 0, 0);
+  }
+
+  return { from: from.toISOString(), to: to.toISOString() };
+}
+
+function SalesAdmin({ pin }: { pin: string }) {
+  const [period, setPeriod] = useState<SalesPeriod>("day");
+  const [report, setReport] = useState<SalesReport | null>(null);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+
+  async function load(nextPeriod = period) {
+    setLoading(true);
+    setNotice("");
+    const range = salesRange(nextPeriod);
+    const params = new URLSearchParams({ pin, ...range });
+    const response = await fetch(`/api/admin/sales?${params}`, { cache: "no-store" });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setNotice(payload?.error || "No fue posible generar el corte");
+      setLoading(false);
+      return;
+    }
+    setReport(payload as SalesReport);
+    setLoading(false);
+  }
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void load(period), 0);
+    return () => window.clearTimeout(timer);
+    // The PIN is stable for the authenticated admin session.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [period, pin]);
+
+  const maximumDaily = Math.max(...(report?.dailySales.map((day) => day.total) || [1]), 1);
+  const maximumProduct = Math.max(
+    ...(report?.topProducts.map((product) => product.quantity) || [1]),
+    1
+  );
+
   return (
     <div>
-      <h1 className="font-display text-4xl font-bold">Historial</h1>
-      <div className="paper mt-5 overflow-hidden rounded-2xl">
-        {orders.length === 0 ? (
-          <p className="p-10 text-center text-[var(--muted)]">Aún no hay pedidos registrados.</p>
-        ) : (
-          orders.map((order) => (
-            <div
-              className="flex items-center justify-between border-b border-[var(--line)] p-4 last:border-0"
-              key={order.id}
-            >
-              <div>
-                <strong>{order.folio}</strong>
-                <p className="text-xs text-[var(--muted)]">
-                  Mesa {order.tableCode} · {order.status}
-                </p>
-              </div>
-              <strong>{money(order.total)}</strong>
-            </div>
-          ))
-        )}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-[var(--terracotta)]">Pedidos realmente entregados</p>
+          <h1 className="font-display text-4xl font-bold">Corte de caja</h1>
+          <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+            Este cálculo registra lo pedido en la app. El cobro continúa realizándose directamente
+            en el restaurante.
+          </p>
+        </div>
+        <button
+          className="focus-ring flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 font-bold"
+          onClick={() => void load()}
+        >
+          <RefreshCw className={loading ? "animate-spin" : ""} size={17} /> Actualizar
+        </button>
       </div>
+
+      <div className="paper mt-5 inline-flex rounded-2xl p-1.5">
+        {([
+          ["day", "Hoy"],
+          ["week", "7 días"],
+          ["month", "Este mes"]
+        ] as const).map(([value, label]) => (
+          <button
+            className={`focus-ring rounded-xl px-4 py-2.5 text-sm font-bold ${
+              period === value ? "bg-[var(--brown)] text-white shadow" : "text-[var(--muted)]"
+            }`}
+            key={value}
+            onClick={() => setPeriod(value)}
+          >
+            {label}
+          </button>
+        ))}
+      </div>
+
+      {notice && (
+        <div className="mt-5 rounded-2xl bg-[#f1d0ca] p-4 text-sm font-bold text-[#7a2c22]">
+          {notice}
+        </div>
+      )}
+
+      {loading && !report ? (
+        <div className="paper mt-5 grid min-h-64 place-items-center rounded-3xl">
+          <div className="text-center">
+            <RefreshCw className="mx-auto animate-spin text-[var(--brown)]" />
+            <p className="mt-3 text-sm text-[var(--muted)]">Calculando el corte…</p>
+          </div>
+        </div>
+      ) : report ? (
+        <>
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+            {[
+              {
+                label: "Consumo registrado",
+                value: money(report.summary.grossSales),
+                detail: "Solo pedidos entregados",
+                icon: CircleDollarSign
+              },
+              {
+                label: "Pedidos entregados",
+                value: report.summary.orderCount,
+                detail: `${report.summary.itemsSold} productos servidos`,
+                icon: PackageCheck
+              },
+              {
+                label: "Ticket promedio",
+                value: money(report.summary.averageTicket),
+                detail: "Promedio por mesa/pedido",
+                icon: TrendingUp
+              },
+              {
+                label: "Pedidos en proceso",
+                value: report.summary.pendingOrders,
+                detail: money(report.summary.pendingAmount),
+                icon: CalendarDays
+              }
+            ].map(({ label, value, detail, icon: Icon }) => (
+              <article className="paper rounded-3xl p-5" key={label}>
+                <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e4ece6] text-[var(--green)]">
+                  <Icon size={20} />
+                </div>
+                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                  {label}
+                </p>
+                <strong className="mt-1 block font-display text-3xl">{value}</strong>
+                <span className="mt-1 block text-xs text-[var(--muted)]">{detail}</span>
+              </article>
+            ))}
+          </div>
+
+          <div className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
+            <section className="paper rounded-3xl p-5 sm:p-6">
+              <div className="flex items-center justify-between">
+                <div>
+                  <p className="eyebrow text-[var(--terracotta)]">Tendencia</p>
+                  <h2 className="font-display text-2xl font-bold">Consumo por día</h2>
+                </div>
+                <BarChart3 className="text-[var(--brown)]" />
+              </div>
+              {report.dailySales.length ? (
+                <div className="mt-6 flex min-h-48 items-end gap-3 overflow-x-auto">
+                  {report.dailySales.map((day) => (
+                    <div className="flex min-w-16 flex-1 flex-col items-center" key={day.day}>
+                      <span className="mb-2 text-xs font-bold">{money(day.total)}</span>
+                      <div
+                        className="w-full min-w-12 rounded-t-xl bg-gradient-to-t from-[var(--brown-dark)] to-[var(--terracotta)]"
+                        style={{
+                          height: `${Math.max(18, (day.total / maximumDaily) * 140)}px`
+                        }}
+                      />
+                      <span className="mt-2 text-[11px] text-[var(--muted)]">
+                        {new Date(`${day.day}T12:00:00`).toLocaleDateString("es-MX", {
+                          day: "2-digit",
+                          month: "short"
+                        })}
+                      </span>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptySales message="Aún no hay pedidos entregados en este periodo." />
+              )}
+            </section>
+
+            <section className="paper rounded-3xl p-5 sm:p-6">
+              <p className="eyebrow text-[var(--terracotta)]">Ranking</p>
+              <h2 className="font-display text-2xl font-bold">Lo más vendido</h2>
+              {report.topProducts.length ? (
+                <div className="mt-5 space-y-4">
+                  {report.topProducts.slice(0, 6).map((product, index) => (
+                    <div key={product.name}>
+                      <div className="flex items-center gap-3 text-sm">
+                        <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--charcoal)] text-xs font-bold text-white">
+                          {index + 1}
+                        </span>
+                        <strong className="min-w-0 flex-1 truncate">{product.name}</strong>
+                        <span className="font-bold">{product.quantity}</span>
+                      </div>
+                      <div className="ml-10 mt-2 h-2 overflow-hidden rounded-full bg-[var(--mist)]">
+                        <div
+                          className="h-full rounded-full bg-[var(--green)]"
+                          style={{ width: `${(product.quantity / maximumProduct) * 100}%` }}
+                        />
+                      </div>
+                      <p className="ml-10 mt-1 text-[11px] text-[var(--muted)]">
+                        {money(product.revenue)} registrados
+                      </p>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <EmptySales message="El ranking aparecerá con el primer pedido entregado." />
+              )}
+            </section>
+          </div>
+
+          <section className="paper mt-5 overflow-hidden rounded-3xl">
+            <div className="flex items-center justify-between border-b border-[var(--line)] p-5">
+              <div>
+                <p className="eyebrow text-[var(--terracotta)]">Detalle</p>
+                <h2 className="font-display text-2xl font-bold">Pedidos del periodo</h2>
+              </div>
+              <span className="rounded-full bg-[var(--mist)] px-3 py-1.5 text-xs font-bold">
+                {report.orders.length}
+              </span>
+            </div>
+            {report.orders.length ? (
+              <div className="divide-y divide-[var(--line)]">
+                {report.orders.map((order) => (
+                  <article className="grid gap-3 p-5 sm:grid-cols-[1fr_auto] sm:items-center" key={order.id}>
+                    <div>
+                      <div className="flex flex-wrap items-center gap-2">
+                        <strong>{order.folio}</strong>
+                        <span className="rounded-full bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase">
+                          Mesa {order.tableCode}
+                        </span>
+                        <span className="text-xs text-[var(--muted)]">
+                          {order.status === "delivered" ? "Entregado" : "En proceso"}
+                        </span>
+                      </div>
+                      <p className="mt-1 line-clamp-1 text-sm text-[var(--muted)]">
+                        {order.items.map((item) => `${item.quantity}× ${item.name}`).join(" · ")}
+                      </p>
+                      <time className="mt-1 block text-xs text-[var(--muted)]">
+                        {new Date(order.createdAt).toLocaleString("es-MX", {
+                          dateStyle: "medium",
+                          timeStyle: "short"
+                        })}
+                      </time>
+                    </div>
+                    <strong className="font-display text-xl">{money(order.total)}</strong>
+                  </article>
+                ))}
+              </div>
+            ) : (
+              <EmptySales message="No hay pedidos registrados en este periodo." />
+            )}
+          </section>
+        </>
+      ) : null}
     </div>
   );
 }
 
-function SummaryAdmin() {
-  const orders = readDemoOrders();
-  const ranking = useMemo(() => {
-    const counts = new Map<string, number>();
-    orders.flatMap((order) => order.items).forEach((item) => {
-      counts.set(item.name, (counts.get(item.name) || 0) + item.quantity);
-    });
-    return [...counts.entries()].sort((a, b) => b[1] - a[1]).slice(0, 5);
-  }, [orders]);
+function EmptySales({ message }: { message: string }) {
   return (
-    <div>
-      <h1 className="font-display text-4xl font-bold">Resumen</h1>
-      <div className="mt-5 grid gap-4 sm:grid-cols-3">
-        {[
-          ["Pedidos", orders.length],
-          ["Ventas estimadas", money(orders.reduce((sum, order) => sum + order.total, 0))],
-          ["Mesas activas", 6]
-        ].map(([label, value]) => (
-          <div className="paper rounded-2xl p-5" key={label}>
-            <p className="text-xs font-bold uppercase text-[var(--muted)]">{label}</p>
-            <strong className="mt-2 block font-display text-3xl">{value}</strong>
-          </div>
-        ))}
-      </div>
-      <div className="paper mt-5 rounded-2xl p-5">
-        <h2 className="font-display text-2xl font-bold">Más solicitados</h2>
-        {ranking.length ? (
-          ranking.map(([name, count], index) => (
-            <div className="mt-4 flex items-center gap-3" key={name}>
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-[#e4ece6] font-bold">
-                {index + 1}
-              </span>
-              <span className="flex-1 font-bold">{name}</span>
-              <span>{count}</span>
-            </div>
-          ))
-        ) : (
-          <p className="mt-4 text-sm text-[var(--muted)]">
-            El ranking aparecerá después del primer pedido.
-          </p>
-        )}
-      </div>
+    <div className="my-6 rounded-2xl border border-dashed border-[#bdb4a5] px-5 py-10 text-center text-sm text-[var(--muted)]">
+      {message}
     </div>
   );
 }

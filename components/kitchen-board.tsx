@@ -61,11 +61,13 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [statusFilter, setStatusFilter] = useState("active");
   const [tableFilter, setTableFilter] = useState("");
   const [sound, setSound] = useState(false);
+  const [readyNotice, setReadyNotice] = useState<Order | null>(null);
   const [online, setOnline] = useState(true);
   const [backend, setBackend] = useState<"supabase" | "demo">("supabase");
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
+  const notifiedReadyRef = useRef(new Set<string>());
   const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
   useEffect(() => {
@@ -103,10 +105,35 @@ function StaffBoard({ role }: { role: StaffRole }) {
     oscillator.stop(context.currentTime + 0.35);
   }, []);
 
+  const notifyWaiterReady = useCallback(
+    (order: Order) => {
+      if (
+        role !== "waiter" ||
+        order.status !== "ready" ||
+        notifiedReadyRef.current.has(order.id)
+      ) {
+        return;
+      }
+
+      notifiedReadyRef.current.add(order.id);
+      setReadyNotice(order);
+      beep();
+
+      if ("Notification" in window && Notification.permission === "granted") {
+        new Notification(`Pedido listo · Mesa ${order.tableCode}`, {
+          body: `${order.folio} está listo para entregar.`,
+          tag: `orquideas-ready-${order.id}`
+        });
+      }
+    },
+    [beep, role]
+  );
+
   useEffect(() => {
     if (!unlocked) return;
     channelRef.current = connectOrderChannel(({ type, order }) => {
       upsert(order);
+      notifyWaiterReady(order);
       if (
         (role === "waiter" && type === "new") ||
         (role === "kitchen" && order.status === "accepted")
@@ -115,7 +142,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
       }
     });
     return () => channelRef.current?.close();
-  }, [beep, role, unlocked, upsert]);
+  }, [beep, notifyWaiterReady, role, unlocked, upsert]);
 
   useEffect(() => {
     const firstTick = window.setTimeout(() => setNow(Date.now()), 0);
@@ -139,15 +166,30 @@ function StaffBoard({ role }: { role: StaffRole }) {
         const rows = (await response.json()) as Order[];
         setOrders(rows);
         setBackend("supabase");
+        rows.forEach(notifyWaiterReady);
       } else if (response.status === 503) {
-        setOrders(readDemoOrders());
+        const demoOrders = readDemoOrders();
+        setOrders(demoOrders);
         setBackend("demo");
+        demoOrders.forEach(notifyWaiterReady);
       } else {
         throw new Error("PIN incorrecto");
       }
     },
-    []
+    [notifyWaiterReady]
   );
+
+  async function toggleAlerts() {
+    if (sound) {
+      setSound(false);
+      return;
+    }
+
+    if ("Notification" in window && Notification.permission === "default") {
+      await Notification.requestPermission();
+    }
+    setSound(true);
+  }
 
   async function unlock(event: React.FormEvent) {
     event.preventDefault();
@@ -323,7 +365,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
               className={`focus-ring flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold ${
                 sound ? "bg-[var(--green)] text-white" : "border border-[var(--line)] bg-white"
               }`}
-              onClick={() => setSound((value) => !value)}
+              onClick={() => void toggleAlerts()}
             >
               {sound ? <BellRing size={16} /> : <Bell size={16} />}
               {sound ? "Alertas activas" : "Activar alertas"}
@@ -331,6 +373,46 @@ function StaffBoard({ role }: { role: StaffRole }) {
           </div>
         </div>
       </header>
+
+      {role === "waiter" && readyNotice && (
+        <div
+          aria-live="assertive"
+          className="fixed inset-x-4 top-24 z-50 mx-auto max-w-md animate-pop rounded-3xl border-2 border-[#d9c17f] bg-[var(--charcoal)] p-4 text-white shadow-2xl"
+          role="alert"
+        >
+          <div className="flex items-start gap-3">
+            <div className="grid h-12 w-12 shrink-0 place-items-center rounded-2xl bg-[var(--gold)] text-[var(--charcoal)]">
+              <BellRing size={24} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <p className="text-xs font-bold uppercase tracking-wider text-[#d9c17f]">
+                Cocina terminó
+              </p>
+              <strong className="font-display text-2xl">Mesa {readyNotice.tableCode}</strong>
+              <p className="mt-1 text-sm text-white/80">
+                El pedido {readyNotice.folio} está listo para entregar.
+              </p>
+            </div>
+            <button
+              aria-label="Cerrar alerta"
+              className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/10"
+              onClick={() => setReadyNotice(null)}
+            >
+              <XCircle size={20} />
+            </button>
+          </div>
+          <button
+            className="focus-ring mt-4 min-h-11 w-full rounded-xl bg-[var(--gold)] font-bold text-[var(--charcoal)]"
+            onClick={() => {
+              setTableFilter(readyNotice.tableCode);
+              setStatusFilter("ready");
+              setReadyNotice(null);
+            }}
+          >
+            Ver pedido listo
+          </button>
+        </div>
+      )}
 
       <div className="mx-auto max-w-[1500px] p-4 lg:p-5">
         {backend === "demo" && (

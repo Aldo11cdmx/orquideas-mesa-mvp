@@ -45,7 +45,6 @@ export const products: Product[] = [
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-sencillos.jpg",
     popular: true,
-    optionGroups: [salsaGroup, cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -67,7 +66,7 @@ export const products: Product[] = [
     price: 65,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
-    optionGroups: [salsaGroup, cheeseGroup, eggGroup],
+    optionGroups: [eggGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -79,7 +78,6 @@ export const products: Product[] = [
     category: "Desayunos",
     image: "/menu/imperio/molletes.jpg",
     popular: true,
-    optionGroups: [cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -90,7 +88,6 @@ export const products: Product[] = [
     price: 85,
     category: "Desayunos",
     image: "/menu/imperio/enchiladas-suizas.jpg",
-    optionGroups: [salsaGroup, cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -102,7 +99,6 @@ export const products: Product[] = [
     category: "Desayunos",
     image: "/menu/imperio/enfrijoladas.jpg",
     popular: true,
-    optionGroups: [cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -113,7 +109,6 @@ export const products: Product[] = [
     price: 85,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
-    optionGroups: [salsaGroup, cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -125,7 +120,6 @@ export const products: Product[] = [
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-pechuga.jpg",
     popular: true,
-    optionGroups: [salsaGroup, cheeseGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -167,7 +161,7 @@ export const products: Product[] = [
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
-    optionGroups: [eggGroup, cheeseGroup],
+    optionGroups: [eggGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },

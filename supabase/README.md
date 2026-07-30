@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `009_extend_service_hours.sql` es el parche más
-reciente y extiende los horarios de servicio hasta las 9:00 p.m.
+**SQL Editor**. La migración `010_limit_omelette_customizations.sql` es el
+parche más reciente y limita salsa y queso al omelette de champiñones.
 
 Las migraciones:
 

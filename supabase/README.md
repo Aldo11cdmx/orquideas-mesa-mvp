@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `011_waiter_order_review.sql` es el parche más
-reciente y habilita la revisión del mesero antes de enviar a cocina.
+**SQL Editor**. La migración `012_ready_alert_and_sales_report_fix.sql` es el
+parche más reciente y corrige el corte de caja.
 
 Las migraciones:
 

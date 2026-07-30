@@ -71,7 +71,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   useEffect(() => {
     channelRef.current = connectOrderChannel(({ type, order: incoming }) => {
-      if (type === "status" && incoming.id === order?.id) {
+      if ((type === "status" || type === "edited") && incoming.id === order?.id) {
         setOrder((current) =>
           !current || +new Date(incoming.updatedAt) >= +new Date(current.updatedAt)
             ? incoming
@@ -822,6 +822,16 @@ function OrderTracking({
 }) {
   const steps = ["sent", "accepted", "preparing", "ready", "delivered"] as const;
   const current = steps.indexOf(order.status === "cancelled" ? "sent" : order.status);
+  const trackingTitle =
+    order.status === "sent"
+      ? "El mesero está revisando tu pedido"
+      : order.status === "accepted" || order.status === "preparing"
+        ? "Tu pedido ya está en cocina"
+        : order.status === "ready"
+          ? "Tu pedido está listo para servir"
+          : order.status === "delivered"
+            ? "Tu pedido fue entregado"
+            : "Este pedido fue cancelado";
   return (
     <main className="mx-auto min-h-screen max-w-xl px-5 py-6">
       <Brand />
@@ -831,9 +841,9 @@ function OrderTracking({
             <Check size={30} strokeWidth={3} />
           </div>
           <p className="mt-6 text-xs font-bold uppercase tracking-[0.2em] text-[#e5cd90]">
-            Pedido recibido
+            Pedido enviado
           </p>
-          <h1 className="mt-1 font-display text-4xl font-bold">¡Ya recibimos tu pedido!</h1>
+          <h1 className="mt-1 font-display text-4xl font-bold">{trackingTitle}</h1>
           <div className="mt-5 flex items-center gap-4">
             <StatusPill status={order.status} />
             <span className="text-sm">Folio {order.folio}</span>
@@ -880,8 +890,8 @@ function OrderTracking({
                     <strong className="capitalize">
                       {
                         {
-                          sent: "Enviado",
-                          accepted: "Aceptado",
+                          sent: "Revisión del mesero",
+                          accepted: "Confirmado y enviado a cocina",
                           preparing: "Preparando",
                           ready: "Listo para servir",
                           delivered: "Entregado"

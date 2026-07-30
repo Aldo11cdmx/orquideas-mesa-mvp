@@ -10,6 +10,7 @@ import {
   Clock3,
   RefreshCw,
   Search,
+  Trash2,
   Utensils,
   Wifi,
   WifiOff,
@@ -32,14 +33,14 @@ const kitchenColumns: Array<{
   statuses: OrderStatus[];
   icon: typeof Bell;
 }> = [
-  { id: "new", title: "Nuevos", statuses: ["sent", "accepted"], icon: BellRing },
+  { id: "new", title: "Por preparar", statuses: ["accepted"], icon: BellRing },
   { id: "preparing", title: "Preparando", statuses: ["preparing"], icon: ChefHat },
   { id: "ready", title: "Listos", statuses: ["ready"], icon: CheckCircle2 }
 ];
 
 const waiterColumns: typeof kitchenColumns = [
-  { id: "new", title: "Pedidos nuevos", statuses: ["sent", "accepted"], icon: BellRing },
-  { id: "preparing", title: "En cocina", statuses: ["preparing"], icon: ChefHat },
+  { id: "review", title: "Por revisar", statuses: ["sent"], icon: BellRing },
+  { id: "kitchen", title: "En cocina", statuses: ["accepted", "preparing"], icon: ChefHat },
   { id: "ready", title: "Para entregar", statuses: ["ready"], icon: HandPlatter }
 ];
 
@@ -106,10 +107,15 @@ function StaffBoard({ role }: { role: StaffRole }) {
     if (!unlocked) return;
     channelRef.current = connectOrderChannel(({ type, order }) => {
       upsert(order);
-      if (type === "new") beep();
+      if (
+        (role === "waiter" && type === "new") ||
+        (role === "kitchen" && order.status === "accepted")
+      ) {
+        beep();
+      }
     });
     return () => channelRef.current?.close();
-  }, [beep, unlocked, upsert]);
+  }, [beep, role, unlocked, upsert]);
 
   useEffect(() => {
     const firstTick = window.setTimeout(() => setNow(Date.now()), 0);
@@ -179,15 +185,23 @@ function StaffBoard({ role }: { role: StaffRole }) {
     () =>
       orders.filter((order) => {
         const active = !["delivered", "cancelled"].includes(order.status);
+        const visibleForRole = role === "waiter" || order.status !== "sent";
         return (
+          visibleForRole &&
           (statusFilter === "all" || (statusFilter === "active" ? active : order.status === statusFilter)) &&
           (!tableFilter || order.tableCode.toLowerCase().includes(tableFilter.toLowerCase()))
         );
       }),
-    [orders, statusFilter, tableFilter]
+    [orders, role, statusFilter, tableFilter]
   );
 
   async function changeStatus(order: Order, status: OrderStatus) {
+    if (
+      status === "accepted" &&
+      !window.confirm(`¿Confirmas que el pedido ${order.folio} está correcto y puede pasar a cocina?`)
+    ) {
+      return;
+    }
     if (status === "cancelled" && !window.confirm(`¿Cancelar el pedido ${order.folio}?`)) return;
     let updated: Order | null = null;
     if (backend === "supabase") {
@@ -196,7 +210,12 @@ function StaffBoard({ role }: { role: StaffRole }) {
         headers: { "content-type": "application/json" },
         body: JSON.stringify({ status, pin })
       });
-      if (response.ok) updated = await response.json();
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        window.alert(payload?.error || "No fue posible actualizar el pedido.");
+        return;
+      }
+      updated = payload as Order;
     }
     if (!updated) {
       updated = updateDemoOrder(order.id, status) || {
@@ -209,6 +228,36 @@ function StaffBoard({ role }: { role: StaffRole }) {
     }
     upsert(updated);
     await channelRef.current?.send({ type: "status", order: updated });
+  }
+
+  async function removeItem(order: Order, itemId: string) {
+    if (
+      !window.confirm(
+        `¿Eliminar este producto del pedido ${order.folio}? El total se recalculará automáticamente.`
+      )
+    ) {
+      return;
+    }
+
+    if (backend !== "supabase") {
+      window.alert("La edición de productos requiere conexión con Supabase.");
+      return;
+    }
+
+    const response = await fetch(`/api/orders/${order.id}/items/${itemId}`, {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      window.alert(payload?.error || "No fue posible eliminar el producto.");
+      return;
+    }
+
+    const updated = payload as Order;
+    upsert(updated);
+    await channelRef.current?.send({ type: "edited", order: updated });
   }
 
   if (!unlocked) {
@@ -290,6 +339,19 @@ function StaffBoard({ role }: { role: StaffRole }) {
             después de recargar.
           </div>
         )}
+        <div className="mb-4 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm">
+          {role === "waiter" ? (
+            <>
+              <strong>Revisa antes de enviar:</strong> puedes quitar productos o cancelar el pedido
+              mientras esté en revisión. Al confirmar, aparecerá en cocina.
+            </>
+          ) : (
+            <>
+              <strong>Pedidos confirmados:</strong> aquí solo aparecen después de que un mesero
+              revisó y aprobó el pedido.
+            </>
+          )}
+        </div>
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <label className="flex min-h-11 items-center gap-2 rounded-xl bg-white px-3">
             <Search size={17} />
@@ -309,7 +371,8 @@ function StaffBoard({ role }: { role: StaffRole }) {
           >
             <option value="active">Pedidos activos</option>
             <option value="all">Todos</option>
-            <option value="sent">Enviados</option>
+            {role === "waiter" && <option value="sent">Por revisar</option>}
+            <option value="accepted">Confirmados</option>
             <option value="preparing">Preparando</option>
             <option value="ready">Listos</option>
           </select>
@@ -346,6 +409,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
                       now={now}
                       role={role}
                       onStatus={changeStatus}
+                      onRemoveItem={removeItem}
                     />
                   ))}
                   {columnOrders.length === 0 && (
@@ -368,22 +432,24 @@ function KitchenCard({
   order,
   now,
   role,
-  onStatus
+  onStatus,
+  onRemoveItem
 }: {
   order: Order;
   now: number;
   role: StaffRole;
   onStatus: (order: Order, status: OrderStatus) => void;
+  onRemoveItem: (order: Order, itemId: string) => void;
 }) {
   const minutes = Math.max(0, Math.floor((now - +new Date(order.createdAt)) / 60000));
   const next: Partial<Record<OrderStatus, { label: string; status: OrderStatus }>> =
     role === "kitchen"
       ? {
-          sent: { label: "Aceptar pedido", status: "accepted" },
           accepted: { label: "Comenzar preparación", status: "preparing" },
           preparing: { label: "Marcar listo", status: "ready" }
         }
       : {
+          sent: { label: "Confirmar y enviar a cocina", status: "accepted" },
           ready: { label: "Marcar como entregado", status: "delivered" }
         };
   const action = next[order.status];
@@ -413,10 +479,23 @@ function KitchenCard({
         </div>
         <ul className="space-y-3">
           {order.items.map((item, index) => (
-            <li className="border-b border-[var(--line)] pb-3 last:border-0" key={index}>
-              <div className="flex gap-2 font-bold">
+            <li
+              className="border-b border-[var(--line)] pb-3 last:border-0"
+              key={item.itemId || `${item.productId}-${index}`}
+            >
+              <div className="flex items-start gap-2 font-bold">
                 <span className="text-[var(--terracotta)]">{item.quantity}×</span>
-                <span>{item.name}</span>
+                <span className="min-w-0 flex-1">{item.name}</span>
+                {role === "waiter" && order.status === "sent" && item.itemId && (
+                  <button
+                    className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
+                    aria-label={`Eliminar ${item.name}`}
+                    title="Eliminar producto"
+                    onClick={() => onRemoveItem(order, item.itemId!)}
+                  >
+                    <Trash2 size={15} />
+                  </button>
+                )}
               </div>
               {item.option && (
                 <p className="ml-6 mt-1 rounded-lg bg-[#edf3ec] px-2 py-1.5 text-xs font-bold text-[var(--green)]">
@@ -448,12 +527,12 @@ function KitchenCard({
             {action.label}
           </button>
         )}
-        {role === "kitchen" && (
+        {role === "waiter" && ["sent", "accepted"].includes(order.status) && (
           <button
             className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
             onClick={() => onStatus(order, "cancelled")}
           >
-            <XCircle size={15} /> Cancelar
+            <XCircle size={15} /> Cancelar pedido completo
           </button>
         )}
       </div>

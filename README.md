@@ -38,6 +38,7 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 8. `supabase/migrations/008_omelette_and_trial_period.sql`
 9. `supabase/migrations/009_extend_service_hours.sql`
 10. `supabase/migrations/010_limit_omelette_customizations.sql`
+11. `supabase/migrations/011_waiter_order_review.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
 rutas de las fotografías y configura la comida corrida en $75. La sexta
@@ -48,6 +49,8 @@ La octava corrige el platillo a omelette de champiñones en $65 y registra el
 periodo de prueba no bloqueante de 14 días.
 La novena extiende el servicio de todos los menús hasta las 9:00 p.m.
 La décima limita las elecciones de salsa y queso al omelette de champiñones.
+La once agrega la revisión del mesero, edición de productos y autorización
+antes de enviar un pedido a cocina.
 
 ## Variables
 

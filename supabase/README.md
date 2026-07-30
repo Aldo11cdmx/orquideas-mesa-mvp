@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `010_limit_omelette_customizations.sql` es el
-parche más reciente y limita salsa y queso al omelette de champiñones.
+**SQL Editor**. La migración `011_waiter_order_review.sql` es el parche más
+reciente y habilita la revisión del mesero antes de enviar a cocina.
 
 Las migraciones:
 

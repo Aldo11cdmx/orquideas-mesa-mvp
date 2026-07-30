@@ -1,8 +1,8 @@
 import type { OrderStatus } from "@/lib/types";
 
 const labels: Record<OrderStatus, string> = {
-  sent: "Enviado",
-  accepted: "Aceptado",
+  sent: "Revisión del mesero",
+  accepted: "Confirmado",
   preparing: "Preparando",
   ready: "Listo",
   delivered: "Entregado",

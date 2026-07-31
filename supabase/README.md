@@ -1,8 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `015_breakfast_price_corrections.sql` es el parche
-más reciente: corrige únicamente los cuatro precios confirmados de desayunos.
+**SQL Editor**. La migración `016_final_menu_and_daily_choices.sql` es el parche
+más reciente: sincroniza el menú final, sus horarios y la comida corrida.
 
 Las migraciones:
 

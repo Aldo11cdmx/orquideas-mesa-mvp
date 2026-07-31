@@ -310,8 +310,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">
           <div className="grid grid-cols-2">
             {[
-              ["fixed", "Paquetes y carta · 9 a 9"],
-              ["lunch", "Comida corrida · 1 a 9"]
+              ["fixed", "Paquetes y carta · 9 a 5"],
+              ["lunch", "Comida corrida · 1 a 5"]
             ].map(([value, label]) => (
               <button
                 key={value}
@@ -342,11 +342,11 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
               <div className="mb-3 grid gap-2 sm:grid-cols-2">
                 <div className="rounded-2xl bg-[var(--charcoal)] px-4 py-3 text-sm text-white">
                   <strong className="block">Paquetes de desayuno</strong>
-                  <span className="text-white/70">Con fruta y café · 9:00 a.m.–9:00 p.m.</span>
+                  <span className="text-white/70">Con fruta y café · 9:00 a.m.–1:00 p.m.</span>
                 </div>
                 <div className="rounded-2xl bg-[var(--brown)] px-4 py-3 text-sm text-white">
                   <strong className="block">Comidas a la carta</strong>
-                  <span className="text-white/70">Todos los días · 1:00–9:00 p.m.</span>
+                  <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>
                 </div>
               </div>
               <label className="paper flex items-center gap-3 rounded-2xl px-4 py-3">
@@ -1032,8 +1032,14 @@ function ConfiguredLunchMenu({
   const [quantity, setQuantity] = useState(1);
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(
-      dailyCourseOrder.map((course) => [course, menu.courses[course]?.[0] || ""])
+      dailyCourseOrder.map((course) => {
+        const options = menu.courses[course] || [];
+        return [course, options.length === 1 ? options[0] : ""];
+      })
     )
+  );
+  const hasCompleteSelection = courses.every(
+    ([course, options]) => options.length > 0 && Boolean(selections[course])
   );
   const isOpen =
     serviceMinutes === null ||
@@ -1045,7 +1051,7 @@ function ConfiguredLunchMenu({
       <div className="paper overflow-hidden rounded-[2rem]">
         <div className="bg-[var(--brown)] px-6 py-7 text-white">
           <span className="rounded-full bg-white/20 px-3 py-1 text-xs font-bold">
-            {isOpen ? "Disponible ahora" : "Disponible hoy de 1:00 a 9:00 p.m."}
+            {isOpen ? "Disponible ahora" : "Disponible hoy de 1:00 a 5:00 p.m."}
           </span>
           <h2 className="mt-4 font-display text-4xl font-bold">Comida corrida del día</h2>
           <p className="mt-2 flex items-center gap-2 text-sm">
@@ -1060,7 +1066,12 @@ function ConfiguredLunchMenu({
           </div>
           {courses.map(([course, options]) => (
             <fieldset className="border-b border-[var(--line)] py-4 last:border-0" key={course}>
-              <legend className="font-display text-xl font-bold">{course}</legend>
+              <legend className="font-display text-xl font-bold">
+                {course}
+                <span className="ml-2 font-sans text-xs font-bold text-[var(--muted)]">
+                  Elige 1 de {options.length}
+                </span>
+              </legend>
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {options.map((option) => (
                   <label
@@ -1106,10 +1117,16 @@ function ConfiguredLunchMenu({
             </div>
             <button
               className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
-              disabled={!isOpen}
+              disabled={!isOpen || !hasCompleteSelection}
               onClick={() => onAdd(menu, selections, quantity)}
             >
-              <span>{isOpen ? "Agregar al pedido" : "Disponible de 1 a 5"}</span>
+              <span>
+                {!isOpen
+                  ? "Disponible de 1 a 5"
+                  : hasCompleteSelection
+                    ? "Agregar al pedido"
+                    : "Elige una opción de cada tiempo"}
+              </span>
               <span>{money(menu.price * quantity)}</span>
             </button>
           </div>

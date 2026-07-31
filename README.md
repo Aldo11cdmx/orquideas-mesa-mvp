@@ -43,6 +43,7 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 13. `supabase/migrations/013_live_menu_payments_and_catalog.sql`
 14. `supabase/migrations/014_menu_deletion_hours_images_alerts.sql`
 15. `supabase/migrations/015_breakfast_price_corrections.sql`
+16. `supabase/migrations/016_final_menu_and_daily_choices.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
 rutas de las fotografías y configura la comida corrida en $75. La sexta
@@ -62,6 +63,8 @@ al cierre del pedido, actualiza el menú y sincroniza productos y comida corrida
 La catorce permite retirar productos sin borrar su historial, fija los horarios
 de desayuno y comida corrida, e instala las fotografías finales.
 La quince corrige únicamente los cuatro precios confirmados de desayunos.
+La dieciséis sincroniza el menú final, fija los horarios de 9:00–13:00 y
+13:00–17:00, y conserva varias opciones seleccionables para la comida corrida.
 
 ## Variables
 

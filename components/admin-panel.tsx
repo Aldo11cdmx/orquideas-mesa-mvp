@@ -461,7 +461,13 @@ function DailyAdmin({ pin }: { pin: string }) {
     setNotice("");
     const publishingDraft = {
       ...draft,
-      serviceDate: mexicoToday()
+      serviceDate: mexicoToday(),
+      courses: Object.fromEntries(
+        Object.entries(draft.courses).map(([course, options]) => [
+          course,
+          options.map((option) => option.trim()).filter(Boolean)
+        ])
+      )
     };
     const response = await fetch("/api/admin/daily-menu", {
       method: "PUT",
@@ -482,14 +488,37 @@ function DailyAdmin({ pin }: { pin: string }) {
     channel.close();
   }
 
-  function setCourse(course: string, text: string) {
-    const options = text
-      .split("\n")
-      .map((option) => option.trim())
-      .filter(Boolean);
+  function setCourseOption(course: string, index: number, value: string) {
     setDraft((current) => ({
       ...current,
-      courses: { ...current.courses, [course]: options }
+      courses: {
+        ...current.courses,
+        [course]: (current.courses[course] || []).map((option, optionIndex) =>
+          optionIndex === index ? value : option
+        )
+      }
+    }));
+  }
+
+  function addCourseOption(course: string) {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        [course]: [...(current.courses[course] || []), ""]
+      }
+    }));
+  }
+
+  function removeCourseOption(course: string, index: number) {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        [course]: (current.courses[course] || []).filter(
+          (_, optionIndex) => optionIndex !== index
+        )
+      }
     }));
   }
 
@@ -500,8 +529,8 @@ function DailyAdmin({ pin }: { pin: string }) {
       </p>
       <h1 className="font-display text-4xl font-bold">Comida corrida</h1>
       <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
-        Solo cambia las opciones del día y presiona “Guardar y publicar”. Escribe una opción por
-        renglón.
+        Agrega todas las opciones disponibles de cada tiempo. El cliente elegirá una opción de
+        cada grupo antes de agregar la comida corrida.
       </p>
       <form className="paper mt-5 max-w-3xl rounded-3xl p-5 sm:p-6" onSubmit={save}>
         {loading ? (
@@ -588,18 +617,46 @@ function DailyAdmin({ pin }: { pin: string }) {
 
             <div className="mt-6 grid gap-4">
               {(["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const).map((course) => (
-                <label className="text-sm font-bold" key={course}>
-                  {course}
-                  <span className="ml-2 font-normal text-[var(--muted)]">
-                    una opción por renglón
-                  </span>
-                  <textarea
-                    className="mt-2 min-h-28 w-full resize-y rounded-xl border border-[var(--line)] p-3 font-normal"
-                    required
-                    value={(draft.courses[course] || []).join("\n")}
-                    onChange={(event) => setCourse(course, event.target.value)}
-                  />
-                </label>
+                <fieldset className="rounded-2xl border border-[var(--line)] p-4" key={course}>
+                  <legend className="px-1 font-display text-xl font-bold">{course}</legend>
+                  <p className="mb-3 text-xs text-[var(--muted)]">
+                    El cliente elegirá 1 de estas opciones.
+                  </p>
+                  <div className="grid gap-2">
+                    {(draft.courses[course] || []).map((option, index) => (
+                      <div className="flex gap-2" key={`${course}-${index}`}>
+                        <input
+                          aria-label={`${course}, opción ${index + 1}`}
+                          className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] px-3 font-normal"
+                          maxLength={80}
+                          placeholder={`Opción ${index + 1}`}
+                          required
+                          value={option}
+                          onChange={(event) =>
+                            setCourseOption(course, index, event.target.value)
+                          }
+                        />
+                        <button
+                          aria-label={`Quitar opción ${index + 1} de ${course}`}
+                          className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
+                          disabled={(draft.courses[course] || []).length <= 1}
+                          type="button"
+                          onClick={() => removeCourseOption(course, index)}
+                        >
+                          <Trash2 size={17} />
+                        </button>
+                      </div>
+                    ))}
+                  </div>
+                  <button
+                    className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                    disabled={(draft.courses[course] || []).length >= 8}
+                    type="button"
+                    onClick={() => addCourseOption(course)}
+                  >
+                    <Plus size={16} /> Agregar otra opción
+                  </button>
+                </fieldset>
               ))}
             </div>
 
@@ -618,7 +675,10 @@ function DailyAdmin({ pin }: { pin: string }) {
               className="focus-ring mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-5 font-bold text-white disabled:opacity-60"
               disabled={
                 saving ||
-                Object.values(draft.courses).some((options) => options.length === 0)
+                Object.values(draft.courses).some(
+                  (options) =>
+                    options.length === 0 || options.some((option) => !option.trim())
+                )
               }
             >
               <Save size={18} /> {saving ? "Guardando…" : "Guardar y publicar"}

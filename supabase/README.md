@@ -1,9 +1,8 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `014_menu_deletion_hours_images_alerts.sql` es el
-parche más reciente: permite retirar productos, fija horarios e instala las
-fotografías finales.
+**SQL Editor**. La migración `015_breakfast_price_corrections.sql` es el parche
+más reciente: corrige únicamente los cuatro precios confirmados de desayunos.
 
 Las migraciones:
 

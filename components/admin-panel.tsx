@@ -1,10 +1,12 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
+  Banknote,
   CalendarDays,
   CircleDollarSign,
+  CreditCard,
   LayoutGrid,
   PackageCheck,
   Pencil,
@@ -20,10 +22,9 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
+import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, Product, SalesReport } from "@/lib/types";
-
-const ADMIN_PRODUCTS = "orquideas-admin-products";
 
 export function AdminPanel() {
   const [pin, setPin] = useState("");
@@ -31,18 +32,45 @@ export function AdminPanel() {
   const [tab, setTab] = useState("menu");
   const [products, setProducts] = useState<Product[]>(seedProducts);
   const [editing, setEditing] = useState<Product | null>(null);
+  const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
-    const saved = localStorage.getItem(ADMIN_PRODUCTS);
     const savedPin = sessionStorage.getItem("orquideas-admin-pin");
     queueMicrotask(() => {
-      if (saved) setProducts(JSON.parse(saved));
       if (savedPin) {
         setPin(savedPin);
         setReady(true);
       }
     });
   }, []);
+
+  const loadProducts = useCallback(async (enteredPin: string) => {
+    const response = await fetch(
+      `/api/admin/products?pin=${encodeURIComponent(enteredPin)}`,
+      { cache: "no-store" }
+    );
+    if (!response.ok) return;
+    const rows = (await response.json()) as Product[];
+    if (rows.length) setProducts(rows);
+  }, []);
+
+  useEffect(() => {
+    if (!ready || !pin) return;
+    const initialTimer = window.setTimeout(() => void loadProducts(pin), 0);
+    const timer = window.setInterval(() => void loadProducts(pin), 15000);
+    channelRef.current = connectOrderChannel(({ type, product }) => {
+      if (type !== "menu" || !product) return;
+      setProducts((current) => [
+        product,
+        ...current.filter((item) => item.id !== product.id)
+      ]);
+    });
+    return () => {
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+      channelRef.current?.close();
+    };
+  }, [loadProducts, pin, ready]);
 
   async function login(event: React.FormEvent) {
     event.preventDefault();
@@ -53,11 +81,35 @@ export function AdminPanel() {
     }
     sessionStorage.setItem("orquideas-admin-pin", pin);
     setReady(true);
+    await loadProducts(pin);
+  }
+
+  async function saveProduct(product: Product) {
+    const response = await fetch("/api/admin/products", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, product })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      window.alert(payload?.error || "No fue posible guardar el producto");
+      throw new Error("save_product_failed");
+    }
+    const saved = payload as Product;
+    setProducts((current) => [
+      saved,
+      ...current.filter((item) => item.id !== saved.id)
+    ]);
+    await channelRef.current?.send({ type: "menu", product: saved });
+    return saved;
   }
 
   function persist(next: Product[]) {
-    setProducts(next);
-    localStorage.setItem(ADMIN_PRODUCTS, JSON.stringify(next));
+    const changed = next.find((item) => {
+      const current = products.find((product) => product.id === item.id);
+      return !current || JSON.stringify(current) !== JSON.stringify(item);
+    });
+    if (changed) void saveProduct(changed);
   }
 
   if (!ready) {
@@ -152,8 +204,7 @@ export function AdminPanel() {
           product={editing}
           onClose={() => setEditing(null)}
           onSave={(product) => {
-            persist([product, ...products.filter((item) => item.id !== product.id)]);
-            setEditing(null);
+            void saveProduct(product).then(() => setEditing(null));
           }}
         />
       )}
@@ -181,7 +232,7 @@ function MenuAdmin({
           </p>
           <h1 className="font-display text-4xl font-bold">Productos</h1>
           <p className="mt-1 text-sm text-[var(--muted)]">
-            Los cambios de productos de esta sección se guardan en este navegador.
+            Este es el mismo menú que ven las mesas. Los cambios se publican para todos.
           </p>
         </div>
         <button
@@ -368,10 +419,14 @@ function DailyAdmin({ pin }: { pin: string }) {
     event.preventDefault();
     setSaving(true);
     setNotice("");
+    const publishingDraft = {
+      ...draft,
+      serviceDate: mexicoToday()
+    };
     const response = await fetch("/api/admin/daily-menu", {
       method: "PUT",
       headers: { "content-type": "application/json" },
-      body: JSON.stringify({ pin, ...draft })
+      body: JSON.stringify({ pin, ...publishingDraft })
     });
     const payload = await response.json().catch(() => null);
     setSaving(false);
@@ -379,8 +434,12 @@ function DailyAdmin({ pin }: { pin: string }) {
       setNotice(payload?.error || "No fue posible guardar");
       return;
     }
-    setDraft(payload as DailyMenuConfig);
-    setNotice("Menú guardado y publicado correctamente.");
+    const saved = payload as DailyMenuConfig;
+    setDraft(saved);
+    setNotice("Menú guardado y publicado para hoy.");
+    const channel = connectOrderChannel(() => {});
+    await channel.send({ type: "daily-menu", dailyMenu: saved });
+    channel.close();
   }
 
   function setCourse(course: string, text: string) {
@@ -507,7 +566,7 @@ function DailyAdmin({ pin }: { pin: string }) {
             {notice && (
               <div
                 className={`mt-5 rounded-xl p-3 text-sm font-bold ${
-                  notice.includes("correctamente")
+                  notice.includes("correctamente") || notice.includes("publicado")
                     ? "bg-[#dce8c8] text-[#274a27]"
                     : "bg-[#f1d0ca] text-[#7a2c22]"
                 }`}
@@ -599,7 +658,11 @@ function SalesAdmin({ pin }: { pin: string }) {
 
   useEffect(() => {
     const timer = window.setTimeout(() => void load(period), 0);
-    return () => window.clearTimeout(timer);
+    const interval = window.setInterval(() => void load(period), 10000);
+    return () => {
+      window.clearTimeout(timer);
+      window.clearInterval(interval);
+    };
     // The PIN is stable for the authenticated admin session.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [period, pin]);
@@ -662,13 +725,28 @@ function SalesAdmin({ pin }: { pin: string }) {
         </div>
       ) : report ? (
         <>
-          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-4">
+          <div className="mt-5 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
             {[
               {
                 label: "Consumo registrado",
                 value: money(report.summary.grossSales),
-                detail: "Solo pedidos entregados",
+                detail:
+                  report.summary.unassignedOrders > 0
+                    ? `${report.summary.unassignedOrders} pedidos anteriores sin método`
+                    : "Solo pedidos entregados",
                 icon: CircleDollarSign
+              },
+              {
+                label: "Efectivo",
+                value: money(report.summary.cashSales),
+                detail: `${report.summary.cashOrders} pedidos`,
+                icon: Banknote
+              },
+              {
+                label: "Tarjeta",
+                value: money(report.summary.cardSales),
+                detail: `${report.summary.cardOrders} pedidos`,
+                icon: CreditCard
               },
               {
                 label: "Pedidos entregados",
@@ -791,6 +869,11 @@ function SalesAdmin({ pin }: { pin: string }) {
                         <span className="text-xs text-[var(--muted)]">
                           {order.status === "delivered" ? "Entregado" : "En proceso"}
                         </span>
+                        {order.paymentMethod && (
+                          <span className="rounded-full bg-[#eee8dc] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+                            {order.paymentMethod === "cash" ? "Efectivo" : "Tarjeta"}
+                          </span>
+                        )}
                       </div>
                       <p className="mt-1 line-clamp-1 text-sm text-[var(--muted)]">
                         {order.items.map((item) => `${item.quantity}× ${item.name}`).join(" · ")}

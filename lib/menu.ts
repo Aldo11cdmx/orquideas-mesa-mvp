@@ -41,7 +41,7 @@ export const products: Product[] = [
     id: "chilaquiles-sencillos",
     name: "Chilaquiles sencillos",
     description: "Totopos con crema y cebolla. Paquete con fruta y café.",
-    price: 60,
+    price: 50,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-sencillos.jpg",
     popular: true,
@@ -63,7 +63,7 @@ export const products: Product[] = [
     id: "chilaquiles-huevo",
     name: "Chilaquiles con 1 huevo",
     description: "Chilaquiles con un huevo al gusto. Paquete con fruta y café.",
-    price: 65,
+    price: 60,
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-huevo.jpg",
     optionGroups: [eggGroup],
@@ -87,7 +87,7 @@ export const products: Product[] = [
     description: "Tres piezas rellenas de pollo. Paquete con fruta y café.",
     price: 85,
     category: "Desayunos",
-    image: "/menu/imperio/enchiladas-suizas.jpg",
+    image: "/menu/imperio/enchiladas-verdes.jpg",
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -95,7 +95,7 @@ export const products: Product[] = [
     id: "enfrijoladas",
     name: "Enfrijoladas veracruzanas",
     description: "Rellenas de pollo, cubiertas con frijol y chorizo. Incluye fruta y café.",
-    price: 85,
+    price: 90,
     category: "Desayunos",
     image: "/menu/imperio/enfrijoladas.jpg",
     popular: true,
@@ -108,7 +108,7 @@ export const products: Product[] = [
     description: "Chilaquiles con carne asada. Paquete con fruta y café.",
     price: 85,
     category: "Desayunos",
-    image: "/menu/imperio/chilaquiles-huevo.jpg",
+    image: "/menu/imperio/chilaquiles-carne.jpg",
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -160,7 +160,7 @@ export const products: Product[] = [
     description: "Dos huevos con salsa verde y roja. Paquete con fruta y café.",
     price: 90,
     category: "Desayunos",
-    image: "/menu/imperio/chilaquiles-huevo.jpg",
+    image: "/menu/imperio/chilaquiles-divorciados.jpg",
     optionGroups: [eggGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
@@ -171,7 +171,7 @@ export const products: Product[] = [
     description: "Acompañada de papas fritas, ensalada y frijoles.",
     price: 90,
     category: "Desayunos",
-    image: "/menu/imperio/arrachera.jpg",
+    image: "/menu/imperio/arrachera-actual.jpg",
     ...breakfastHours
   },
   {
@@ -230,7 +230,7 @@ export const products: Product[] = [
     description: "Dos hot cakes, dos huevos, dos piezas de tocino y una porción de fruta.",
     price: 65,
     category: "A la carta",
-    image: "/menu/imperio/hotcakes-waffles.jpg",
+    image: "/menu/imperio/desayuno-combinado.jpg",
     ...breakfastHours
   },
   {
@@ -280,8 +280,8 @@ export const products: Product[] = [
   },
   {
     id: "coca-cola",
-    name: "Coca-Cola 355 ml",
-    description: "Refresco frío en presentación de 355 ml.",
+    name: "Coca-Cola 500 ml",
+    description: "Refresco frío en presentación de 500 ml.",
     price: 28,
     category: "Bebidas",
     image: "/menu/imperio/refresco-cola.jpg",
@@ -293,7 +293,7 @@ export const products: Product[] = [
     description: "Preparado con leche y fruta.",
     price: 30,
     category: "Bebidas",
-    image: "/menu/imperio/malteada-fresa.jpg",
+    image: "/menu/imperio/licuado.jpg",
     options: ["Plátano", "Fresa", "Mamey"],
     ...breakfastHours
   },
@@ -313,7 +313,7 @@ export const products: Product[] = [
     price: 40,
     category: "Bebidas",
     image: "/menu/imperio/malteada-fresa.jpg",
-    options: ["Fresa", "Chocolate", "Vainilla"],
+    options: ["Fresa", "Chocolate", "Vainilla", "Café", "Cajeta"],
     ...breakfastHours
   },
   {
@@ -328,10 +328,29 @@ export const products: Product[] = [
   {
     id: "agua-fruta",
     name: "Agua de fruta",
-    description: "Agua fresca preparada con el sabor disponible del día.",
-    price: 25,
+    description: "Un litro de agua fresca con el sabor disponible del día.",
+    price: 35,
     category: "Bebidas",
     image: "/menu/imperio/agua-fruta.jpg",
+    ...breakfastHours
+  },
+  {
+    id: "enfrijoladas-carta",
+    name: "Enfrijoladas a la carta",
+    description: "Rellenas de pollo, cubiertas con frijol, crema, queso y chorizo.",
+    price: 90,
+    category: "A la carta",
+    image: "/menu/imperio/enfrijoladas.jpg",
+    ...breakfastHours
+  },
+  {
+    id: "salchipulpos-papas",
+    name: "Salchipulpos con papas",
+    description: "Salchichas doradas en forma de pulpo acompañadas de papas a la francesa.",
+    price: 65,
+    category: "A la carta",
+    image: "/menu/imperio/salchipulpos-papas.jpg",
+    isNew: true,
     ...breakfastHours
   },
   {
@@ -349,7 +368,7 @@ export const products: Product[] = [
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pollo-plancha.jpg",
+    image: "/menu/imperio/pechuga-plancha.jpg",
     ...lunchHours
   },
   {
@@ -395,7 +414,7 @@ export const products: Product[] = [
     description: "Acompañada de papas a la francesa, ensalada y frijoles.",
     price: 100,
     category: "Comidas a la carta",
-    image: "/menu/imperio/arrachera.jpg",
+    image: "/menu/imperio/arrachera-actual.jpg",
     ...lunchHours
   },
   {

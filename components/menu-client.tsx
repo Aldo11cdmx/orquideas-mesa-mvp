@@ -1,6 +1,6 @@
 "use client";
 
-import { useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
   ChevronLeft,
@@ -20,7 +20,7 @@ import {
   isProductAvailable,
   mexicoCityMinutes,
   money,
-  products,
+  products as seedProducts,
   timeToMinutes
 } from "@/lib/menu";
 import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
@@ -41,6 +41,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [generalNotes, setGeneralNotes] = useState("");
   const [dailyMenu, setDailyMenu] = useState<DailyMenuConfig | null>(null);
   const [dailyMenuLoading, setDailyMenuLoading] = useState(true);
+  const [catalog, setCatalog] = useState<Product[]>(seedProducts);
   const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
@@ -51,36 +52,67 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     return () => window.clearInterval(timer);
   }, []);
 
-  useEffect(() => {
-    let active = true;
-    void fetch("/api/daily-menu")
-      .then(async (response) => {
-        if (!response.ok) return null;
-        return (await response.json()) as DailyMenuConfig | null;
-      })
-      .then((menu) => {
-        if (active) setDailyMenu(menu);
-      })
-      .finally(() => {
-        if (active) setDailyMenuLoading(false);
-      });
-    return () => {
-      active = false;
-    };
+  const loadDailyMenu = useCallback(async () => {
+    const response = await fetch("/api/daily-menu", { cache: "no-store" });
+    if (!response.ok) return null;
+    const menu = (await response.json()) as DailyMenuConfig | null;
+    setDailyMenu(menu);
+    return menu;
+  }, []);
+
+  const loadCatalog = useCallback(async () => {
+    const response = await fetch("/api/products", { cache: "no-store" });
+    if (!response.ok) return;
+    const next = (await response.json()) as Product[];
+    if (next.length) setCatalog(next);
   }, []);
 
   useEffect(() => {
-    channelRef.current = connectOrderChannel(({ type, order: incoming }) => {
-      if ((type === "status" || type === "edited") && incoming.id === order?.id) {
+    let active = true;
+    const initialTimer = window.setTimeout(() => {
+      void loadDailyMenu().finally(() => {
+        if (active) setDailyMenuLoading(false);
+      });
+      void loadCatalog();
+    }, 0);
+    const timer = window.setInterval(() => {
+      void loadDailyMenu();
+      void loadCatalog();
+    }, 15000);
+    return () => {
+      active = false;
+      window.clearTimeout(initialTimer);
+      window.clearInterval(timer);
+    };
+  }, [loadCatalog, loadDailyMenu]);
+
+  useEffect(() => {
+    channelRef.current = connectOrderChannel(({ type, order: incoming, product, dailyMenu: menu }) => {
+      if (
+        (type === "status" || type === "edited") &&
+        incoming &&
+        incoming.id === order?.id
+      ) {
+        const nextOrder = incoming;
         setOrder((current) =>
-          !current || +new Date(incoming.updatedAt) >= +new Date(current.updatedAt)
-            ? incoming
+          !current || +new Date(nextOrder.updatedAt) >= +new Date(current.updatedAt)
+            ? nextOrder
             : current
         );
       }
+      if (type === "menu" && product) {
+        setCatalog((current) => [
+          product,
+          ...current.filter((item) => item.id !== product.id)
+        ]);
+      }
+      if (type === "daily-menu") {
+        if (menu) setDailyMenu(menu);
+        else void loadDailyMenu();
+      }
     });
     return () => channelRef.current?.close();
-  }, [order?.id]);
+  }, [loadDailyMenu, order?.id]);
 
   useEffect(() => {
     if (!order) return;
@@ -109,7 +141,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es");
-    return products.filter((product) => {
+    return catalog.filter((product) => {
       const matchesQuery =
         !normalized ||
         `${product.name} ${product.description}`.toLocaleLowerCase("es").includes(normalized);
@@ -118,7 +150,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         (category === "Favoritos" ? product.popular : product.category === category);
       return matchesQuery && matchesCategory;
     });
-  }, [category, query]);
+  }, [catalog, category, query]);
 
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);

@@ -295,7 +295,10 @@ function StaffBoard({ role }: { role: StaffRole }) {
     let stopped = false;
     const schedule = () => {
       const connected = realtimeStatus === "SUBSCRIBED";
-      const delay = connected ? 20000 : 6000;
+      // Broadcast/Postgres Changes deliver instantly. This short automatic
+      // reconciliation guarantees that staff still receive orders if a mobile
+      // network silently drops a realtime packet; no manual refresh is needed.
+      const delay = connected ? (role === "waiter" ? 4000 : 7000) : 3000;
       timer = window.setTimeout(async () => {
         if (!stopped && document.visibilityState === "visible") {
           await loadOrders(pin).catch(() => undefined);
@@ -317,7 +320,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
       window.removeEventListener("online", refresh);
       document.removeEventListener("visibilitychange", refresh);
     };
-  }, [loadOrders, pin, realtimeStatus, unlocked]);
+  }, [loadOrders, pin, realtimeStatus, role, unlocked]);
 
   const filtered = useMemo(
     () =>

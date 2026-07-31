@@ -88,17 +88,14 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   useEffect(() => {
     channelRef.current = connectOrderChannel(({ type, order: incoming, product, dailyMenu: menu }) => {
-      if (
-        (type === "status" || type === "edited") &&
-        incoming &&
-        incoming.id === order?.id
-      ) {
+      if ((type === "status" || type === "edited") && incoming) {
         const nextOrder = incoming;
-        setOrder((current) =>
-          !current || +new Date(nextOrder.updatedAt) >= +new Date(current.updatedAt)
+        setOrder((current) => {
+          if (!current || current.id !== nextOrder.id) return current;
+          return +new Date(nextOrder.updatedAt) >= +new Date(current.updatedAt)
             ? nextOrder
-            : current
-        );
+            : current;
+        });
       }
       if (type === "menu" && product) {
         setCatalog((current) => [
@@ -115,7 +112,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       }
     });
     return () => channelRef.current?.close();
-  }, [loadDailyMenu, order?.id]);
+  }, [loadDailyMenu]);
 
   useEffect(() => {
     if (!order) return;

@@ -77,3 +77,35 @@ export async function PUT(request: NextRequest) {
 
   return NextResponse.json(data);
 }
+
+export async function DELETE(request: NextRequest) {
+  const parsed = z
+    .object({
+      pin: z.string().min(1).max(20),
+      productId: z.string().trim().min(1).max(80)
+    })
+    .safeParse(await request.json().catch(() => null));
+
+  if (!parsed.success || !authorized(parsed.data.pin)) {
+    return NextResponse.json(
+      { error: parsed.success ? "PIN incorrecto" : "Producto inválido" },
+      { status: parsed.success ? 401 : 400 }
+    );
+  }
+
+  const supabase = createServerClient();
+  const { data, error } = await supabase.rpc("archive_admin_product", {
+    p_pin: parsed.data.pin,
+    p_product_slug: parsed.data.productId
+  });
+
+  if (error) {
+    console.error("archive_admin_product failed", error.code, error.message);
+    return NextResponse.json(
+      { error: "No fue posible borrar el producto" },
+      { status: 503 }
+    );
+  }
+
+  return NextResponse.json({ removed: Boolean(data) });
+}

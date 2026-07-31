@@ -8,12 +8,17 @@ export const restaurant = {
 
 const breakfastHours = {
   availableFrom: "09:00",
-  availableUntil: "21:00"
+  availableUntil: "13:00"
 };
 
 const lunchHours = {
   availableFrom: "13:00",
-  availableUntil: "21:00"
+  availableUntil: "17:00"
+};
+
+const allDayHours = {
+  availableFrom: "09:00",
+  availableUntil: "17:00"
 };
 
 const breakfastPackage = ["Fruta de temporada", "Café de la casa"];
@@ -54,7 +59,7 @@ export const products: Product[] = [
     description: "Dos huevos con frijoles refritos. Paquete con fruta y café.",
     price: 60,
     category: "Desayunos",
-    image: "/menu/imperio/huevos-al-gusto.jpg",
+    image: "/menu/imperio/huevos-al-gusto-nuevos.jpg",
     optionGroups: [eggGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
@@ -87,7 +92,7 @@ export const products: Product[] = [
     description: "Tres piezas rellenas de pollo. Paquete con fruta y café.",
     price: 85,
     category: "Desayunos",
-    image: "/menu/imperio/enchiladas-verdes.jpg",
+    image: "/menu/imperio/enchiladas-verdes-nuevas.jpg",
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -193,7 +198,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/taco-bistec.jpg",
     options: ["Bistec", "Longaniza"],
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "papas-francesa",
@@ -202,7 +207,7 @@ export const products: Product[] = [
     price: 45,
     category: "A la carta",
     image: "/menu/imperio/papas-francesas.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "ensalada-fresca",
@@ -212,7 +217,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/ensalada.jpg",
     options: ["Pollo", "Atún"],
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "club-sandwich",
@@ -222,7 +227,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/club-sandwich.jpg",
     popular: true,
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "desayuno-combinado",
@@ -239,7 +244,7 @@ export const products: Product[] = [
     description: "Servido con mantequilla y mermelada de fresa.",
     price: 25,
     category: "Panes y más",
-    image: "/menu/imperio/bisquet.jpg",
+    image: "/menu/imperio/bisquet-nuevo.jpg",
     ...breakfastHours
   },
   {
@@ -257,7 +262,7 @@ export const products: Product[] = [
     description: "Orden de tres piezas.",
     price: 40,
     category: "Panes y más",
-    image: "/menu/imperio/hotcakes-waffles.jpg",
+    image: "/menu/imperio/hot-cakes-nuevos.jpg",
     ...breakfastHours
   },
   {
@@ -266,7 +271,7 @@ export const products: Product[] = [
     description: "Dos piezas servidas con helado y fruta de temporada.",
     price: 45,
     category: "Panes y más",
-    image: "/menu/imperio/hotcakes-waffles.jpg",
+    image: "/menu/imperio/waffles-nuevos.jpg",
     ...breakfastHours
   },
   {
@@ -285,7 +290,7 @@ export const products: Product[] = [
     price: 28,
     category: "Bebidas",
     image: "/menu/imperio/refresco-cola.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "licuado",
@@ -295,7 +300,7 @@ export const products: Product[] = [
     category: "Bebidas",
     image: "/menu/imperio/licuado.jpg",
     options: ["Plátano", "Fresa", "Mamey"],
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "cafe-leche",
@@ -304,7 +309,7 @@ export const products: Product[] = [
     price: 25,
     category: "Bebidas",
     image: "/menu/imperio/cafe-leche.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "malteada",
@@ -314,7 +319,7 @@ export const products: Product[] = [
     category: "Bebidas",
     image: "/menu/imperio/malteada-fresa.jpg",
     options: ["Fresa", "Chocolate", "Vainilla", "Café", "Cajeta"],
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "jugo-verde",
@@ -323,7 +328,7 @@ export const products: Product[] = [
     price: 35,
     category: "Bebidas",
     image: "/menu/imperio/jugo-verde.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "agua-fruta",
@@ -332,7 +337,7 @@ export const products: Product[] = [
     price: 35,
     category: "Bebidas",
     image: "/menu/imperio/agua-fruta.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "enfrijoladas-carta",
@@ -341,7 +346,7 @@ export const products: Product[] = [
     price: 90,
     category: "A la carta",
     image: "/menu/imperio/enfrijoladas.jpg",
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "salchipulpos-papas",
@@ -351,7 +356,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/salchipulpos-papas.jpg",
     isNew: true,
-    ...breakfastHours
+    ...allDayHours
   },
   {
     id: "pechuga-empanizada",

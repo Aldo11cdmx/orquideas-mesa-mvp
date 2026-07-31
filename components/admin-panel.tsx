@@ -15,6 +15,7 @@ import {
   Save,
   Settings2,
   Store,
+  Trash2,
   TrendingUp,
   ToggleLeft,
   ToggleRight
@@ -59,7 +60,12 @@ export function AdminPanel() {
     const initialTimer = window.setTimeout(() => void loadProducts(pin), 0);
     const timer = window.setInterval(() => void loadProducts(pin), 15000);
     channelRef.current = connectOrderChannel(({ type, product }) => {
-      if (type !== "menu" || !product) return;
+      if (!product) return;
+      if (type === "menu-delete") {
+        setProducts((current) => current.filter((item) => item.id !== product.id));
+        return;
+      }
+      if (type !== "menu") return;
       setProducts((current) => [
         product,
         ...current.filter((item) => item.id !== product.id)
@@ -102,6 +108,30 @@ export function AdminPanel() {
     ]);
     await channelRef.current?.send({ type: "menu", product: saved });
     return saved;
+  }
+
+  async function deleteProduct(product: Product) {
+    if (
+      !window.confirm(
+        `¿Quitar "${product.name}" del menú? Sus ventas anteriores se conservarán.`
+      )
+    ) {
+      return;
+    }
+
+    const response = await fetch("/api/admin/products", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, productId: product.id })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      window.alert(payload?.error || "No fue posible borrar el producto");
+      return;
+    }
+
+    setProducts((current) => current.filter((item) => item.id !== product.id));
+    await channelRef.current?.send({ type: "menu-delete", product });
   }
 
   function persist(next: Product[]) {
@@ -181,6 +211,7 @@ export function AdminPanel() {
               products={products}
               onEdit={setEditing}
               onChange={persist}
+              onDelete={(product) => void deleteProduct(product)}
               onCreate={() =>
                 setEditing({
                   id: `new-${Date.now()}`,
@@ -216,11 +247,13 @@ function MenuAdmin({
   products,
   onEdit,
   onChange,
+  onDelete,
   onCreate
 }: {
   products: Product[];
   onEdit: (product: Product) => void;
   onChange: (products: Product[]) => void;
+  onDelete: (product: Product) => void;
   onCreate: () => void;
 }) {
   return (
@@ -254,12 +287,19 @@ function MenuAdmin({
               <h2 className="truncate font-bold">{product.name || "Producto nuevo"}</h2>
               <p className="mt-1 text-sm">{money(product.price)}</p>
               <p className="mt-1 truncate text-xs text-[var(--muted)]">{product.category}</p>
-              <div className="mt-3 flex items-center justify-between">
+              <div className="mt-3 flex items-center justify-between gap-2">
                 <button
                   className="focus-ring flex items-center gap-1 text-xs font-bold"
                   onClick={() => onEdit(product)}
                 >
                   <Pencil size={14} /> Editar
+                </button>
+                <button
+                  className="focus-ring flex items-center gap-1 text-xs font-bold text-[#8a3b30]"
+                  aria-label={`Borrar ${product.name}`}
+                  onClick={() => onDelete(product)}
+                >
+                  <Trash2 size={14} /> Borrar
                 </button>
                 <button
                   className={`focus-ring ${product.soldOut ? "text-[var(--terracotta)]" : "text-[#377359]"}`}
@@ -363,7 +403,7 @@ const defaultDailyMenu: DailyMenuConfig = {
   availableToday: true,
   serviceDate: "",
   availableFrom: "13:00",
-  availableUntil: "21:00",
+  availableUntil: "17:00",
   price: 75,
   courses: {
     Entrada: ["Consomé del día", "Sopa del día", "Crema del día"],

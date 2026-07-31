@@ -67,7 +67,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
-  const notifiedReadyRef = useRef(new Set<string>());
+  const alertedRef = useRef(new Set<string>());
   const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
   useEffect(() => {
@@ -95,34 +95,55 @@ function StaffBoard({ role }: { role: StaffRole }) {
         .webkitAudioContext;
     if (!AudioContextClass) return;
     const context = new AudioContextClass();
-    const oscillator = context.createOscillator();
-    const gain = context.createGain();
-    oscillator.frequency.value = 660;
-    gain.gain.setValueAtTime(0.06, context.currentTime);
-    gain.gain.exponentialRampToValueAtTime(0.001, context.currentTime + 0.35);
-    oscillator.connect(gain).connect(context.destination);
-    oscillator.start();
-    oscillator.stop(context.currentTime + 0.35);
+    const start = context.currentTime + 0.02;
+    [880, 660, 880, 1040].forEach((frequency, index) => {
+      const oscillator = context.createOscillator();
+      const gain = context.createGain();
+      const toneStart = start + index * 0.32;
+      oscillator.type = index % 2 === 0 ? "square" : "sine";
+      oscillator.frequency.setValueAtTime(frequency, toneStart);
+      gain.gain.setValueAtTime(0.22, toneStart);
+      gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 0.24);
+      oscillator.connect(gain).connect(context.destination);
+      oscillator.start(toneStart);
+      oscillator.stop(toneStart + 0.25);
+    });
+    window.setTimeout(() => void context.close(), 1600);
   }, []);
 
-  const notifyWaiterReady = useCallback(
+  const notifyStaff = useCallback(
     (order: Order) => {
-      if (
-        role !== "waiter" ||
-        order.status !== "ready" ||
-        notifiedReadyRef.current.has(order.id)
-      ) {
+      let kind = "";
+      let title = "";
+      let body = "";
+
+      if (role === "waiter" && order.status === "sent") {
+        kind = "new";
+        title = `Pedido nuevo · Mesa ${order.tableCode}`;
+        body = `${order.folio} espera revisión del mesero.`;
+      } else if (role === "waiter" && order.status === "ready") {
+        kind = "ready";
+        title = `Pedido listo · Mesa ${order.tableCode}`;
+        body = `${order.folio} está listo para entregar.`;
+      } else if (role === "kitchen" && order.status === "accepted") {
+        kind = "accepted";
+        title = `Nuevo para cocina · Mesa ${order.tableCode}`;
+        body = `${order.folio} ya fue confirmado por el mesero.`;
+      } else {
         return;
       }
 
-      notifiedReadyRef.current.add(order.id);
-      setReadyNotice(order);
+      const alertKey = `${role}:${kind}:${order.id}`;
+      if (alertedRef.current.has(alertKey)) return;
+      alertedRef.current.add(alertKey);
+      if (kind === "ready") setReadyNotice(order);
       beep();
+      navigator.vibrate?.([300, 120, 300, 120, 450]);
 
       if ("Notification" in window && Notification.permission === "granted") {
-        new Notification(`Pedido listo · Mesa ${order.tableCode}`, {
-          body: `${order.folio} está listo para entregar.`,
-          tag: `orquideas-ready-${order.id}`
+        new Notification(title, {
+          body,
+          tag: `orquideas-${kind}-${order.id}`
         });
       }
     },
@@ -131,19 +152,13 @@ function StaffBoard({ role }: { role: StaffRole }) {
 
   useEffect(() => {
     if (!unlocked) return;
-    channelRef.current = connectOrderChannel(({ type, order }) => {
+    channelRef.current = connectOrderChannel(({ order }) => {
       if (!order) return;
       upsert(order);
-      notifyWaiterReady(order);
-      if (
-        (role === "waiter" && type === "new") ||
-        (role === "kitchen" && order.status === "accepted")
-      ) {
-        beep();
-      }
+      notifyStaff(order);
     });
     return () => channelRef.current?.close();
-  }, [beep, notifyWaiterReady, role, unlocked, upsert]);
+  }, [notifyStaff, unlocked, upsert]);
 
   useEffect(() => {
     const firstTick = window.setTimeout(() => setNow(Date.now()), 0);
@@ -167,21 +182,22 @@ function StaffBoard({ role }: { role: StaffRole }) {
         const rows = (await response.json()) as Order[];
         setOrders(rows);
         setBackend("supabase");
-        rows.forEach(notifyWaiterReady);
+        rows.forEach(notifyStaff);
       } else if (response.status === 503) {
         const demoOrders = readDemoOrders();
         setOrders(demoOrders);
         setBackend("demo");
-        demoOrders.forEach(notifyWaiterReady);
+        demoOrders.forEach(notifyStaff);
       } else {
         throw new Error("PIN incorrecto");
       }
     },
-    [notifyWaiterReady]
+    [notifyStaff]
   );
 
   async function toggleAlerts() {
     if (sound) {
+      soundRef.current = false;
       setSound(false);
       return;
     }
@@ -189,7 +205,10 @@ function StaffBoard({ role }: { role: StaffRole }) {
     if ("Notification" in window && Notification.permission === "default") {
       await Notification.requestPermission();
     }
+    soundRef.current = true;
+    alertedRef.current.clear();
     setSound(true);
+    beep();
   }
 
   async function unlock(event: React.FormEvent) {

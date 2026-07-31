@@ -8,6 +8,7 @@ import {
   ChefHat,
   HandPlatter,
   Clock3,
+  Flame,
   RefreshCw,
   Search,
   Trash2,
@@ -26,6 +27,11 @@ import {
   updateDemoOrder
 } from "@/lib/order-store";
 import type { Order, OrderStatus, PaymentMethod } from "@/lib/types";
+import {
+  mergeOrders,
+  orderAgeMinutes,
+  urgencyLevel
+} from "@/lib/staff-board-utils";
 
 const kitchenColumns: Array<{
   id: string;
@@ -63,11 +69,18 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [sound, setSound] = useState(false);
   const [readyNotice, setReadyNotice] = useState<Order | null>(null);
   const [online, setOnline] = useState(true);
+  const [realtimeStatus, setRealtimeStatus] = useState("CONNECTING");
+  const [syncing, setSyncing] = useState(false);
+  const [lastSync, setLastSync] = useState<number | null>(null);
   const [backend, setBackend] = useState<"supabase" | "demo">("supabase");
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
+  const audioContextRef = useRef<AudioContext | null>(null);
   const alertedRef = useRef(new Set<string>());
+  const ordersRef = useRef<Order[]>([]);
+  const hasLoadedRef = useRef(false);
+  const requestRef = useRef<Promise<void> | null>(null);
   const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
   useEffect(() => {
@@ -76,14 +89,9 @@ function StaffBoard({ role }: { role: StaffRole }) {
 
   const upsert = useCallback((incoming: Order) => {
     setOrders((current) => {
-      const existing = current.find((order) => order.id === incoming.id);
-      const selected =
-        existing && +new Date(existing.updatedAt) > +new Date(incoming.updatedAt)
-          ? existing
-          : incoming;
-      return [selected, ...current.filter((order) => order.id !== incoming.id)].sort(
-        (a, b) => +new Date(a.createdAt) - +new Date(b.createdAt)
-      );
+      const next = mergeOrders(current, [incoming]);
+      ordersRef.current = next;
+      return next;
     });
   }, []);
 
@@ -94,21 +102,24 @@ function StaffBoard({ role }: { role: StaffRole }) {
       (window as typeof window & { webkitAudioContext?: typeof AudioContext })
         .webkitAudioContext;
     if (!AudioContextClass) return;
-    const context = new AudioContextClass();
+    const context = audioContextRef.current || new AudioContextClass();
+    audioContextRef.current = context;
+    void context.resume();
     const start = context.currentTime + 0.02;
-    [880, 660, 880, 1040].forEach((frequency, index) => {
-      const oscillator = context.createOscillator();
-      const gain = context.createGain();
-      const toneStart = start + index * 0.32;
-      oscillator.type = index % 2 === 0 ? "square" : "sine";
-      oscillator.frequency.setValueAtTime(frequency, toneStart);
-      gain.gain.setValueAtTime(0.22, toneStart);
-      gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 0.24);
-      oscillator.connect(gain).connect(context.destination);
-      oscillator.start(toneStart);
-      oscillator.stop(toneStart + 0.25);
+    [0, 1].forEach((round) => {
+      [740, 980, 740, 1180].forEach((frequency, index) => {
+        const oscillator = context.createOscillator();
+        const gain = context.createGain();
+        const toneStart = start + round * 1.25 + index * 0.24;
+        oscillator.type = "square";
+        oscillator.frequency.setValueAtTime(frequency, toneStart);
+        gain.gain.setValueAtTime(0.3, toneStart);
+        gain.gain.exponentialRampToValueAtTime(0.001, toneStart + 0.18);
+        oscillator.connect(gain).connect(context.destination);
+        oscillator.start(toneStart);
+        oscillator.stop(toneStart + 0.2);
+      });
     });
-    window.setTimeout(() => void context.close(), 1600);
   }, []);
 
   const notifyStaff = useCallback(
@@ -151,16 +162,6 @@ function StaffBoard({ role }: { role: StaffRole }) {
   );
 
   useEffect(() => {
-    if (!unlocked) return;
-    channelRef.current = connectOrderChannel(({ order }) => {
-      if (!order) return;
-      upsert(order);
-      notifyStaff(order);
-    });
-    return () => channelRef.current?.close();
-  }, [notifyStaff, unlocked, upsert]);
-
-  useEffect(() => {
     const firstTick = window.setTimeout(() => setNow(Date.now()), 0);
     const timer = window.setInterval(() => setNow(Date.now()), 30000);
     const setConnection = () => setOnline(navigator.onLine);
@@ -177,23 +178,77 @@ function StaffBoard({ role }: { role: StaffRole }) {
 
   const loadOrders = useCallback(
     async (enteredPin: string) => {
-      const response = await fetch(`/api/orders?pin=${encodeURIComponent(enteredPin)}`);
-      if (response.ok) {
-        const rows = (await response.json()) as Order[];
-        setOrders(rows);
-        setBackend("supabase");
-        rows.forEach(notifyStaff);
-      } else if (response.status === 503) {
-        const demoOrders = readDemoOrders();
-        setOrders(demoOrders);
-        setBackend("demo");
-        demoOrders.forEach(notifyStaff);
-      } else {
-        throw new Error("PIN incorrecto");
+      if (requestRef.current) return requestRef.current;
+      const request = (async () => {
+        setSyncing(true);
+        const controller = new AbortController();
+        const timeout = window.setTimeout(() => controller.abort(), 9000);
+        try {
+          const response = await fetch(`/api/orders?pin=${encodeURIComponent(enteredPin)}`, {
+            cache: "no-store",
+            signal: controller.signal
+          });
+          if (response.ok) {
+            const rows = (await response.json()) as Order[];
+            if (hasLoadedRef.current) {
+              const previous = new Map(
+                ordersRef.current.map((order) => [order.id, `${order.status}:${order.updatedAt}`])
+              );
+              rows.forEach((order) => {
+                if (previous.get(order.id) !== `${order.status}:${order.updatedAt}`) {
+                  notifyStaff(order);
+                }
+              });
+            }
+            const returnedIds = new Set(rows.map((order) => order.id));
+            const next = mergeOrders(ordersRef.current, rows).filter((order) => {
+              const stillReturned = returnedIds.has(order.id);
+              const terminal = ["delivered", "cancelled"].includes(order.status);
+              return stillReturned || !terminal;
+            });
+            ordersRef.current = next;
+            setOrders(next);
+            setBackend("supabase");
+            setLastSync(Date.now());
+            hasLoadedRef.current = true;
+          } else if (response.status === 503) {
+            const demoOrders = readDemoOrders();
+            ordersRef.current = demoOrders;
+            setOrders(demoOrders);
+            setBackend("demo");
+          } else {
+            throw new Error("PIN incorrecto");
+          }
+        } finally {
+          window.clearTimeout(timeout);
+          setSyncing(false);
+        }
+      })();
+      requestRef.current = request;
+      try {
+        await request;
+      } finally {
+        requestRef.current = null;
       }
     },
     [notifyStaff]
   );
+
+  useEffect(() => {
+    if (!unlocked) return;
+    channelRef.current = connectOrderChannel(
+      ({ order, type }) => {
+        if (order) {
+          upsert(order);
+          notifyStaff(order);
+        } else if (type === "database_change") {
+          void loadOrders(pin);
+        }
+      },
+      setRealtimeStatus
+    );
+    return () => channelRef.current?.close();
+  }, [loadOrders, notifyStaff, pin, unlocked, upsert]);
 
   async function toggleAlerts() {
     if (sound) {
@@ -226,7 +281,6 @@ function StaffBoard({ role }: { role: StaffRole }) {
     const saved = sessionStorage.getItem("orquideas-staff-pin");
     if (!saved) return;
     // Restores an explicitly persisted staff session after hydration.
-    // eslint-disable-next-line react-hooks/set-state-in-effect
     loadOrders(saved)
       .then(() => {
         setPin(saved);
@@ -237,11 +291,33 @@ function StaffBoard({ role }: { role: StaffRole }) {
 
   useEffect(() => {
     if (!unlocked || !pin) return;
-    const timer = window.setInterval(() => {
-      void loadOrders(pin);
-    }, 8000);
-    return () => window.clearInterval(timer);
-  }, [loadOrders, pin, unlocked]);
+    let timer = 0;
+    let stopped = false;
+    const schedule = () => {
+      const connected = realtimeStatus === "SUBSCRIBED";
+      const delay = connected ? 20000 : 6000;
+      timer = window.setTimeout(async () => {
+        if (!stopped && document.visibilityState === "visible") {
+          await loadOrders(pin).catch(() => undefined);
+        }
+        if (!stopped) schedule();
+      }, delay + Math.floor(Math.random() * 1500));
+    };
+    const refresh = () => {
+      if (document.visibilityState === "visible") void loadOrders(pin).catch(() => undefined);
+    };
+    schedule();
+    window.addEventListener("focus", refresh);
+    window.addEventListener("online", refresh);
+    document.addEventListener("visibilitychange", refresh);
+    return () => {
+      stopped = true;
+      window.clearTimeout(timer);
+      window.removeEventListener("focus", refresh);
+      window.removeEventListener("online", refresh);
+      document.removeEventListener("visibilitychange", refresh);
+    };
+  }, [loadOrders, pin, realtimeStatus, unlocked]);
 
   const filtered = useMemo(
     () =>
@@ -256,6 +332,27 @@ function StaffBoard({ role }: { role: StaffRole }) {
       }),
     [orders, role, statusFilter, tableFilter]
   );
+  const activeCount = orders.filter(
+    (order) => !["delivered", "cancelled"].includes(order.status)
+  ).length;
+  const urgentCount = filtered.filter(
+    (order) => urgencyLevel(order, now) !== "normal"
+  ).length;
+  const readyCount = orders.filter((order) => order.status === "ready").length;
+  const peakMode = activeCount >= 12;
+
+  useEffect(() => {
+    if (!unlocked) return;
+    const attention = role === "waiter"
+      ? orders.filter((order) => ["sent", "ready"].includes(order.status)).length
+      : orders.filter((order) => order.status === "accepted").length;
+    document.title = attention
+      ? `(${attention}) ${role === "kitchen" ? "Cocina" : "Meseros"} · Orquídeas`
+      : `${role === "kitchen" ? "Cocina" : "Meseros"} · Orquídeas`;
+    return () => {
+      document.title = "Orquídeas";
+    };
+  }, [orders, role, unlocked]);
 
   async function changeStatus(
     order: Order,
@@ -379,11 +476,19 @@ function StaffBoard({ role }: { role: StaffRole }) {
           <div className="flex items-center gap-2">
             <span
               className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold ${
-                online ? "bg-[#dce8c8] text-[#274a27]" : "bg-[#f1d0ca] text-[#7a2c22]"
+                online && realtimeStatus === "SUBSCRIBED"
+                  ? "bg-[#dce8c8] text-[#274a27]"
+                  : online
+                    ? "bg-[#f4dfb4] text-[#694500]"
+                    : "bg-[#f1d0ca] text-[#7a2c22]"
               }`}
             >
               {online ? <Wifi size={16} /> : <WifiOff size={16} />}
-              {online ? "En línea" : "Sin conexión"}
+              {!online
+                ? "Sin conexión"
+                : realtimeStatus === "SUBSCRIBED"
+                  ? "Tiempo real"
+                  : "Reconectando"}
             </span>
             <button
               className={`focus-ring flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold ${
@@ -445,6 +550,33 @@ function StaffBoard({ role }: { role: StaffRole }) {
             después de recargar.
           </div>
         )}
+        <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo">
+          <div className="paper rounded-2xl p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Activos</p>
+            <strong className="mt-1 block font-display text-3xl">{activeCount}</strong>
+          </div>
+          <div className={`rounded-2xl p-4 ${urgentCount ? "bg-[#7a2c22] text-white shadow-lg" : "paper"}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider ${urgentCount ? "text-white/70" : "text-[var(--muted)]"}`}>
+              Con demora
+            </p>
+            <strong className="mt-1 flex items-center gap-2 font-display text-3xl">
+              {urgentCount > 0 && <Flame size={24} />} {urgentCount}
+            </strong>
+          </div>
+          <div className="paper rounded-2xl p-4">
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Listos</p>
+            <strong className="mt-1 block font-display text-3xl">{readyCount}</strong>
+          </div>
+          <div className={`rounded-2xl p-4 ${peakMode ? "bg-[var(--charcoal)] text-white shadow-lg" : "paper"}`}>
+            <p className={`text-xs font-bold uppercase tracking-wider ${peakMode ? "text-[#d9c17f]" : "text-[var(--muted)]"}`}>
+              Operación
+            </p>
+            <strong className="mt-1 block text-lg">{peakMode ? "Hora pico activa" : "Flujo normal"}</strong>
+            <span className={`text-xs ${peakMode ? "text-white/65" : "text-[var(--muted)]"}`}>
+              {syncing ? "Sincronizando…" : lastSync ? `Actualizado ${new Date(lastSync).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : "Preparando tablero"}
+            </span>
+          </div>
+        </section>
         <div className="mb-4 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm">
           {role === "waiter" ? (
             <>
@@ -483,10 +615,12 @@ function StaffBoard({ role }: { role: StaffRole }) {
             <option value="ready">Listos</option>
           </select>
           <button
-            className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 font-bold"
-            onClick={() => loadOrders(pin)}
+            className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 font-bold disabled:opacity-60"
+            disabled={syncing}
+            onClick={() => void loadOrders(pin)}
           >
-            <RefreshCw size={17} /> Actualizar
+            <RefreshCw className={syncing ? "animate-spin" : ""} size={17} />
+            {syncing ? "Sincronizando" : "Actualizar"}
           </button>
           <span className="ml-auto text-sm text-[var(--muted)]">
             {filtered.length} pedidos visibles
@@ -547,7 +681,8 @@ function KitchenCard({
   onStatus: (order: Order, status: OrderStatus, paymentMethod?: PaymentMethod) => void;
   onRemoveItem: (order: Order, itemId: string) => void;
 }) {
-  const minutes = Math.max(0, Math.floor((now - +new Date(order.createdAt)) / 60000));
+  const minutes = orderAgeMinutes(order, now);
+  const urgency = urgencyLevel(order, now);
   const next: Partial<Record<OrderStatus, { label: string; status: OrderStatus }>> =
     role === "kitchen"
       ? {
@@ -563,7 +698,7 @@ function KitchenCard({
     <article
       className={`paper order-card animate-pop overflow-hidden rounded-2xl ${
         order.status === "sent" ? "ring-2 ring-[var(--gold)]" : ""
-      }`}
+      } ${urgency === "critical" ? "order-card-critical" : urgency === "warning" ? "order-card-warning" : ""}`}
     >
       <div className="premium-header flex items-start justify-between p-4 text-white">
         <div>
@@ -576,12 +711,23 @@ function KitchenCard({
         </div>
       </div>
       <div className="p-4">
-        <div
-          className={`mb-3 flex items-center gap-2 text-sm font-bold ${
-            minutes >= 15 ? "text-[var(--terracotta)]" : "text-[var(--muted)]"
-          }`}
-        >
-          <Clock3 size={16} /> Hace {minutes} min
+        <div className="mb-3 flex items-center justify-between gap-2">
+          <span
+            className={`flex items-center gap-2 text-sm font-bold ${
+              urgency === "critical"
+                ? "text-[#9b261c]"
+                : urgency === "warning"
+                  ? "text-[var(--terracotta)]"
+                  : "text-[var(--muted)]"
+            }`}
+          >
+            <Clock3 size={16} /> Hace {minutes} min
+          </span>
+          {urgency !== "normal" && (
+            <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-[#9b261c] text-white" : "bg-[#f4dfb4] text-[#694500]"}`}>
+              {urgency === "critical" ? "Prioridad alta" : "Revisar tiempo"}
+            </span>
+          )}
         </div>
         <ul className="space-y-3">
           {order.items.map((item, index) => (

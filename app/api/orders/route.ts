@@ -2,6 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
 
+let orderCache: { data: unknown; expiresAt: number } | null = null;
+let pendingOrderQuery: Promise<unknown> | null = null;
+
 const note = z.string().trim().max(250);
 const orderSchema = z.object({
   tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$/),
@@ -52,14 +55,36 @@ export async function GET(request: NextRequest) {
   if (pin !== process.env.STAFF_DEMO_PIN) {
     return NextResponse.json({ error: "Acceso no autorizado" }, { status: 401 });
   }
-  const supabase = createServerClient();
-  const { data, error } = await supabase.rpc("kitchen_orders", { p_pin: pin });
-  if (error) {
-    console.error("kitchen_orders failed", error.code, error.message);
-    return NextResponse.json(
-      { error: "No fue posible consultar los pedidos" },
-      { status: 503 }
-    );
+  const now = Date.now();
+  let data = orderCache?.expiresAt && orderCache.expiresAt > now ? orderCache.data : null;
+
+  if (!data) {
+    pendingOrderQuery ||= (async () => {
+      const supabase = createServerClient();
+      const result = await supabase.rpc("kitchen_orders", { p_pin: pin });
+      if (result.error) throw result.error;
+      orderCache = { data: result.data || [], expiresAt: Date.now() + 1500 };
+      return orderCache.data;
+    })().finally(() => {
+      pendingOrderQuery = null;
+    });
+
+    try {
+      data = await pendingOrderQuery;
+    } catch (error) {
+      const details = error as { code?: string; message?: string };
+      console.error("kitchen_orders failed", details.code, details.message);
+      return NextResponse.json(
+        { error: "No fue posible consultar los pedidos" },
+        { status: 503 }
+      );
+    }
   }
-  return NextResponse.json(data || []);
+  return NextResponse.json(data, {
+    headers: {
+      "Cache-Control": "no-store, max-age=0",
+      "CDN-Cache-Control": "no-store",
+      "Vercel-CDN-Cache-Control": "no-store"
+    }
+  });
 }

@@ -48,13 +48,19 @@ export function onLocalOrders(callback: (order: Order) => void) {
 }
 
 export function connectOrderChannel(
-  callback: (payload: AppChannelPayload) => void
+  callback: (payload: AppChannelPayload) => void,
+  onStatus?: (status: string) => void
 ) {
   const supabase = createClient();
   const channel = supabase
     .channel("orquideas-orders", { config: { broadcast: { self: true } } })
     .on("broadcast", { event: "order" }, ({ payload }) => callback(payload))
-    .subscribe();
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "orders" },
+      () => callback({ type: "database_change" })
+    )
+    .subscribe((status) => onStatus?.(status));
 
   return {
     send: (payload: AppChannelPayload) =>

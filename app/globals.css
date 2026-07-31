@@ -151,6 +151,20 @@ button:disabled {
   box-shadow: 0 12px 32px rgb(48 44 41 / 11%);
 }
 
+.order-card-warning {
+  border-color: rgb(120 77 54 / 55%);
+  box-shadow: 0 14px 36px rgb(120 77 54 / 18%);
+}
+
+.order-card-critical {
+  border-color: rgb(155 38 28 / 70%);
+  box-shadow: 0 16px 42px rgb(155 38 28 / 24%);
+}
+
+.order-card-critical .premium-header {
+  background: linear-gradient(135deg, #6f211b 0%, #8f2b21 55%, #49211e 100%);
+}
+
 .premium-header {
   background:
     radial-gradient(circle at 80% 0%, rgb(210 173 130 / 20%), transparent 22rem),

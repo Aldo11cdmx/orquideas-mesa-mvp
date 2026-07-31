@@ -106,6 +106,9 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           ...current.filter((item) => item.id !== product.id)
         ]);
       }
+      if (type === "menu-delete" && product) {
+        setCatalog((current) => current.filter((item) => item.id !== product.id));
+      }
       if (type === "daily-menu") {
         if (menu) setDailyMenu(menu);
         else void loadDailyMenu();

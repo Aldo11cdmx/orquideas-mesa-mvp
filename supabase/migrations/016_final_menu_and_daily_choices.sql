@@ -40,6 +40,8 @@ set
     else p.name
   end,
   description = case
+    when p.name = 'Chilaquiles sencillos' and c.name = 'Desayunos'
+      then 'Totopos con crema y cebolla. Paquete con fruta y café.'
     when p.slug = 'chilaquiles-pechuga'
       then 'Chilaquiles con pechuga de pollo. Paquete con fruta y café.'
     when p.slug = 'desayuno-combinado'

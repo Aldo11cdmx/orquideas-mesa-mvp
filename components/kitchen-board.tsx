@@ -25,7 +25,7 @@ import {
   saveDemoOrder,
   updateDemoOrder
 } from "@/lib/order-store";
-import type { Order, OrderStatus } from "@/lib/types";
+import type { Order, OrderStatus, PaymentMethod } from "@/lib/types";
 
 const kitchenColumns: Array<{
   id: string;
@@ -132,6 +132,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   useEffect(() => {
     if (!unlocked) return;
     channelRef.current = connectOrderChannel(({ type, order }) => {
+      if (!order) return;
       upsert(order);
       notifyWaiterReady(order);
       if (
@@ -237,7 +238,11 @@ function StaffBoard({ role }: { role: StaffRole }) {
     [orders, role, statusFilter, tableFilter]
   );
 
-  async function changeStatus(order: Order, status: OrderStatus) {
+  async function changeStatus(
+    order: Order,
+    status: OrderStatus,
+    paymentMethod?: PaymentMethod
+  ) {
     if (
       status === "accepted" &&
       !window.confirm(`¿Confirmas que el pedido ${order.folio} está correcto y puede pasar a cocina?`)
@@ -250,7 +255,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PATCH",
         headers: { "content-type": "application/json" },
-        body: JSON.stringify({ status, pin })
+        body: JSON.stringify({ status, pin, paymentMethod })
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
@@ -520,7 +525,7 @@ function KitchenCard({
   order: Order;
   now: number;
   role: StaffRole;
-  onStatus: (order: Order, status: OrderStatus) => void;
+  onStatus: (order: Order, status: OrderStatus, paymentMethod?: PaymentMethod) => void;
   onRemoveItem: (order: Order, itemId: string) => void;
 }) {
   const minutes = Math.max(0, Math.floor((now - +new Date(order.createdAt)) / 60000));
@@ -532,7 +537,7 @@ function KitchenCard({
         }
       : {
           sent: { label: "Confirmar y enviar a cocina", status: "accepted" },
-          ready: { label: "Marcar como entregado", status: "delivered" }
+          ready: { label: "Registrar entrega", status: "delivered" }
         };
   const action = next[order.status];
   return (
@@ -601,14 +606,34 @@ function KitchenCard({
           <span>Total</span>
           <strong>{money(order.total)}</strong>
         </div>
-        {action && (
+        {role === "waiter" && order.status === "ready" ? (
+          <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-3">
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+              Pregunta al cliente cómo pagará
+            </p>
+            <div className="mt-2 grid grid-cols-2 gap-2">
+              <button
+                className="focus-ring min-h-12 rounded-xl bg-[var(--green)] px-3 font-bold text-white"
+                onClick={() => onStatus(order, "delivered", "cash")}
+              >
+                Efectivo
+              </button>
+              <button
+                className="focus-ring min-h-12 rounded-xl bg-[var(--brown)] px-3 font-bold text-white"
+                onClick={() => onStatus(order, "delivered", "card")}
+              >
+                Tarjeta
+              </button>
+            </div>
+          </div>
+        ) : action ? (
           <button
             className="focus-ring mt-4 min-h-12 w-full rounded-xl bg-[var(--brown)] px-4 font-bold text-white shadow-md hover:bg-[var(--brown-dark)]"
             onClick={() => onStatus(order, action.status)}
           >
             {action.label}
           </button>
-        )}
+        ) : null}
         {role === "waiter" && ["sent", "accepted"].includes(order.status) && (
           <button
             className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"

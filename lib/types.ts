@@ -6,6 +6,8 @@ export type OrderStatus =
   | "delivered"
   | "cancelled";
 
+export type PaymentMethod = "cash" | "card";
+
 export type Product = {
   id: string;
   name: string;
@@ -23,6 +25,7 @@ export type Product = {
   packageIncludes?: string[];
   availableFrom?: string;
   availableUntil?: string;
+  active?: boolean;
 };
 
 export type ProductOptionGroup = {
@@ -54,6 +57,7 @@ export type Order = {
   total: number;
   createdAt: string;
   updatedAt: string;
+  paymentMethod?: PaymentMethod;
   accessToken?: string;
   source?: "supabase" | "demo";
 };
@@ -79,6 +83,12 @@ export type SalesReport = {
     averageTicket: number;
     pendingOrders: number;
     pendingAmount: number;
+    cashSales: number;
+    cashOrders: number;
+    cardSales: number;
+    cardOrders: number;
+    unassignedSales: number;
+    unassignedOrders: number;
   };
   topProducts: Array<{
     name: string;

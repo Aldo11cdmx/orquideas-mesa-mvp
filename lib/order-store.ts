@@ -1,7 +1,14 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import type { Order, OrderStatus } from "@/lib/types";
+import type { DailyMenuConfig, Order, OrderStatus, Product } from "@/lib/types";
+
+export type AppChannelPayload = {
+  type: string;
+  order?: Order;
+  product?: Product;
+  dailyMenu?: DailyMenuConfig;
+};
 
 const STORAGE_KEY = "orquideas-demo-orders";
 const EVENT = "orders";
@@ -41,7 +48,7 @@ export function onLocalOrders(callback: (order: Order) => void) {
 }
 
 export function connectOrderChannel(
-  callback: (payload: { type: string; order: Order }) => void
+  callback: (payload: AppChannelPayload) => void
 ) {
   const supabase = createClient();
   const channel = supabase
@@ -50,7 +57,7 @@ export function connectOrderChannel(
     .subscribe();
 
   return {
-    send: (payload: { type: string; order: Order }) =>
+    send: (payload: AppChannelPayload) =>
       channel.send({ type: "broadcast", event: "order", payload }),
     close: () => {
       void supabase.removeChannel(channel);

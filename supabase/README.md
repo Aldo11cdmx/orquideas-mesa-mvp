@@ -1,8 +1,9 @@
 # Supabase
 
 Ejecuta las migraciones de `supabase/migrations` en orden numérico desde
-**SQL Editor**. La migración `012_ready_alert_and_sales_report_fix.sql` es el
-parche más reciente y corrige el corte de caja.
+**SQL Editor**. La migración `013_live_menu_payments_and_catalog.sql` es el
+parche más reciente: unifica el catálogo, registra efectivo o tarjeta y
+actualiza el corte de caja.
 
 Las migraciones:
 

@@ -12,7 +12,7 @@ describe("calculateTrustedTotal", () => {
         ],
         products
       )
-    ).toBe(185);
+    ).toBe(165);
   });
 
   it("rejects excessive quantities", () => {

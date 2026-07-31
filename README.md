@@ -40,6 +40,7 @@ En **SQL Editor**, ejecuta las migraciones en orden:
 10. `supabase/migrations/010_limit_omelette_customizations.sql`
 11. `supabase/migrations/011_waiter_order_review.sql`
 12. `supabase/migrations/012_ready_alert_and_sales_report_fix.sql`
+13. `supabase/migrations/013_live_menu_payments_and_catalog.sql`
 
 La quinta migración instala el menú final, actualiza los precios, registra las
 rutas de las fotografías y configura la comida corrida en $75. La sexta
@@ -54,6 +55,8 @@ La once agrega la revisión del mesero, edición de productos y autorización
 antes de enviar un pedido a cocina.
 La doce corrige el corte de caja y habilita la alerta reforzada de pedidos
 listos en el tablero de meseros.
+La trece unifica el catálogo público y administrativo, agrega efectivo/tarjeta
+al cierre del pedido, actualiza el menú y sincroniza productos y comida corrida.
 
 ## Variables
 

@@ -53,7 +53,9 @@ export function connectOrderChannel(
 ) {
   const supabase = createClient();
   const channel = supabase
-    .channel("orquideas-orders", { config: { broadcast: { self: true } } })
+    .channel("orquideas-orders", {
+      config: { broadcast: { self: true, ack: true } }
+    })
     .on("broadcast", { event: "order" }, ({ payload }) => callback(payload))
     .on(
       "postgres_changes",

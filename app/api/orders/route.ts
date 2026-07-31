@@ -47,6 +47,9 @@ export async function POST(request: NextRequest) {
       { status: 503 }
     );
   }
+  // Avoid serving the pre-order snapshot while realtime/polling reconcile the
+  // waiter board after a new order is accepted.
+  orderCache = null;
   return NextResponse.json(data, { status: 201 });
 }
 

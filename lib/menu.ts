@@ -582,34 +582,31 @@ export function timeToMinutes(value: string) {
 
 export function isProductAvailable(product: Product, currentMinutes: number | null) {
   if (currentMinutes === null || !product.availableFrom || !product.availableUntil) return true;
-  
+
   const fromMinutes = timeToMinutes(product.availableFrom);
   const untilMinutes = timeToMinutes(product.availableUntil);
-  
+
   // Si el producto tiene horario personalizado, usarlo directamente
   if (product.availableFrom !== "09:00" || product.availableUntil !== "17:00") {
-    return (
-      currentMinutes >= fromMinutes &&
-      currentMinutes < untilMinutes
-    );
+    return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
   }
-  
-  // Para productos con horario 09:00-17:00, aplicar lógica especial de desayunos
+
+  // Solo los productos de la categoría Desayunos aplican la regla especial de horario
+  if (product.category !== "Desayunos") {
+    return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
+  }
+
   const now = new Date();
   const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
   const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-  
-  // Verificar si es un producto de desayuno con horario extendido
+
   const hasExtendedHours = extendedBreakfastSlugs.includes(product.id);
-  
+
   if (hasExtendedHours) {
-    // Chilaquiles, enchiladas y club sandwich permanecen disponibles hasta el cierre
-    // Lunes a viernes: hasta 18:00 (1080 minutos)
-    // Sábado y domingo: hasta 15:00 (900 minutos)
     const closingTime = isWeekend ? 900 : 1080; // 15:00 o 18:00
     return currentMinutes >= fromMinutes && currentMinutes < closingTime;
   }
-  
+
   // Desayunos normales: disponibles hasta 13:00 (780 minutos)
   return currentMinutes >= fromMinutes && currentMinutes < 780;
 }

@@ -49,7 +49,18 @@ export async function POST(request: NextRequest) {
   });
 
   if (error) {
-    console.error("place_order failed", error.code, error.message);
+    console.error("place_order failed", {
+      code: error.code,
+      message: error.message,
+      details: error.details,
+      hint: error.hint,
+      payload: {
+        tableCode: parsed.data.tableCode,
+        items: parsed.data.items,
+        notes: parsed.data.notes,
+        idempotencyKey: parsed.data.idempotencyKey
+      }
+    });
     return NextResponse.json(
       { error: "No fue posible registrar el pedido" },
       { status: 503 }

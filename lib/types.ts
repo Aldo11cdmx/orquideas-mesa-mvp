@@ -35,6 +35,12 @@ export type ProductOptionGroup = {
   required?: boolean;
 };
 
+export type DailyMenuExtra = {
+  name: string;
+  price: number;
+  active?: boolean;
+};
+
 export type CartItem = {
   itemId?: string;
   productId: string;
@@ -43,6 +49,7 @@ export type CartItem = {
   quantity: number;
   notes: string;
   option?: string;
+  extras?: Array<{ name: string; price: number }>;
   image: string;
 };
 
@@ -70,6 +77,7 @@ export type DailyMenuConfig = {
   availableUntil: string;
   price: number;
   courses: Record<string, string[]>;
+  extras?: DailyMenuExtra[];
   updatedAt?: string;
 };
 

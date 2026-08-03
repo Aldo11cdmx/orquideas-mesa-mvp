@@ -16,7 +16,15 @@ const orderSchema = z.object({
         productId: z.string().min(1).max(80),
         quantity: z.number().int().min(1).max(10),
         notes: note.default(""),
-        option: z.string().trim().max(80).optional()
+        option: z.string().trim().max(80).optional(),
+        extras: z
+          .array(
+            z.object({
+              name: z.string().trim().min(1).max(80)
+            })
+          )
+          .max(12)
+          .optional()
       })
     )
     .min(1)

@@ -21,6 +21,20 @@ const allDayHours = {
   availableUntil: "17:00"
 };
 
+// Productos de desayuno que pueden permanecer disponibles hasta el cierre
+const extendedBreakfastSlugs = [
+  "chilaquiles-sencillos",
+  "chilaquiles-huevo",
+  "chilaquiles-carne",
+  "chilaquiles-pechuga",
+  "chilaquiles-divorciados",
+  "chilaquiles-suizos",
+  "enchiladas-verdes",
+  "enchiladas-suizas",
+  "enmoladas",
+  "club-sandwich"
+];
+
 const breakfastPackage = ["Fruta de temporada", "Café de la casa"];
 const salsaGroup = {
   id: "salsa",
@@ -38,6 +52,19 @@ const eggGroup = {
   id: "huevos",
   label: "¿Cómo quieres tus huevos?",
   choices: ["Revueltos", "Estrellados", "A la mexicana"],
+  required: true
+};
+
+const comboEggGroup = {
+  id: "huevos",
+  label: "¿Cómo quieres tus huevos?",
+  choices: ["Revueltos", "Estrellados"],
+  required: true
+};
+const chickenStyleGroup = {
+  id: "pechuga",
+  label: "Elige tu pechuga",
+  choices: ["Asada", "Empanizada"],
   required: true
 };
 
@@ -125,6 +152,7 @@ export const products: Product[] = [
     category: "Desayunos",
     image: "/menu/imperio/chilaquiles-pechuga.jpg",
     popular: true,
+    optionGroups: [chickenStyleGroup],
     packageIncludes: breakfastPackage,
     ...breakfastHours
   },
@@ -161,6 +189,35 @@ export const products: Product[] = [
     ...breakfastHours
   },
   {
+    id: "chilaquiles-suizos",
+    name: "Chilaquiles suizos",
+    description: "Servidos con fajitas de pechuga, queso manchego gratinado y bañados en nuestra salsa suiza.",
+    price: 90,
+    category: "Desayunos",
+    image: "/menu/imperio/chilaquiles-suizos.jpg",
+    popular: true,
+    packageIncludes: breakfastPackage,
+    ...breakfastHours
+  },
+  {
+    id: "desayuno-infantil",
+    name: "Desayuno infantil",
+    description: "5 mini hot cakes, licuado a elegir y una porción de fruta.",
+    price: 75,
+    category: "Desayunos",
+    image: "/menu/imperio/desayuno-infantil.jpg",
+    optionGroups: [
+      {
+        id: "licuado",
+        label: "Elige tu licuado",
+        choices: ["Plátano", "Fresa", "Mamey"],
+        required: true
+      }
+    ],
+    packageIncludes: ["Fruta de temporada"],
+    ...breakfastHours
+  },
+  {
     id: "arrachera-desayuno",
     name: "200 g de arrachera",
     description: "Acompañada de papas fritas, ensalada y frijoles.",
@@ -187,7 +244,14 @@ export const products: Product[] = [
     price: 26,
     category: "A la carta",
     image: "/menu/imperio/taco-bistec.jpg",
-    options: ["Bistec", "Longaniza"],
+    optionGroups: [
+      {
+        id: "carne",
+        label: "Elige tu carne",
+        choices: ["Bistec", "Longaniza"],
+        required: true
+      }
+    ],
     ...allDayHours
   },
   {
@@ -226,6 +290,7 @@ export const products: Product[] = [
     price: 65,
     category: "A la carta",
     image: "/menu/imperio/desayuno-combinado.jpg",
+    optionGroups: [comboEggGroup],
     ...breakfastHours
   },
   {
@@ -290,6 +355,14 @@ export const products: Product[] = [
     category: "Bebidas",
     image: "/menu/imperio/licuado.jpg",
     options: ["Plátano", "Fresa", "Mamey"],
+    optionGroups: [
+      {
+        id: "sabor",
+        label: "Elige tu sabor",
+        choices: ["Plátano", "Fresa", "Mamey"],
+        required: true
+      }
+    ],
     ...allDayHours
   },
   {
@@ -308,7 +381,15 @@ export const products: Product[] = [
     price: 40,
     category: "Bebidas",
     image: "/menu/imperio/malteada-fresa.jpg",
-    options: ["Fresa", "Chocolate", "Vainilla", "Café", "Cajeta"],
+    options: ["Fresa", "Vainilla", "Chocolate", "Cajeta", "Nescafé"],
+    optionGroups: [
+      {
+        id: "sabor",
+        label: "Elige tu sabor",
+        choices: ["Fresa", "Vainilla", "Chocolate", "Cajeta", "Nescafé"],
+        required: true
+      }
+    ],
     ...allDayHours
   },
   {
@@ -460,8 +541,34 @@ export function timeToMinutes(value: string) {
 
 export function isProductAvailable(product: Product, currentMinutes: number | null) {
   if (currentMinutes === null || !product.availableFrom || !product.availableUntil) return true;
-  return (
-    currentMinutes >= timeToMinutes(product.availableFrom) &&
-    currentMinutes < timeToMinutes(product.availableUntil)
-  );
+  
+  const fromMinutes = timeToMinutes(product.availableFrom);
+  const untilMinutes = timeToMinutes(product.availableUntil);
+  
+  // Si el producto tiene horario personalizado, usarlo directamente
+  if (product.availableFrom !== "09:00" || product.availableUntil !== "17:00") {
+    return (
+      currentMinutes >= fromMinutes &&
+      currentMinutes < untilMinutes
+    );
+  }
+  
+  // Para productos con horario 09:00-17:00, aplicar lógica especial de desayunos
+  const now = new Date();
+  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
+  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
+  
+  // Verificar si es un producto de desayuno con horario extendido
+  const hasExtendedHours = extendedBreakfastSlugs.includes(product.id);
+  
+  if (hasExtendedHours) {
+    // Chilaquiles, enchiladas y club sandwich permanecen disponibles hasta el cierre
+    // Lunes a viernes: hasta 18:00 (1080 minutos)
+    // Sábado y domingo: hasta 15:00 (900 minutos)
+    const closingTime = isWeekend ? 900 : 1080; // 15:00 o 18:00
+    return currentMinutes >= fromMinutes && currentMinutes < closingTime;
+  }
+  
+  // Desayunos normales: disponibles hasta 13:00 (780 minutos)
+  return currentMinutes >= fromMinutes && currentMinutes < 780;
 }

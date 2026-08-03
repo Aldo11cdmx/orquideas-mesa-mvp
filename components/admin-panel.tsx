@@ -60,6 +60,10 @@ export function AdminPanel() {
     const initialTimer = window.setTimeout(() => void loadProducts(pin), 0);
     const timer = window.setInterval(() => void loadProducts(pin), 15000);
     channelRef.current = connectOrderChannel(({ type, product }) => {
+      if (type === "database_change") {
+        void loadProducts(pin);
+        return;
+      }
       if (!product) return;
       if (type === "menu-delete") {
         setProducts((current) => current.filter((item) => item.id !== product.id));
@@ -410,7 +414,8 @@ const defaultDailyMenu: DailyMenuConfig = {
     Guarnición: ["Arroz", "Pasta"],
     "Plato fuerte": ["Pechuga empanizada", "Enchiladas verdes"],
     Bebida: ["Agua de fruta del día"]
-  }
+  },
+  extras: []
 };
 
 const mexicoToday = () => {
@@ -467,7 +472,10 @@ function DailyAdmin({ pin }: { pin: string }) {
           course,
           options.map((option) => option.trim()).filter(Boolean)
         ])
-      )
+      ),
+      extras: (draft.extras || [])
+        .map((extra) => ({ name: extra.name.trim(), price: Number(extra.price) }))
+        .filter((extra) => extra.name)
     };
     const response = await fetch("/api/admin/daily-menu", {
       method: "PUT",
@@ -519,6 +527,34 @@ function DailyAdmin({ pin }: { pin: string }) {
           (_, optionIndex) => optionIndex !== index
         )
       }
+    }));
+  }
+
+  function setExtra(index: number, field: "name" | "price", value: string) {
+    setDraft((current) => ({
+      ...current,
+      extras: (current.extras || []).map((extra, extraIndex) =>
+        extraIndex === index
+          ? {
+              ...extra,
+              [field]: field === "price" ? Number(value || 0) : value
+            }
+          : extra
+      )
+    }));
+  }
+
+  function addExtra() {
+    setDraft((current) => ({
+      ...current,
+      extras: [...(current.extras || []), { name: "", price: 0 }]
+    }));
+  }
+
+  function removeExtra(index: number) {
+    setDraft((current) => ({
+      ...current,
+      extras: (current.extras || []).filter((_, extraIndex) => extraIndex !== index)
     }));
   }
 
@@ -659,6 +695,51 @@ function DailyAdmin({ pin }: { pin: string }) {
                 </fieldset>
               ))}
             </div>
+
+            <fieldset className="mt-6 rounded-2xl border border-[var(--line)] p-4">
+              <legend className="px-1 font-display text-xl font-bold">Extras con costo</legend>
+              <p className="mb-3 text-xs text-[var(--muted)]">
+                El cliente podrÃ¡ elegir varios extras y su total subirÃ¡ automÃ¡ticamente.
+              </p>
+              <div className="grid gap-3">
+                {(draft.extras || []).map((extra, index) => (
+                  <div className="grid gap-2 sm:grid-cols-[1fr_140px_auto]" key={`extra-${index}`}>
+                    <input
+                      aria-label={`Extra ${index + 1}`}
+                      className="h-11 min-w-0 rounded-xl border border-[var(--line)] px-3 font-normal"
+                      maxLength={80}
+                      placeholder={`Extra ${index + 1}`}
+                      value={extra.name}
+                      onChange={(event) => setExtra(index, "name", event.target.value)}
+                    />
+                    <input
+                      aria-label={`Precio del extra ${index + 1}`}
+                      className="h-11 min-w-0 rounded-xl border border-[var(--line)] px-3 font-normal"
+                      min="0"
+                      step="0.5"
+                      type="number"
+                      value={extra.price}
+                      onChange={(event) => setExtra(index, "price", event.target.value)}
+                    />
+                    <button
+                      aria-label={`Quitar extra ${index + 1}`}
+                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e]"
+                      type="button"
+                      onClick={() => removeExtra(index)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                type="button"
+                onClick={addExtra}
+              >
+                <Plus size={16} /> Agregar extra
+              </button>
+            </fieldset>
 
             {notice && (
               <div

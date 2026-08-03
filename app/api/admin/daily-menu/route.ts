@@ -1,8 +1,14 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
+import { normalizeDailyMenuConfig, serializeDailyMenuCourses } from "@/lib/daily-menu";
 import { createServerClient } from "@/lib/supabase/server";
 
 const time = z.string().regex(/^\d{2}:\d{2}$/);
+const dailyMenuExtra = z.object({
+  name: z.string().trim().min(1).max(80),
+  price: z.number().min(0).max(10000)
+});
+
 const dailyMenuSchema = z.object({
   pin: z.string().min(1).max(20),
   active: z.boolean(),
@@ -15,7 +21,8 @@ const dailyMenuSchema = z.object({
     "Guarnición": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     "Plato fuerte": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     Bebida: z.array(z.string().trim().min(1).max(80)).min(1).max(8)
-  })
+  }),
+  extras: z.array(dailyMenuExtra).max(12).optional().default([])
 });
 
 function authorized(pin: string) {
@@ -38,7 +45,7 @@ export async function GET(request: NextRequest) {
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(normalizeDailyMenuConfig(data));
 }
 
 export async function PUT(request: NextRequest) {
@@ -50,7 +57,7 @@ export async function PUT(request: NextRequest) {
     );
   }
 
-  const { pin, active, serviceDate, availableFrom, availableUntil, price, courses } =
+  const { pin, active, serviceDate, availableFrom, availableUntil, price, courses, extras } =
     parsed.data;
   const supabase = createServerClient();
   const { data, error } = await supabase.rpc("save_daily_menu", {
@@ -60,7 +67,16 @@ export async function PUT(request: NextRequest) {
     p_available_from: availableFrom,
     p_available_until: availableUntil,
     p_price: price,
-    p_courses: courses
+    p_courses: serializeDailyMenuCourses({
+      active,
+      availableToday: active,
+      serviceDate,
+      availableFrom,
+      availableUntil,
+      price,
+      courses,
+      extras
+    })
   });
 
   if (error) {
@@ -68,5 +84,5 @@ export async function PUT(request: NextRequest) {
     return NextResponse.json({ error: "No fue posible guardar el menú" }, { status: 503 });
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(normalizeDailyMenuConfig(data));
 }

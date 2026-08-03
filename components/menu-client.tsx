@@ -15,6 +15,7 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
+import { dailyCourseOrder } from "@/lib/daily-menu";
 import {
   categories,
   isProductAvailable,
@@ -27,7 +28,31 @@ import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
 import type { CartItem, DailyMenuConfig, Order, Product } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
-const dailyCourseOrder = ["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const;
+
+function normalizeProduct(raw: Record<string, unknown>): Product {
+  const product = raw as unknown as Product;
+  const normalized = {
+    ...product,
+    image:
+      (raw.image as string) ||
+      (raw.image_url as string) ||
+      (raw.imageUrl as string) ||
+      product.image ||
+      "/menu/imperio/chilaquiles-sencillos.jpg"
+  };
+  // DEBUG TEMPORAL: log para chilaquiles-suizos
+  if (raw.slug === "chilaquiles-suizos" || raw.id === "chilaquiles-suizos") {
+    console.log("[DEBUG normalizeProduct] chilaquiles-suizos:", {
+      "raw.image": raw.image,
+      "raw.image_url": raw.image_url,
+      "raw.imageUrl": raw.imageUrl,
+      "product.image": product.image,
+      "normalized.image": normalized.image,
+      "raw completo": raw
+    });
+  }
+  return normalized;
+}
 
 export function MenuClient({ tableCode }: { tableCode: string }) {
   const [mode, setMode] = useState<MenuMode>("fixed");
@@ -43,6 +68,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [dailyMenuLoading, setDailyMenuLoading] = useState(true);
   const [catalog, setCatalog] = useState<Product[]>(seedProducts);
   const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
+  const [justAdded, setJustAdded] = useState(false);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
@@ -63,7 +89,9 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const loadCatalog = useCallback(async () => {
     const response = await fetch("/api/products", { cache: "no-store" });
     if (!response.ok) return;
-    const next = (await response.json()) as Product[];
+    const raw = (await response.json()) as Array<Record<string, unknown>>;
+    if (!raw.length) return;
+    const next = raw.map(normalizeProduct);
     if (next.length) setCatalog(next);
   }, []);
 
@@ -98,9 +126,10 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         });
       }
       if (type === "menu" && product) {
+        const normalized = normalizeProduct(product as unknown as Record<string, unknown>);
         setCatalog((current) => [
-          product,
-          ...current.filter((item) => item.id !== product.id)
+          normalized,
+          ...current.filter((item) => item.id !== normalized.id)
         ]);
       }
       if (type === "menu-delete" && product) {
@@ -110,9 +139,13 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         if (menu) setDailyMenu(menu);
         else void loadDailyMenu();
       }
+      if (type === "database_change") {
+        void loadCatalog();
+        void loadDailyMenu();
+      }
     });
     return () => channelRef.current?.close();
-  }, [loadDailyMenu]);
+  }, [loadCatalog, loadDailyMenu]);
 
   useEffect(() => {
     if (!order) return;
@@ -155,7 +188,13 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
 
-  function addItem(product: Product, quantity: number, notes: string, option?: string) {
+  function addItem(
+    product: Product,
+    quantity: number,
+    notes: string,
+    option?: string,
+    extras?: Array<{ name: string; price: number }>
+  ) {
     setCart((current) => [
       ...current,
       {
@@ -165,16 +204,20 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         quantity,
         notes,
         option,
+        extras: extras && extras.length > 0 ? extras : undefined,
         image: product.image
       }
     ]);
     setSelected(null);
+    setJustAdded(true);
+    window.setTimeout(() => setJustAdded(false), 1800);
   }
 
   function addDailyMenu(
     menu: DailyMenuConfig,
     selections: Record<string, string>,
-    quantity: number
+    quantity: number,
+    extras: Array<{ name: string; price: number }>
   ) {
     const notes = Object.entries(selections)
       .sort(
@@ -184,18 +227,21 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       )
       .map(([course, choice]) => `${course}: ${choice}`)
       .join(" · ")
-      .slice(0, 250);
+      .slice(0, 200);
+    const extraTotal = extras.reduce((sum, extra) => sum + extra.price, 0);
     addItem(
       {
         id: "comida-corrida",
         name: "Comida corrida",
         description: "Menú completo del día",
-        price: menu.price,
+        price: menu.price + extraTotal,
         category: "Comida corrida",
         image: "/menu/imperio/pechuga-rellena.jpg"
       },
       quantity,
-      notes
+      notes,
+      undefined,
+      extras
     );
   }
 
@@ -213,11 +259,12 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         signal: controller.signal,
         body: JSON.stringify({
           tableCode,
-          items: cart.map(({ productId, quantity, notes, option }) => ({
+          items: cart.map(({ productId, quantity, notes, option, extras }) => ({
             productId,
             quantity,
             notes,
-            option
+            option,
+            extras: extras?.map((extra) => ({ name: extra.name }))
           })),
           notes: generalNotes,
           idempotencyKey
@@ -235,8 +282,6 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       setGeneralNotes("");
       setSending(false);
 
-      // Realtime is an enhancement; the order is already persisted in PostgreSQL.
-      // Do not keep the customer waiting if Broadcast is unavailable.
       void channelRef.current?.send({ type: "new", order: created });
     } catch (error) {
       const message =
@@ -412,10 +457,19 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         )}
       </div>
 
+      {justAdded && (
+        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div className="animate-pop flex items-center gap-2 rounded-full bg-[var(--green)] px-5 py-3 text-sm font-bold text-white shadow-2xl">
+            <Check size={18} strokeWidth={3} />
+            Producto agregado al pedido
+          </div>
+        </div>
+      )}
+
       {itemCount > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:p-5">
           <button
-            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl"
+            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"
             onClick={() => setCartOpen(true)}
           >
             <span className="flex items-center gap-3">
@@ -461,6 +515,16 @@ function ProductCard({
   onOpen: (product: Product) => void;
 }) {
   const available = isProductAvailable(product, currentMinutes);
+  // DEBUG TEMPORAL: log para chilaquiles-suizos
+  if (product.id === "chilaquiles-suizos") {
+    console.log("[DEBUG ProductCard] chilaquiles-suizos:", {
+      "product.id": product.id,
+      "product.name": product.name,
+      "product.image": product.image,
+      "product.image_url": (product as unknown as Record<string, unknown>).image_url,
+      "product completo": product
+    });
+  }
   return (
     <article className="paper menu-card group relative overflow-hidden rounded-[1.75rem]">
       <button
@@ -490,6 +554,11 @@ function ProductCard({
             {product.packageIncludes?.length && (
               <span className="rounded-full bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
                 Paquete completo
+              </span>
+            )}
+            {(product.optionGroups?.length || product.options?.length) && (
+              <span className="rounded-full bg-[#efe3d7] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+                Personalizable
               </span>
             )}
             {product.soldOut && (
@@ -550,6 +619,8 @@ function ProductCard({
 
 function optionPrompt(product: Product) {
   if (product.id === "malteada" || product.id === "licuado") return "Elige tu sabor";
+  if (product.id === "desayuno-combinado") return "¿Cómo quieres tus huevos?";
+  if (product.id === "chilaquiles-pechuga") return "Elige cómo prefieres la pechuga";
   if (product.id === "taco-bistec-longaniza") return "Elige la preparación";
   if (product.id === "ensalada-fresca") return "Elige la proteína";
   if (product.id === "huevos-al-gusto") return "¿Cómo quieres tus huevos?";
@@ -563,7 +634,13 @@ function ProductDialog({
 }: {
   product: Product;
   onClose: () => void;
-  onAdd: (product: Product, quantity: number, notes: string, option?: string) => void;
+  onAdd: (
+    product: Product,
+    quantity: number,
+    notes: string,
+    option?: string,
+    extras?: Array<{ name: string; price: number }>
+  ) => void;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -584,7 +661,15 @@ function ProductDialog({
             ? "Queso"
             : group.id === "huevos"
               ? "Huevos"
-              : "Opción";
+              : group.id === "plato"
+                ? "Plato"
+                : group.id === "bebida"
+                  ? "Bebida"
+                  : group.id === "pechuga"
+                    ? "Pechuga"
+                    : group.id === "opcion"
+                      ? "Sabor"
+                      : "Opción";
       return `${shortLabel}: ${selections[group.id]}`;
     })
     .join(" · ")
@@ -695,7 +780,7 @@ function ProductDialog({
                 </button>
               </div>
               <button
-                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]"
+                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)]"
                 onClick={() =>
                   onAdd(product, quantity, notes.trim(), selectionSummary || undefined)
                 }
@@ -769,9 +854,20 @@ function CartDrawer({
                       <h3 className="font-bold">{item.name}</h3>
                       <strong>{money(item.unitPrice * item.quantity)}</strong>
                     </div>
-                    {item.option && <p className="mt-1 text-xs">{item.option}</p>}
+                    {item.option && (
+                      <p className="mt-1 text-xs font-medium text-[var(--brown)]">{item.option}</p>
+                    )}
+                    {item.extras && item.extras.length > 0 && (
+                      <div className="mt-1.5 space-y-0.5">
+                        {item.extras.map((extra, extraIndex) => (
+                          <p key={extraIndex} className="text-xs text-[var(--terracotta)]">
+                            + {extra.name} ({money(extra.price)})
+                          </p>
+                        ))}
+                      </div>
+                    )}
                     {item.notes && (
-                      <p className="mt-1 text-xs text-[var(--terracotta)]">{item.notes}</p>
+                      <p className="mt-1 text-xs text-[var(--muted)]">{item.notes}</p>
                     )}
                     <div className="mt-3 flex items-center gap-3">
                       <button
@@ -824,7 +920,7 @@ function CartDrawer({
             <strong className="text-xl">{money(subtotal)}</strong>
           </div>
           <button
-            className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--green)] px-5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-60"
+            className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--green)] px-5 font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
             disabled={sending || cart.length === 0}
             onClick={onSubmit}
           >
@@ -970,7 +1066,8 @@ function LunchMenu({
   onAdd: (
     menu: DailyMenuConfig,
     selections: Record<string, string>,
-    quantity: number
+    quantity: number,
+    extras: Array<{ name: string; price: number }>
   ) => void;
   onShowFixed: () => void;
 }) {
@@ -1020,7 +1117,8 @@ function ConfiguredLunchMenu({
   onAdd: (
     menu: DailyMenuConfig,
     selections: Record<string, string>,
-    quantity: number
+    quantity: number,
+    extras: Array<{ name: string; price: number }>
   ) => void;
 }) {
   const courses = dailyCourseOrder.map(
@@ -1035,6 +1133,7 @@ function ConfiguredLunchMenu({
       })
     )
   );
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const hasCompleteSelection = courses.every(
     ([course, options]) => options.length > 0 && Boolean(selections[course])
   );
@@ -1042,6 +1141,10 @@ function ConfiguredLunchMenu({
     serviceMinutes === null ||
     (serviceMinutes >= timeToMinutes(menu.availableFrom) &&
       serviceMinutes < timeToMinutes(menu.availableUntil));
+  const extras = menu.extras || [];
+  const chosenExtras = extras.filter((extra) => selectedExtras.includes(extra.name));
+  const extraTotal = chosenExtras.reduce((sum, extra) => sum + extra.price, 0);
+  const finalUnitPrice = menu.price + extraTotal;
 
   return (
     <section className="mt-6">
@@ -1072,10 +1175,10 @@ function ConfiguredLunchMenu({
               <div className="mt-3 grid gap-2 sm:grid-cols-2">
                 {options.map((option) => (
                   <label
-                    className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 ${
+                    className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
                       selections[course] === option
-                        ? "border-[var(--green)] bg-[#e7efe9]"
-                        : "border-[var(--line)]"
+                        ? "border-[var(--green)] bg-[#e7efe9] shadow-sm"
+                        : "border-[var(--line)] hover:bg-[var(--cream)]"
                     }`}
                     key={option}
                   >
@@ -1094,6 +1197,61 @@ function ConfiguredLunchMenu({
               </div>
             </fieldset>
           ))}
+          {extras.length > 0 && (
+            <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
+              <legend className="font-display text-xl font-bold">Extras con costo</legend>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Puedes sumar extras y el precio se actualizará al momento.
+              </p>
+              <div className="mt-3 grid gap-2">
+                {extras.map((extra) => {
+                  const selected = selectedExtras.includes(extra.name);
+                  return (
+                    <label
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
+                        selected
+                          ? "border-[var(--brown)] bg-[#f4e6d8] shadow-sm"
+                          : "border-[var(--line)] bg-white hover:bg-[var(--cream)]"
+                      }`}
+                      key={extra.name}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`grid h-5 w-5 place-items-center rounded border-2 ${
+                            selected
+                              ? "border-[var(--brown)] bg-[var(--brown)] text-white"
+                              : "border-[var(--line)]"
+                          }`}
+                        >
+                          {selected && <Check size={12} strokeWidth={3} />}
+                        </span>
+                        <span className="font-medium">{extra.name}</span>
+                      </span>
+                      <strong className="text-sm text-[var(--brown)]">+{money(extra.price)}</strong>
+                      <input
+                        checked={selected}
+                        type="checkbox"
+                        className="sr-only"
+                        onChange={() =>
+                          setSelectedExtras((current) =>
+                            selected
+                              ? current.filter((item) => item !== extra.name)
+                              : [...current, extra.name]
+                          )
+                        }
+                      />
+                    </label>
+                  );
+                })}
+              </div>
+              {extraTotal > 0 && (
+                <div className="mt-3 flex items-center justify-between rounded-xl bg-[#f4e6d8] px-4 py-2.5 text-sm">
+                  <span className="font-bold text-[var(--brown)]">Total de extras</span>
+                  <strong className="text-[var(--brown)]">+{money(extraTotal)}</strong>
+                </div>
+              )}
+            </fieldset>
+          )}
           <div className="mt-6 grid gap-3 sm:grid-cols-[auto_1fr]">
             <div className="flex items-center justify-center rounded-xl border border-[var(--line)]">
               <button
@@ -1113,9 +1271,9 @@ function ConfiguredLunchMenu({
               </button>
             </div>
             <button
-              className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white disabled:cursor-not-allowed disabled:opacity-45"
+              className="focus-ring flex min-h-14 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"
               disabled={!isOpen || !hasCompleteSelection}
-              onClick={() => onAdd(menu, selections, quantity)}
+              onClick={() => onAdd(menu, selections, quantity, chosenExtras)}
             >
               <span>
                 {!isOpen
@@ -1124,7 +1282,7 @@ function ConfiguredLunchMenu({
                     ? "Agregar al pedido"
                     : "Elige una opción de cada tiempo"}
               </span>
-              <span>{money(menu.price * quantity)}</span>
+              <span>{money(finalUnitPrice * quantity)}</span>
             </button>
           </div>
         </div>

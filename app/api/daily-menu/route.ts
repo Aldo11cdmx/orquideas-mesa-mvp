@@ -1,4 +1,5 @@
 import { NextResponse } from "next/server";
+import { normalizeDailyMenuConfig } from "@/lib/daily-menu";
 import { createServerClient } from "@/lib/supabase/server";
 
 export async function GET() {
@@ -13,5 +14,5 @@ export async function GET() {
     );
   }
 
-  return NextResponse.json(data);
+  return NextResponse.json(normalizeDailyMenuConfig(data));
 }

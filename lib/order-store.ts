@@ -62,6 +62,21 @@ export function connectOrderChannel(
       { event: "*", schema: "public", table: "orders" },
       () => callback({ type: "database_change" })
     )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "products" },
+      () => callback({ type: "database_change" })
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "daily_menus" },
+      () => callback({ type: "database_change" })
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "order_items" },
+      () => callback({ type: "database_change" })
+    )
     .subscribe((status) => onStatus?.(status));
 
   return {

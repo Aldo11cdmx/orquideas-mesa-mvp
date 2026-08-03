@@ -71,6 +71,7 @@ const chickenStyleGroup = {
 export const products: Product[] = [
   {
     id: "chilaquiles-sencillos",
+    slug: "chilaquiles-sencillos",
     name: "Chilaquiles sencillos",
     description: "Totopos con crema y cebolla. Paquete con fruta y café.",
     price: 50,
@@ -82,6 +83,7 @@ export const products: Product[] = [
   },
   {
     id: "huevos-al-gusto",
+    slug: "huevos-al-gusto",
     name: "Huevos al gusto",
     description: "Dos huevos con frijoles refritos. Paquete con fruta y café.",
     price: 60,
@@ -93,6 +95,7 @@ export const products: Product[] = [
   },
   {
     id: "chilaquiles-huevo",
+    slug: "chilaquiles-huevo",
     name: "Chilaquiles con 1 huevo",
     description: "Chilaquiles con un huevo al gusto. Paquete con fruta y café.",
     price: 60,
@@ -104,6 +107,7 @@ export const products: Product[] = [
   },
   {
     id: "molletes",
+    slug: "molletes",
     name: "Molletes tradicionales",
     description: "Pan con frijoles, tocino y chorizo. Paquete con fruta y café.",
     price: 65,
@@ -115,6 +119,7 @@ export const products: Product[] = [
   },
   {
     id: "enchiladas-verdes",
+    slug: "enchiladas-verdes",
     name: "Enchiladas verdes",
     description: "Tres piezas rellenas de pollo. Paquete con fruta y café.",
     price: 70,
@@ -125,6 +130,7 @@ export const products: Product[] = [
   },
   {
     id: "enfrijoladas",
+    slug: "enfrijoladas",
     name: "Enfrijoladas veracruzanas",
     description: "Rellenas de pollo, cubiertas con frijol y chorizo. Incluye fruta y café.",
     price: 85,
@@ -136,6 +142,7 @@ export const products: Product[] = [
   },
   {
     id: "chilaquiles-carne",
+    slug: "chilaquiles-carne",
     name: "Chilaquiles con carne asada",
     description: "Chilaquiles con carne asada. Paquete con fruta y café.",
     price: 85,
@@ -146,6 +153,7 @@ export const products: Product[] = [
   },
   {
     id: "chilaquiles-pechuga",
+    slug: "chilaquiles-pechuga",
     name: "Chilaquiles con pechuga",
     description: "Chilaquiles con pechuga de pollo. Paquete con fruta y café.",
     price: 85,
@@ -158,6 +166,7 @@ export const products: Product[] = [
   },
   {
     id: "enchiladas-suizas",
+    slug: "enchiladas-suizas",
     name: "Enchiladas suizas",
     description: "Rellenas de pollo y gratinadas con manchego. Incluye fruta y café.",
     price: 90,
@@ -169,6 +178,7 @@ export const products: Product[] = [
   },
   {
     id: "enmoladas",
+    slug: "enmoladas",
     name: "Enmoladas",
     description: "Cuatro enchiladas rellenas de pollo y bañadas en mole. Incluye fruta y café.",
     price: 90,
@@ -179,6 +189,7 @@ export const products: Product[] = [
   },
   {
     id: "chilaquiles-divorciados",
+    slug: "chilaquiles-divorciados",
     name: "Chilaquiles divorciados",
     description: "Dos huevos con salsa verde y roja. Paquete con fruta y café.",
     price: 90,
@@ -190,6 +201,7 @@ export const products: Product[] = [
   },
   {
     id: "chilaquiles-suizos",
+    slug: "chilaquiles-suizos",
     name: "Chilaquiles suizos",
     description: "Servidos con fajitas de pechuga, queso manchego gratinado y bañados en nuestra salsa suiza.",
     price: 90,
@@ -201,6 +213,7 @@ export const products: Product[] = [
   },
   {
     id: "desayuno-infantil",
+    slug: "desayuno-infantil",
     name: "Desayuno infantil",
     description: "5 mini hot cakes, licuado a elegir y una porción de fruta.",
     price: 75,
@@ -219,6 +232,7 @@ export const products: Product[] = [
   },
   {
     id: "arrachera-desayuno",
+    slug: "arrachera-desayuno",
     name: "200 g de arrachera",
     description: "Acompañada de papas fritas, ensalada y frijoles.",
     price: 90,
@@ -228,6 +242,7 @@ export const products: Product[] = [
   },
   {
     id: "omelette-champinones",
+    slug: "omelette-champinones",
     name: "Omelette de champiñones",
     description: "Omelette de champiñones con frijoles. Paquete con fruta y café.",
     price: 65,
@@ -239,6 +254,7 @@ export const products: Product[] = [
   },
   {
     id: "taco-bistec-longaniza",
+    slug: "taco-bistec-longaniza",
     name: "Taco de bistec o longaniza",
     description: "Taco servido con una porción de papas fritas.",
     price: 26,
@@ -256,6 +272,7 @@ export const products: Product[] = [
   },
   {
     id: "papas-francesa",
+    slug: "papas-francesa",
     name: "Orden de papas a la francesa",
     description: "Papas doradas preparadas al momento.",
     price: 45,
@@ -265,6 +282,7 @@ export const products: Product[] = [
   },
   {
     id: "ensalada-fresca",
+    slug: "ensalada-fresca",
     name: "Ensalada fresca",
     description: "Con pollo o atún, rollitos de jamón, queso y vegetales frescos.",
     price: 65,
@@ -275,6 +293,7 @@ export const products: Product[] = [
   },
   {
     id: "club-sandwich",
+    slug: "club-sandwich",
     name: "Club sándwich",
     description: "Sándwich de dos pisos con pollo, tocino, jamón, queso y verduras; incluye papas.",
     price: 65,
@@ -285,6 +304,7 @@ export const products: Product[] = [
   },
   {
     id: "desayuno-combinado",
+    slug: "desayuno-combinado",
     name: "Desayuno combinado",
     description: "2 hot cakes, 2 huevos, 2 piezas de tocino y 1 porción de fruta.",
     price: 65,
@@ -295,6 +315,7 @@ export const products: Product[] = [
   },
   {
     id: "bisquet",
+    slug: "bisquet",
     name: "Bisquet horneado",
     description: "Servido con mantequilla y mermelada de fresa.",
     price: 25,
@@ -304,6 +325,7 @@ export const products: Product[] = [
   },
   {
     id: "pan-frances",
+    slug: "pan-frances",
     name: "Pan francés",
     description: "Orden de tres piezas preparada al momento.",
     price: 40,
@@ -313,6 +335,7 @@ export const products: Product[] = [
   },
   {
     id: "hot-cakes",
+    slug: "hot-cakes",
     name: "Hot cakes",
     description: "Orden de tres piezas.",
     price: 40,
@@ -322,6 +345,7 @@ export const products: Product[] = [
   },
   {
     id: "waffles",
+    slug: "waffles",
     name: "Waffles",
     description: "Dos piezas servidas con helado y fruta de temporada.",
     price: 45,
@@ -331,6 +355,7 @@ export const products: Product[] = [
   },
   {
     id: "cuernito",
+    slug: "cuernito",
     name: "Cuernito horneado",
     description: "Con jamón, quesos, lechuga y jitomate.",
     price: 35,
@@ -340,6 +365,7 @@ export const products: Product[] = [
   },
   {
     id: "coca-cola",
+    slug: "coca-cola",
     name: "Coca-Cola 500 ml",
     description: "Refresco frío en presentación de 500 ml.",
     price: 28,
@@ -349,6 +375,7 @@ export const products: Product[] = [
   },
   {
     id: "licuado",
+    slug: "licuado",
     name: "Licuado",
     description: "Preparado con leche y fruta.",
     price: 30,
@@ -367,6 +394,7 @@ export const products: Product[] = [
   },
   {
     id: "cafe-leche",
+    slug: "cafe-leche",
     name: "Café con leche evaporada",
     description: "Café caliente preparado al momento.",
     price: 25,
@@ -376,6 +404,7 @@ export const products: Product[] = [
   },
   {
     id: "malteada",
+    slug: "malteada",
     name: "Malteada",
     description: "Cremosa malteada fría.",
     price: 40,
@@ -394,6 +423,7 @@ export const products: Product[] = [
   },
   {
     id: "jugo-verde",
+    slug: "jugo-verde",
     name: "Jugo verde",
     description: "Jugo de piña, espinaca y apio, 500 ml.",
     price: 35,
@@ -403,6 +433,7 @@ export const products: Product[] = [
   },
   {
     id: "agua-fruta",
+    slug: "agua-fruta",
     name: "Agua de fruta",
     description: "Un litro de agua fresca con el sabor disponible del día.",
     price: 35,
@@ -412,6 +443,7 @@ export const products: Product[] = [
   },
   {
     id: "enfrijoladas-carta",
+    slug: "enfrijoladas-carta",
     name: "Enfrijoladas a la carta",
     description: "Rellenas de pollo, cubiertas con frijol, crema, queso y chorizo.",
     price: 90,
@@ -421,6 +453,7 @@ export const products: Product[] = [
   },
   {
     id: "salchipulpos-papas",
+    slug: "salchipulpos-papas",
     name: "Salchipulpos con papas",
     description: "Salchichas doradas en forma de pulpo acompañadas de papas a la francesa.",
     price: 65,
@@ -431,6 +464,7 @@ export const products: Product[] = [
   },
   {
     id: "pechuga-empanizada",
+    slug: "pechuga-empanizada",
     name: "Pechuga de pollo empanizada",
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
@@ -440,6 +474,7 @@ export const products: Product[] = [
   },
   {
     id: "pechuga-plancha",
+    slug: "pechuga-plancha",
     name: "Pechuga de pollo a la plancha",
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
@@ -449,6 +484,7 @@ export const products: Product[] = [
   },
   {
     id: "milanesa-res",
+    slug: "milanesa-res",
     name: "Milanesa de res",
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
@@ -458,6 +494,7 @@ export const products: Product[] = [
   },
   {
     id: "pechuga-rellena",
+    slug: "pechuga-rellena",
     name: "Pechuga de pollo rellena",
     description: "Con jamón y quesos, acompañada de papas fritas y ensalada.",
     price: 95,
@@ -468,6 +505,7 @@ export const products: Product[] = [
   },
   {
     id: "filete-pescado",
+    slug: "filete-pescado",
     name: "Filete de pescado empanizado",
     description: "Acompañado de papas fritas y ensalada.",
     price: 95,
@@ -477,6 +515,7 @@ export const products: Product[] = [
   },
   {
     id: "enchiladas-suizas-comida",
+    slug: "enchiladas-suizas-comida",
     name: "Enchiladas suizas de comida",
     description: "Rellenas de queso Oaxaca, cubiertas con pollo y gratinadas con manchego.",
     price: 100,
@@ -486,6 +525,7 @@ export const products: Product[] = [
   },
   {
     id: "arrachera-comida",
+    slug: "arrachera-comida",
     name: "200 g de arrachera",
     description: "Acompañada de papas a la francesa, ensalada y frijoles.",
     price: 100,
@@ -495,6 +535,7 @@ export const products: Product[] = [
   },
   {
     id: "enchiladas-mole-comida",
+    slug: "enchiladas-mole-comida",
     name: "Enchiladas de mole",
     description: "Cuatro piezas rellenas de pollo y bañadas en mole tradicional.",
     price: 100,

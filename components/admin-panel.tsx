@@ -219,6 +219,7 @@ export function AdminPanel() {
               onCreate={() =>
                 setEditing({
                   id: `new-${Date.now()}`,
+                  slug: `new-${Date.now()}`,
                   name: "",
                   description: "",
                   price: 0,

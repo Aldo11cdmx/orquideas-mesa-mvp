@@ -33,6 +33,7 @@ function normalizeProduct(raw: Record<string, unknown>): Product {
   const product = raw as unknown as Product;
   const normalized = {
     ...product,
+    slug: (raw.slug as string) || (raw.id as string) || product.slug || product.id,
     image:
       (raw.image as string) ||
       (raw.image_url as string) ||
@@ -198,7 +199,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     setCart((current) => [
       ...current,
       {
-        productId: product.id,
+        productId: product.slug || product.id,
         name: product.name,
         unitPrice: product.price,
         quantity,
@@ -232,6 +233,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     addItem(
       {
         id: "comida-corrida",
+        slug: "comida-corrida",
         name: "Comida corrida",
         description: "Menú completo del día",
         price: menu.price + extraTotal,

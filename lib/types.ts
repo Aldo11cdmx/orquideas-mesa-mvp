@@ -10,6 +10,7 @@ export type PaymentMethod = "cash" | "card";
 
 export type Product = {
   id: string;
+  slug: string;
   name: string;
   description: string;
   price: number;

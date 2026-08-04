@@ -603,9 +603,16 @@ export function timeToMinutes(value: string) {
   return hour * 60 + minute;
 }
 
+function isTemporaryAvailabilityBypass(): boolean {
+  return true;
+}
+
 export function isProductAvailable(product: Product, currentMinutes: number | null) {
   if (process.env.NODE_ENV === "development") return true;
   if (currentMinutes === null || !product.availableFrom || !product.availableUntil) return true;
+
+  // TEMPORAL: ignorar horarios durante las pruebas. Eliminar antes del commit final.
+  if (isTemporaryAvailabilityBypass()) return true;
 
   const fromMinutes = timeToMinutes(product.availableFrom);
   const untilMinutes = timeToMinutes(product.availableUntil);

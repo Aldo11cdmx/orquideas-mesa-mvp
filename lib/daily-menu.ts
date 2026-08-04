@@ -38,7 +38,9 @@ export function normalizeDailyMenuConfig(payload: unknown): DailyMenuConfig | nu
     availableUntil: typeof source.availableUntil === "string" ? source.availableUntil : "17:00",
     price: Number(source.price || 0),
     courses: Object.fromEntries(
-      dailyCourseOrder.map((course) => [course, asStringArray(rawCourses[course])])
+      Object.entries(rawCourses)
+        .filter(([, options]) => Array.isArray(options))
+        .map(([course, options]) => [course, asStringArray(options)])
     ),
     extras: asExtras(rawCourses.Extras ?? source.extras),
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined
@@ -48,7 +50,9 @@ export function normalizeDailyMenuConfig(payload: unknown): DailyMenuConfig | nu
 export function serializeDailyMenuCourses(menu: DailyMenuConfig) {
   return {
     ...Object.fromEntries(
-      dailyCourseOrder.map((course) => [course, menu.courses[course] || []])
+      Object.entries(menu.courses)
+        .filter(([, options]) => Array.isArray(options))
+        .map(([course, options]) => [course, options])
     ),
     Extras: (menu.extras || []).map((extra) => ({
       name: extra.name.trim(),

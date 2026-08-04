@@ -757,9 +757,13 @@ function DailyAdmin({ pin }: { pin: string }) {
               className="focus-ring mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-5 font-bold text-white disabled:opacity-60"
               disabled={
                 saving ||
-                Object.values(draft.courses).some(
-                  (options) =>
-                    options.length === 0 || options.some((option) => !option.trim())
+                (["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const).some(
+                  (course) => {
+                    const options = draft.courses[course] || [];
+                    return (
+                      options.length === 0 || options.some((option) => !option.trim())
+                    );
+                  }
                 )
               }
             >

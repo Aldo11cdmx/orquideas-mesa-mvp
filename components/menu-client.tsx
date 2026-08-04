@@ -438,12 +438,13 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
             {visible.length ? (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
                 {visible.map((product) => (
-                  <ProductCard
-                    key={product.id}
-                    product={product}
-                    currentMinutes={serviceMinutes}
-                    onOpen={setSelected}
-                  />
+                   <ProductCard
+                     key={product.id}
+                     product={product}
+                     currentMinutes={serviceMinutes}
+                     onOpen={setSelected}
+                     dailyMenu={dailyMenu}
+                   />
                 ))}
               </div>
             ) : (
@@ -511,13 +512,23 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 function ProductCard({
   product,
   currentMinutes,
-  onOpen
+  onOpen,
+  dailyMenu
 }: {
   product: Product;
   currentMinutes: number | null;
   onOpen: (product: Product) => void;
+  dailyMenu: DailyMenuConfig | null;
 }) {
-  const available = isProductAvailable(product, currentMinutes);
+  const isComidaALaCarta = product.category === "Comidas a la carta";
+  const available = isProductAvailable(
+    product,
+    currentMinutes,
+    isComidaALaCarta ? dailyMenu?.availableFrom : undefined,
+    isComidaALaCarta ? dailyMenu?.availableUntil : undefined
+  );
+  const effectiveFrom = isComidaALaCarta ? dailyMenu?.availableFrom : product.availableFrom;
+  const effectiveUntil = isComidaALaCarta ? dailyMenu?.availableUntil : product.availableUntil;
   // DEBUG TEMPORAL: log para chilaquiles-suizos
   if (product.id === "chilaquiles-suizos") {
     console.log("[DEBUG ProductCard] chilaquiles-suizos:", {
@@ -606,7 +617,7 @@ function ProductCard({
               </span>
             ) : !available ? (
               <span className="rounded-full bg-[var(--mist)] px-3 py-2 text-xs font-bold text-[var(--brown)]">
-                {product.availableFrom}–{product.availableUntil}
+                {effectiveFrom}–{effectiveUntil}
               </span>
             ) : (
               <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--brown)] text-white shadow-lg transition group-hover:scale-105 group-hover:bg-[var(--brown-dark)]">

@@ -541,8 +541,7 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enchiladas-suizas.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
-    ...lunchHours
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
   },
   {
     id: "arrachera-comida",
@@ -552,8 +551,7 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/arrachera-actual.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
-    ...lunchHours
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
   },
   {
     id: "enchiladas-mole-comida",
@@ -563,8 +561,7 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enmoladas.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
-    ...lunchHours
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
   }
 ];
 
@@ -607,18 +604,29 @@ function isTemporaryAvailabilityBypass(): boolean {
   return true;
 }
 
-export function isProductAvailable(product: Product, currentMinutes: number | null) {
+export function isProductAvailable(
+  product: Product,
+  currentMinutes: number | null,
+  availableFrom?: string,
+  availableUntil?: string
+) {
   if (process.env.NODE_ENV === "development") return true;
-  if (currentMinutes === null || !product.availableFrom || !product.availableUntil) return true;
+  if (currentMinutes === null) return true;
 
-  // TEMPORAL: ignorar horarios durante las pruebas. Eliminar antes del commit final.
+  const effectiveFrom = availableFrom ?? product.availableFrom;
+  const effectiveUntil = availableUntil ?? product.availableUntil;
+
+  if (!effectiveFrom || !effectiveUntil) return true;
+
+  // Bypass temporal de horarios para pruebas funcionales.
+  // Eliminar esta línea antes del commit final de producción.
   if (isTemporaryAvailabilityBypass()) return true;
 
-  const fromMinutes = timeToMinutes(product.availableFrom);
-  const untilMinutes = timeToMinutes(product.availableUntil);
+  const fromMinutes = timeToMinutes(effectiveFrom);
+  const untilMinutes = timeToMinutes(effectiveUntil);
 
   // Si el producto tiene horario personalizado, usarlo directamente
-  if (product.availableFrom !== "09:00" || product.availableUntil !== "17:00") {
+  if (effectiveFrom !== "09:00" || effectiveUntil !== "17:00") {
     return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
   }
 

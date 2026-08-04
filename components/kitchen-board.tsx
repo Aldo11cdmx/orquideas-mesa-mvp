@@ -45,7 +45,6 @@ const kitchenColumns: Array<{
 ];
 
 const waiterColumns: typeof kitchenColumns = [
-  { id: "review", title: "Por revisar", statuses: ["sent"], icon: BellRing },
   { id: "kitchen", title: "En cocina", statuses: ["accepted", "preparing"], icon: ChefHat },
   { id: "ready", title: "Para entregar", statuses: ["ready"], icon: HandPlatter }
 ];
@@ -128,18 +127,14 @@ function StaffBoard({ role }: { role: StaffRole }) {
       let title = "";
       let body = "";
 
-      if (role === "waiter" && order.status === "sent") {
-        kind = "new";
-        title = `Pedido nuevo · Mesa ${order.tableCode}`;
-        body = `${order.folio} espera revisión del mesero.`;
-      } else if (role === "waiter" && order.status === "ready") {
+      if (role === "waiter" && order.status === "ready") {
         kind = "ready";
         title = `Pedido listo · Mesa ${order.tableCode}`;
         body = `${order.folio} está listo para entregar.`;
       } else if (role === "kitchen" && order.status === "accepted") {
         kind = "accepted";
         title = `Nuevo para cocina · Mesa ${order.tableCode}`;
-        body = `${order.folio} ya fue confirmado por el mesero.`;
+        body = `${order.folio} acaba de ser confirmado por el cliente.`;
       } else {
         return;
       }
@@ -347,7 +342,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   useEffect(() => {
     if (!unlocked) return;
     const attention = role === "waiter"
-      ? orders.filter((order) => ["sent", "ready"].includes(order.status)).length
+      ? orders.filter((order) => order.status === "ready").length
       : orders.filter((order) => order.status === "accepted").length;
     document.title = attention
       ? `(${attention}) ${role === "kitchen" ? "Cocina" : "Meseros"} · Orquídeas`
@@ -362,12 +357,6 @@ function StaffBoard({ role }: { role: StaffRole }) {
     status: OrderStatus,
     paymentMethod?: PaymentMethod
   ) {
-    if (
-      status === "accepted" &&
-      !window.confirm(`¿Confirmas que el pedido ${order.folio} está correcto y puede pasar a cocina?`)
-    ) {
-      return;
-    }
     if (status === "cancelled" && !window.confirm(`¿Cancelar el pedido ${order.folio}?`)) return;
     let updated: Order | null = null;
     if (backend === "supabase") {
@@ -581,17 +570,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
           </div>
         </section>
         <div className="mb-4 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm">
-          {role === "waiter" ? (
-            <>
-              <strong>Revisa antes de enviar:</strong> puedes quitar productos o cancelar el pedido
-              mientras esté en revisión. Al confirmar, aparecerá en cocina.
-            </>
-          ) : (
-            <>
-              <strong>Pedidos confirmados:</strong> aquí solo aparecen después de que un mesero
-              revisó y aprobó el pedido.
-            </>
-          )}
+          <strong>Pedidos confirmados:</strong> los pedidos llegan directamente desde la confirmación del cliente.
         </div>
         <div className="mb-5 flex flex-wrap items-center gap-3">
           <label className="flex min-h-11 items-center gap-2 rounded-xl bg-white px-3">
@@ -612,7 +591,6 @@ function StaffBoard({ role }: { role: StaffRole }) {
           >
             <option value="active">Pedidos activos</option>
             <option value="all">Todos</option>
-            {role === "waiter" && <option value="sent">Por revisar</option>}
             <option value="accepted">Confirmados</option>
             <option value="preparing">Preparando</option>
             <option value="ready">Listos</option>
@@ -693,7 +671,6 @@ function KitchenCard({
           preparing: { label: "Marcar listo", status: "ready" }
         }
       : {
-          sent: { label: "Confirmar y enviar a cocina", status: "accepted" },
           ready: { label: "Registrar entrega", status: "delivered" }
         };
   const action = next[order.status];
@@ -802,7 +779,7 @@ function KitchenCard({
             {action.label}
           </button>
         ) : null}
-        {role === "waiter" && ["sent", "accepted"].includes(order.status) && (
+        {role === "waiter" && order.status === "accepted" && (
           <button
             className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
             onClick={() => onStatus(order, "cancelled")}

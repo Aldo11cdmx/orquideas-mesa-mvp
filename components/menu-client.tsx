@@ -249,7 +249,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   async function submitOrder() {
     if (sending || cart.length === 0) return;
-    if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina y meseros?`)) return;
+    if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
     setSending(true);
     const idempotencyKey = crypto.randomUUID();
     const controller = new AbortController();
@@ -995,18 +995,20 @@ function OrderTracking({
   tableCode: string;
   onOrderAgain: () => void;
 }) {
-  const steps = ["sent", "accepted", "preparing", "ready", "delivered"] as const;
-  const current = steps.indexOf(order.status === "cancelled" ? "sent" : order.status);
+  const steps = ["accepted", "preparing", "ready", "delivered"] as const;
+  const current = steps.indexOf(
+    order.status === "cancelled" || order.status === "sent"
+      ? "accepted"
+      : order.status
+  );
   const trackingTitle =
-    order.status === "sent"
-      ? "El mesero está revisando tu pedido"
-      : order.status === "accepted" || order.status === "preparing"
-        ? "Tu pedido ya está en cocina"
-        : order.status === "ready"
-          ? "Tu pedido está listo para servir"
-          : order.status === "delivered"
-            ? "Tu pedido fue entregado"
-            : "Este pedido fue cancelado";
+    order.status === "accepted" || order.status === "preparing"
+      ? "Tu pedido ya está en cocina"
+      : order.status === "ready"
+        ? "Tu pedido está listo para servir"
+        : order.status === "delivered"
+          ? "Tu pedido fue entregado"
+          : "Este pedido fue cancelado";
   return (
     <main className="mx-auto min-h-screen max-w-xl px-5 py-6">
       <Brand />
@@ -1064,9 +1066,8 @@ function OrderTracking({
                   <div className="pt-1">
                     <strong className="capitalize">
                       {
-                        {
-                          sent: "Revisión del mesero",
-                          accepted: "Confirmado y enviado a cocina",
+{
+                           accepted: "Confirmado y enviado a cocina",
                           preparing: "Preparando",
                           ready: "Listo para servir",
                           delivered: "Entregado"

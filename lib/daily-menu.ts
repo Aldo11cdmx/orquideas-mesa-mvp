@@ -1,10 +1,27 @@
-import type { DailyMenuConfig, DailyMenuExtra } from "@/lib/types";
+import type { DailyMenuConfig, DailyMenuDrink, DailyMenuExtra } from "@/lib/types";
 
 export const dailyCourseOrder = ["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const;
 
 function asStringArray(value: unknown) {
   if (!Array.isArray(value)) return [];
   return value.filter((item): item is string => typeof item === "string" && item.trim().length > 0);
+}
+
+function asDrinks(value: unknown): DailyMenuDrink[] {
+  if (!Array.isArray(value)) return [];
+  const result: DailyMenuDrink[] = [];
+  for (const item of value) {
+    if (typeof item === "string") {
+      const name = item.trim();
+      if (name.length > 0) result.push({ name, active: true });
+    } else if (item && typeof item === "object") {
+      const drink = item as { name?: unknown; active?: unknown };
+      const name = typeof drink.name === "string" ? drink.name.trim() : "";
+      if (!name) continue;
+      result.push({ name, active: drink.active !== false });
+    }
+  }
+  return result;
 }
 
 function asExtras(value: unknown): DailyMenuExtra[] {
@@ -40,7 +57,10 @@ export function normalizeDailyMenuConfig(payload: unknown): DailyMenuConfig | nu
     courses: Object.fromEntries(
       Object.entries(rawCourses)
         .filter(([, options]) => Array.isArray(options))
-        .map(([course, options]) => [course, asStringArray(options)])
+        .map(([course, options]) => {
+          if (course === "Bebida") return [course, asDrinks(options)];
+          return [course, asStringArray(options)];
+        })
     ),
     extras: asExtras(rawCourses.Extras ?? source.extras),
     updatedAt: typeof source.updatedAt === "string" ? source.updatedAt : undefined
@@ -52,7 +72,20 @@ export function serializeDailyMenuCourses(menu: DailyMenuConfig) {
     ...Object.fromEntries(
       Object.entries(menu.courses)
         .filter(([, options]) => Array.isArray(options))
-        .map(([course, options]) => [course, options])
+        .map(([course, options]) => {
+          if (course === "Bebida") {
+            return [
+              course,
+              (options as DailyMenuDrink[])
+                .filter((drink) => drink.name.trim())
+                .map((drink) => ({ name: drink.name.trim(), active: drink.active !== false }))
+            ];
+          }
+          return [
+            course,
+            (options as string[]).filter((option) => option.trim()).map((option) => option.trim())
+          ];
+        })
     ),
     Extras: (menu.extras || []).map((extra) => ({
       name: extra.name.trim(),
@@ -60,4 +93,15 @@ export function serializeDailyMenuCourses(menu: DailyMenuConfig) {
       active: extra.active !== false
     }))
   };
+}
+
+export function getCourseOptions(
+  course: string,
+  options: string[] | DailyMenuDrink[] | undefined
+): string[] {
+  if (!options) return [];
+  if (course === "Bebida") {
+    return (options as DailyMenuDrink[]).filter((drink) => drink.active !== false).map((drink) => drink.name);
+  }
+  return options as string[];
 }

@@ -15,7 +15,7 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
-import { dailyCourseOrder } from "@/lib/daily-menu";
+import { dailyCourseOrder, getCourseOptions } from "@/lib/daily-menu";
 import {
   categories,
   isProductAvailable,
@@ -672,15 +672,15 @@ function ProductDialog({
     "acompanamiento": "Guarnición",
     "agua": "Bebida"
   };
-  const groups = isComidaALaCarta
-    ? baseGroups.map((group) => {
-        const courseKey = groupCourseMap[group.id];
-        if (!courseKey || !dailyCourses[courseKey]) return group;
-        const activeOptions = dailyCourses[courseKey];
-        const filteredChoices = group.choices.filter((c) => activeOptions.includes(c));
-        return { ...group, choices: filteredChoices };
-      })
-    : baseGroups;
+   const groups = isComidaALaCarta
+     ? baseGroups.map((group) => {
+         const courseKey = groupCourseMap[group.id];
+         if (!courseKey || !dailyCourses[courseKey]) return group;
+         const activeOptions = getCourseOptions(courseKey, dailyCourses[courseKey]);
+         const filteredChoices = group.choices.filter((c) => activeOptions.includes(c));
+         return { ...group, choices: filteredChoices };
+       })
+     : baseGroups;
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))
   );
@@ -1169,13 +1169,13 @@ function ConfiguredLunchMenu({
   ) => void;
 }) {
   const courses = dailyCourseOrder.map(
-    (course) => [course, menu.courses[course] || []] as const
+    (course) => [course, getCourseOptions(course, menu.courses[course])] as const
   );
   const [quantity, setQuantity] = useState(1);
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(
       dailyCourseOrder.map((course) => {
-        const options = menu.courses[course] || [];
+        const options = getCourseOptions(course, menu.courses[course]);
         return [course, options.length === 1 ? options[0] : ""];
       })
     )

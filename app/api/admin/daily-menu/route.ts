@@ -6,7 +6,12 @@ import { createServerClient } from "@/lib/supabase/server";
 const time = z.string().regex(/^\d{2}:\d{2}$/);
 const dailyMenuExtra = z.object({
   name: z.string().trim().min(1).max(80),
-  price: z.number().min(0).max(10000)
+  price: z.number().min(0).max(10000),
+  active: z.boolean().optional()
+});
+const dailyMenuDrink = z.object({
+  name: z.string().trim().min(1).max(80),
+  active: z.boolean().optional()
 });
 
 const dailyMenuSchema = z.object({
@@ -20,7 +25,7 @@ const dailyMenuSchema = z.object({
     Entrada: z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     "Guarnición": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
     "Plato fuerte": z.array(z.string().trim().min(1).max(80)).min(1).max(8),
-    Bebida: z.array(z.string().trim().min(1).max(80)).min(1).max(8)
+    Bebida: z.array(dailyMenuDrink).min(1).max(8)
   }),
   extras: z.array(dailyMenuExtra).max(12).optional().default([])
 });

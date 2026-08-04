@@ -25,7 +25,7 @@ import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
-import type { DailyMenuConfig, Product, SalesReport } from "@/lib/types";
+import type { DailyMenuConfig, DailyMenuDrink, Product, SalesReport } from "@/lib/types";
 
 export function AdminPanel() {
   const [pin, setPin] = useState("");
@@ -414,7 +414,10 @@ const defaultDailyMenu: DailyMenuConfig = {
     Entrada: ["Consomé", "Sopa"],
     Guarnición: ["Arroz", "Pasta"],
     "Plato fuerte": ["Pechuga empanizada", "Enchiladas verdes"],
-    Bebida: ["Agua de fruta", "Agua simple"]
+    Bebida: [
+      { name: "Agua de fruta", active: true },
+      { name: "Agua simple", active: true }
+    ]
   },
   extras: []
 };
@@ -469,13 +472,23 @@ function DailyAdmin({ pin }: { pin: string }) {
       ...draft,
       serviceDate: mexicoToday(),
       courses: Object.fromEntries(
-        Object.entries(draft.courses).map(([course, options]) => [
-          course,
-          options.map((option) => option.trim()).filter(Boolean)
-        ])
+        Object.entries(draft.courses).map(([course, options]) => {
+          if (course === "Bebida") {
+            return [
+              course,
+              (options as DailyMenuDrink[])
+                .filter((drink) => drink.name.trim())
+                .map((drink) => ({ name: drink.name.trim(), active: drink.active !== false }))
+            ];
+          }
+          return [
+            course,
+            (options as string[]).map((option) => option.trim()).filter(Boolean)
+          ];
+        })
       ),
       extras: (draft.extras || [])
-        .map((extra) => ({ name: extra.name.trim(), price: Number(extra.price) }))
+        .map((extra) => ({ name: extra.name.trim(), price: Number(extra.price), active: extra.active !== false }))
         .filter((extra) => extra.name)
     };
     const response = await fetch("/api/admin/daily-menu", {
@@ -502,7 +515,7 @@ function DailyAdmin({ pin }: { pin: string }) {
       ...current,
       courses: {
         ...current.courses,
-        [course]: (current.courses[course] || []).map((option, optionIndex) =>
+        [course]: (current.courses[course] as string[] || []).map((option, optionIndex) =>
           optionIndex === index ? value : option
         )
       }
@@ -514,7 +527,7 @@ function DailyAdmin({ pin }: { pin: string }) {
       ...current,
       courses: {
         ...current.courses,
-        [course]: [...(current.courses[course] || []), ""]
+        [course]: [...(current.courses[course] as string[] || []), ""]
       }
     }));
   }
@@ -524,8 +537,54 @@ function DailyAdmin({ pin }: { pin: string }) {
       ...current,
       courses: {
         ...current.courses,
-        [course]: (current.courses[course] || []).filter(
+        [course]: (current.courses[course] as string[] || []).filter(
           (_, optionIndex) => optionIndex !== index
+        )
+      }
+    }));
+  }
+
+  function setDrinkOption(index: number, value: string) {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        Bebida: (current.courses.Bebida as DailyMenuDrink[] || []).map((drink, drinkIndex) =>
+          drinkIndex === index ? { ...drink, name: value } : drink
+        )
+      }
+    }));
+  }
+
+  function toggleDrink(index: number) {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        Bebida: (current.courses.Bebida as DailyMenuDrink[] || []).map((drink, drinkIndex) =>
+          drinkIndex === index ? { ...drink, active: !drink.active } : drink
+        )
+      }
+    }));
+  }
+
+  function addDrink() {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        Bebida: [...(current.courses.Bebida as DailyMenuDrink[] || []), { name: "", active: true }]
+      }
+    }));
+  }
+
+  function removeDrink(index: number) {
+    setDraft((current) => ({
+      ...current,
+      courses: {
+        ...current.courses,
+        Bebida: (current.courses.Bebida as DailyMenuDrink[] || []).filter(
+          (_, drinkIndex) => drinkIndex !== index
         )
       }
     }));
@@ -653,49 +712,103 @@ function DailyAdmin({ pin }: { pin: string }) {
             </div>
 
             <div className="mt-6 grid gap-4">
-              {(["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const).map((course) => (
-                <fieldset className="rounded-2xl border border-[var(--line)] p-4" key={course}>
-                  <legend className="px-1 font-display text-xl font-bold">{course}</legend>
-                  <p className="mb-3 text-xs text-[var(--muted)]">
-                    El cliente elegirá 1 de estas opciones.
-                  </p>
-                  <div className="grid gap-2">
-                    {(draft.courses[course] || []).map((option, index) => (
-                      <div className="flex gap-2" key={`${course}-${index}`}>
-                        <input
-                          aria-label={`${course}, opción ${index + 1}`}
-                          className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] px-3 font-normal"
-                          maxLength={80}
-                          placeholder={`Opción ${index + 1}`}
-                          required
-                          value={option}
-                          onChange={(event) =>
-                            setCourseOption(course, index, event.target.value)
-                          }
-                        />
-                        <button
-                          aria-label={`Quitar opción ${index + 1} de ${course}`}
-                          className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
-                          disabled={(draft.courses[course] || []).length <= 1}
-                          type="button"
-                          onClick={() => removeCourseOption(course, index)}
-                        >
-                          <Trash2 size={17} />
-                        </button>
-                      </div>
-                    ))}
-                  </div>
-                  <button
-                    className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
-                    disabled={(draft.courses[course] || []).length >= 8}
-                    type="button"
-                    onClick={() => addCourseOption(course)}
-                  >
-                    <Plus size={16} /> Agregar otra opción
-                  </button>
-                </fieldset>
-              ))}
+              {(["Entrada", "Guarnición", "Plato fuerte"] as const).map((course) => {
+                const options = draft.courses[course] as string[] || [];
+                return (
+                  <fieldset className="rounded-2xl border border-[var(--line)] p-4" key={course}>
+                    <legend className="px-1 font-display text-xl font-bold">{course}</legend>
+                    <p className="mb-3 text-xs text-[var(--muted)]">
+                      El cliente elegirá 1 de estas opciones.
+                    </p>
+                    <div className="grid gap-2">
+                      {options.map((option, index) => (
+                        <div className="flex gap-2" key={`${course}-${index}`}>
+                          <input
+                            aria-label={`${course}, opción ${index + 1}`}
+                            className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] px-3 font-normal"
+                            maxLength={80}
+                            placeholder={`Opción ${index + 1}`}
+                            required
+                            value={option}
+                            onChange={(event) =>
+                              setCourseOption(course, index, event.target.value)
+                            }
+                          />
+                          <button
+                            aria-label={`Quitar opción ${index + 1} de ${course}`}
+                            className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
+                            disabled={options.length <= 1}
+                            type="button"
+                            onClick={() => removeCourseOption(course, index)}
+                          >
+                            <Trash2 size={17} />
+                          </button>
+                        </div>
+                      ))}
+                    </div>
+                    <button
+                      className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                      disabled={options.length >= 8}
+                      type="button"
+                      onClick={() => addCourseOption(course)}
+                    >
+                      <Plus size={16} /> Agregar otra opción
+                    </button>
+                  </fieldset>
+                );
+              })}
             </div>
+
+            <fieldset className="mt-6 rounded-2xl border border-[var(--line)] p-4">
+              <legend className="px-1 font-display text-xl font-bold">Bebidas</legend>
+              <p className="mb-3 text-xs text-[var(--muted)]">
+                El cliente elegirá 1 de estas bebidas. Activa o desactiva cada una según disponibilidad.
+              </p>
+              <div className="grid gap-2">
+                {(draft.courses.Bebida as DailyMenuDrink[] || []).map((drink, index) => (
+                  <div className="flex items-center gap-2" key={`Bebida-${index}`}>
+                    <input
+                      aria-label={`Bebida ${index + 1}`}
+                      className="h-11 min-w-0 flex-1 rounded-xl border border-[var(--line)] px-3 font-normal"
+                      maxLength={80}
+                      placeholder={`Bebida ${index + 1}`}
+                      required
+                      value={drink.name}
+                      onChange={(event) => setDrinkOption(index, event.target.value)}
+                    />
+                    <button
+                      aria-label={drink.active ? "Desactivar bebida" : "Activar bebida"}
+                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e]"
+                      type="button"
+                      onClick={() => toggleDrink(index)}
+                    >
+                      {drink.active ? (
+                        <ToggleRight size={20} className="text-[var(--green)]" />
+                      ) : (
+                        <ToggleLeft size={20} className="text-[var(--muted)]" />
+                      )}
+                    </button>
+                    <button
+                      aria-label={`Quitar bebida ${index + 1}`}
+                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
+                      disabled={(draft.courses.Bebida as DailyMenuDrink[] || []).length <= 1}
+                      type="button"
+                      onClick={() => removeDrink(index)}
+                    >
+                      <Trash2 size={17} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <button
+                className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                disabled={(draft.courses.Bebida as DailyMenuDrink[] || []).length >= 8}
+                type="button"
+                onClick={addDrink}
+              >
+                <Plus size={16} /> Agregar otra bebida
+              </button>
+            </fieldset>
 
             <fieldset className="mt-6 rounded-2xl border border-[var(--line)] p-4">
               <legend className="px-1 font-display text-xl font-bold">Extras con costo</legend>
@@ -755,17 +868,19 @@ function DailyAdmin({ pin }: { pin: string }) {
             )}
             <button
               className="focus-ring mt-5 flex h-14 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-5 font-bold text-white disabled:opacity-60"
-              disabled={
-                saving ||
-                (["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const).some(
+              disabled={(() => {
+                if (saving) return true;
+                const stringCoursesComplete = (["Entrada", "Guarnición", "Plato fuerte"] as const).every(
                   (course) => {
-                    const options = draft.courses[course] || [];
-                    return (
-                      options.length === 0 || options.some((option) => !option.trim())
-                    );
+                    const options = draft.courses[course] as string[] || [];
+                    return options.length > 0 && options.every((option) => option.trim().length > 0);
                   }
-                )
-              }
+                );
+                const drinks = draft.courses.Bebida as DailyMenuDrink[] || [];
+                const drinksValid =
+                  drinks.length > 0 && drinks.every((drink) => drink.name.trim().length > 0);
+                return !stringCoursesComplete || !drinksValid;
+              })()}
             >
               <Save size={18} /> {saving ? "Guardando…" : "Guardar y publicar"}
             </button>

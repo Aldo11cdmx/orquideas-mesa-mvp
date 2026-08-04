@@ -68,6 +68,26 @@ const chickenStyleGroup = {
   required: true
 };
 
+const firstCourseGroup = {
+  id: "primer-tiempo",
+  label: "Primer tiempo",
+  choices: ["Consomé", "Sopa"],
+  required: true
+};
+const sideGroup = {
+  id: "acompanamiento",
+  label: "Acompañamiento",
+  choices: ["Arroz", "Pasta"],
+  required: true
+};
+const drinkGroup = {
+  id: "agua",
+  label: "Agua",
+  choices: ["Agua de fruta", "Agua simple"],
+  required: true
+};
+
+
 export const products: Product[] = [
   {
     id: "chilaquiles-sencillos",
@@ -517,10 +537,11 @@ export const products: Product[] = [
     id: "enchiladas-suizas-comida",
     slug: "enchiladas-suizas-comida",
     name: "Enchiladas suizas de comida",
-    description: "Rellenas de queso Oaxaca, cubiertas con pollo y gratinadas con manchego.",
+    description: "Rellenas de queso Oaxaca, cubiertas con pollo y gratinadas con manchego. Incluye ensalada.",
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enchiladas-suizas.jpg",
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
     ...lunchHours
   },
   {
@@ -531,16 +552,18 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/arrachera-actual.jpg",
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
     ...lunchHours
   },
   {
     id: "enchiladas-mole-comida",
     slug: "enchiladas-mole-comida",
     name: "Enchiladas de mole",
-    description: "Cuatro piezas rellenas de pollo y bañadas en mole tradicional.",
+    description: "Cuatro piezas rellenas de pollo y bañadas en mole tradicional. Incluye ensalada.",
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enmoladas.jpg",
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
     ...lunchHours
   }
 ];
@@ -581,6 +604,7 @@ export function timeToMinutes(value: string) {
 }
 
 export function isProductAvailable(product: Product, currentMinutes: number | null) {
+  if (process.env.NODE_ENV === "development") return true;
   if (currentMinutes === null || !product.availableFrom || !product.availableUntil) return true;
 
   const fromMinutes = timeToMinutes(product.availableFrom);

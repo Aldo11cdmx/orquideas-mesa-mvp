@@ -76,8 +76,8 @@ export function connectOrderChannel(
       "postgres_changes",
       { event: "*", schema: "public", table: "order_items" },
       () => callback({ type: "database_change" })
-    )
-    .subscribe((status) => onStatus?.(status));
+    );
+  channel.subscribe((status) => onStatus?.(status));
 
   return {
     send: (payload: AppChannelPayload) =>

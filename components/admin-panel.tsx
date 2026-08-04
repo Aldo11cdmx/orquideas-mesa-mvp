@@ -411,10 +411,10 @@ const defaultDailyMenu: DailyMenuConfig = {
   availableUntil: "17:00",
   price: 75,
   courses: {
-    Entrada: ["Consomé del día", "Sopa del día", "Crema del día"],
+    Entrada: ["Consomé", "Sopa"],
     Guarnición: ["Arroz", "Pasta"],
     "Plato fuerte": ["Pechuga empanizada", "Enchiladas verdes"],
-    Bebida: ["Agua de fruta del día"]
+    Bebida: ["Agua de fruta", "Agua simple"]
   },
   extras: []
 };

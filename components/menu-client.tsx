@@ -490,6 +490,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           product={selected}
           onClose={() => setSelected(null)}
           onAdd={addItem}
+          dailyMenu={dailyMenu}
         />
       )}
       {cartOpen && (
@@ -632,7 +633,8 @@ function optionPrompt(product: Product) {
 function ProductDialog({
   product,
   onClose,
-  onAdd
+  onAdd,
+  dailyMenu
 }: {
   product: Product;
   onClose: () => void;
@@ -643,16 +645,36 @@ function ProductDialog({
     option?: string,
     extras?: Array<{ name: string; price: number }>
   ) => void;
+  dailyMenu: DailyMenuConfig | null;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
-  const groups = product.optionGroups || (
+  const baseGroups = product.optionGroups || (
     product.options?.length
       ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }]
       : []
   );
+  const isComidaALaCarta = product.category === "Comidas a la carta";
+  const dailyCourses = isComidaALaCarta ? (dailyMenu?.courses || {}) : {};
+  const groupCourseMap: Record<string, string> = {
+    "primer-tiempo": "Entrada",
+    "acompanamiento": "Guarnición",
+    "agua": "Bebida"
+  };
+  const groups = isComidaALaCarta
+    ? baseGroups.map((group) => {
+        const courseKey = groupCourseMap[group.id];
+        if (!courseKey || !dailyCourses[courseKey]) return group;
+        const activeOptions = dailyCourses[courseKey];
+        const filteredChoices = group.choices.filter((c) => activeOptions.includes(c));
+        return { ...group, choices: filteredChoices };
+      })
+    : baseGroups;
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))
+  );
+  const hasCompleteSelection = groups.every(
+    (group) => group.choices.length > 0 && Boolean(selections[group.id])
   );
   const selectionSummary = groups
     .map((group) => {
@@ -671,7 +693,13 @@ function ProductDialog({
                     ? "Pechuga"
                     : group.id === "opcion"
                       ? "Sabor"
-                      : "Opción";
+                      : group.id === "primer-tiempo"
+                        ? "Primer tiempo"
+                        : group.id === "acompanamiento"
+                          ? "Acompañamiento"
+                          : group.id === "agua"
+                            ? "Agua"
+                            : "Opción";
       return `${shortLabel}: ${selections[group.id]}`;
     })
     .join(" · ")
@@ -782,9 +810,15 @@ function ProductDialog({
                 </button>
               </div>
               <button
-                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)]"
+                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"
+                disabled={isComidaALaCarta && !hasCompleteSelection}
                 onClick={() =>
-                  onAdd(product, quantity, notes.trim(), selectionSummary || undefined)
+                  onAdd(
+                    product,
+                    quantity,
+                    notes.trim(),
+                    selectionSummary || undefined
+                  )
                 }
               >
                 <span>Agregar</span>

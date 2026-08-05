@@ -1,4 +1,9 @@
-import type { DailyMenuConfig, DailyMenuDrink, DailyMenuExtra } from "@/lib/types";
+import type {
+  DailyMenuConfig,
+  DailyMenuDrink,
+  DailyMenuExtra,
+  ProductOptionGroup
+} from "@/lib/types";
 
 export const dailyCourseOrder = ["Entrada", "Guarnición", "Plato fuerte", "Bebida"] as const;
 
@@ -104,4 +109,25 @@ export function getCourseOptions(
     return (options as DailyMenuDrink[]).filter((drink) => drink.active !== false).map((drink) => drink.name);
   }
   return options as string[];
+}
+
+const groupCourseMap: Record<string, string> = {
+  "primer-tiempo": "Entrada",
+  "acompanamiento": "Guarnición",
+  "agua": "Bebida"
+};
+
+export function resolveDailyCourseGroups(
+  baseGroups: ProductOptionGroup[],
+  dailyCourses: DailyMenuConfig["courses"] | undefined
+): ProductOptionGroup[] {
+  if (!dailyCourses) return baseGroups;
+  return baseGroups.map((group) => {
+    const courseKey = groupCourseMap[group.id];
+    if (!courseKey) return group;
+    const courseData = dailyCourses[courseKey];
+    if (!courseData) return group;
+    const activeOptions = getCourseOptions(courseKey, courseData);
+    return { ...group, choices: activeOptions };
+  });
 }

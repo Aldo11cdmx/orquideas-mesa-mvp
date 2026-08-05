@@ -15,7 +15,7 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
-import { dailyCourseOrder, getCourseOptions } from "@/lib/daily-menu";
+import { dailyCourseOrder, getCourseOptions, resolveDailyCourseGroups } from "@/lib/daily-menu";
 import {
   categories,
   isProductAvailable,
@@ -660,30 +660,37 @@ function ProductDialog({
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
-  const baseGroups = product.optionGroups || (
-    product.options?.length
-      ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }]
-      : []
-  );
   const isComidaALaCarta = product.category === "Comidas a la carta";
-  const dailyCourses = isComidaALaCarta ? (dailyMenu?.courses || {}) : {};
-  const groupCourseMap: Record<string, string> = {
-    "primer-tiempo": "Entrada",
-    "acompanamiento": "Guarnición",
-    "agua": "Bebida"
-  };
-   const groups = isComidaALaCarta
-     ? baseGroups.map((group) => {
-         const courseKey = groupCourseMap[group.id];
-         if (!courseKey || !dailyCourses[courseKey]) return group;
-         const activeOptions = getCourseOptions(courseKey, dailyCourses[courseKey]);
-         const filteredChoices = group.choices.filter((c) => activeOptions.includes(c));
-         return { ...group, choices: filteredChoices };
-       })
-     : baseGroups;
+  const groups = useMemo(() => {
+    const baseGroups = product.optionGroups || (
+      product.options?.length
+        ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }]
+        : []
+    );
+    return isComidaALaCarta
+      ? resolveDailyCourseGroups(baseGroups, dailyMenu?.courses)
+      : baseGroups;
+  }, [isComidaALaCarta, product, dailyMenu?.courses]);
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))
   );
+  const selectionsSynced = useRef(false);
+  useEffect(() => {
+    if (!selectionsSynced.current) {
+      selectionsSynced.current = true;
+      return;
+    }
+    setSelections((prev) =>
+      Object.fromEntries(
+        groups.map((group) => [
+          group.id,
+          prev[group.id] && group.choices.includes(prev[group.id])
+            ? prev[group.id]
+            : group.choices[0] || ""
+        ])
+      )
+    );
+  }, [groups]);
   const hasCompleteSelection = groups.every(
     (group) => group.choices.length > 0 && Boolean(selections[group.id])
   );

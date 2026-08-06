@@ -255,7 +255,7 @@ begin
       -- 2. Option price modifier (backend-authoritative):
       --    (a) Strict lookup: parse option_str ("label: choice") →
       --        extract choice value via split_part → find index in
-      --        choices[] → use choicePrices[idx] as autority
+      --        choices[] → use choicePrices[idx] as authority
       --    (b) Fallback: validate client_option_modifier against
       --        choicePrices values (pero no usar client value, solo
       --        devolverlo si coincide)

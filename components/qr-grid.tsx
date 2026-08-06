@@ -6,7 +6,6 @@ import { Brand } from "@/components/brand";
 
 type TableEntry = {
   code: string;
-  qrToken: string;
   name?: string;
 };
 
@@ -19,7 +18,7 @@ export function QRGrid({ appUrl, tables }: { appUrl: string; tables: TableEntry[
     let active = true;
     Promise.all(
       tables.map(async (table) => {
-        const url = `${appUrl}/menu?table=${table.qrToken}`;
+        const url = `${appUrl}/mesa/${table.code}`;
         return {
           table,
           url,
@@ -43,12 +42,12 @@ export function QRGrid({ appUrl, tables }: { appUrl: string; tables: TableEntry[
     <div className="mt-8 grid gap-6 sm:grid-cols-2">
       {codes.length === 0 &&
         tables.map((table) => (
-          <div className="qr-card paper min-h-[500px] animate-pulse rounded-3xl" key={table.qrToken} />
+          <div className="qr-card paper min-h-[500px] animate-pulse rounded-3xl" key={table.code} />
         ))}
       {codes.map(({ table, url, image }) => (
         <article
           className="qr-card paper menu-card relative overflow-hidden rounded-[2rem] border border-[var(--line)] p-7 text-center"
-          key={table.qrToken}
+          key={table.code}
         >
           <div className="flex justify-center">
             <Brand compact />

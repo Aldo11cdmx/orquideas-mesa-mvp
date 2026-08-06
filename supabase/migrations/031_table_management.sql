@@ -1,24 +1,35 @@
--- 031 — Sistema profesional de mesas: metadata, QR tokens, estados y RPCs.
+-- 031 — Sistema profesional de mesas: metadata, estados y RPCs.
 --
 -- Esta migración es INCREMENTAL, NO DESTRUCTIVA e IDEMPOTENTE:
 -- - Extiende la tabla existente `tables` (NO crea una tabla nueva, evitando
 --   duplicación y manteniendo la FK existente de orders.table_id → tables.id)
--- - Agrega columnas de forma segura (nullable primero, populate, luego NOT NULL)
+-- - Agrega columnas: name, capacity, updated_at
 -- - Los pedidos históricos y datos existentes permanecen intactos
 -- - Usa `select id from public.restaurants where active limit 1` en lugar de
 --   UUID hardcodeado (robustez ante cambios en el restaurante seed)
 -- - Los RPCs siguen el mismo patrón de autenticación por PIN que save_admin_product
 -- - Compatibilidad con migrations 001-030: FKs intactas, place_order preserved
 --
+-- IMPORTANT: No se toca el sistema QR existente.
+-- El QR actual funciona por código de mesa (/mesa/[codigo]) y está impreso.
+-- No se agrega qr_token, ni se cambia la URL de QR, ni se crea /menu.
+-- Los QR impresos seguirán funcionando sin cambios.
+--
 -- Funciones creadas:
--- - admin_tables(p_pin)           → lista mesas con estado y pedidos activos
+-- - admin_tables(p_pin)         → lista mesas con estado y pedidos activos
 -- - save_admin_table(p_pin, p_table) → crear/actualizar mesa
--- - get_table_by_qr(p_qr_token)   → lookup público de mesa por QR token
+--
+-- Estados de mesa (computados, no almacenados):
+--   free:            sin pedidos pendientes ni sesión activa
+--   occupied:        pedidos con status en (sent, accepted, preparing, ready)
+--   pending_payment: pedidos entregados pero sesión activa (no cerrada)
 
 -- ============================================================================
 -- 1. Extensión de la tabla `tables`
 --    Se reutiliza la tabla existente para mantener compatibilidad con
 --    orders.table_id → tables.id (FK existente desde migration 001)
+--    NO se agrega qr_token: el sistema QR actual usa códigos de mesa (/mesa/A1)
+--    y los QR físicos ya están impresos.
 -- ============================================================================
 
 -- 1a. name (texto opcional, default vacío)
@@ -32,38 +43,6 @@ alter table public.tables
 -- 1c. updated_at (timestamp, default now())
 alter table public.tables
   add column if not exists updated_at timestamptz not null default now();
-
--- 1d. qr_token — migración segura en 4 pasos para evitar bloqueos en tablas con datos:
---     (1) columna nullable → (2) populate existentes → (3) default → (4) NOT NULL
-alter table public.tables
-  add column if not exists qr_token uuid;
-
-update public.tables
-  set qr_token = gen_random_uuid()
-  where qr_token is null;
-
--- Validar que TODOS los qr_token se poblaron antes de hacer NOT NULL.
--- Si algo falla, la migración aborta en lugar de dejar la tabla en estado inconsistente.
-do $$
-begin
-  if exists (
-    select 1
-    from public.tables
-    where qr_token is null
-  ) then
-    raise exception 'qr_token_population_failed: existen mesas sin qr_token después del populate';
-  end if;
-end $$;
-
-alter table public.tables
-  alter column qr_token set default gen_random_uuid();
-
-alter table public.tables
-  alter column qr_token set not null;
-
--- Índice único para QR tokens (acceso O(1) por QR)
-create unique index if not exists idx_tables_qr_token
-  on public.tables (qr_token);
 
 -- Índice único que respalda ON CONFLICT (restaurant_id, code) en save_admin_table
 -- NOTA: migration 001 ya define `unique (restaurant_id, code)` como constraint,
@@ -127,7 +106,6 @@ begin
         'name',       t.name,
         'capacity',   t.capacity,
         'active',     t.active,
-        'qrToken',    t.qr_token,
         'createdAt',  t.created_at,
         'updatedAt',  t.updated_at,
         'status',     case
@@ -171,8 +149,6 @@ grant execute on function public.admin_tables(text) to anon, authenticated;
 -- 3. RPC: crear/actualizar mesa
 --    Recibe JSON: { id?, code, name?, capacity?, active? }
 --    Si id está presente → UPDATE; si no → INSERT con ON CONFLICT(restaurant_id, code)
---    La columna qr_token se genera automáticamente via default al INSERT.
---    En UPDATE, qr_token se preserva (no se regenera).
 --    Patrón de autenticación: mismo que save_admin_product (migration 028)
 -- ============================================================================
 create or replace function public.save_admin_table(p_pin text, p_table jsonb)
@@ -219,9 +195,6 @@ begin
 
   -- Insert o update (dependiendo de si se pasa id)
   if p_table ? 'id' and p_table->>'id' is not null and p_table->>'id' <> '' then
-    -- IMPORTANTE:
-    -- Los QR físicos pueden estar impresos.
-    -- Nunca regenerar qr_token en edición de mesa.
     update public.tables
     set code = v_code,
         name = v_name,
@@ -234,7 +207,6 @@ begin
 
     if v_table_id is null then raise exception 'table_not_found'; end if;
   else
-    -- INSERT: qr_token se genera automáticamente via default
     insert into public.tables (restaurant_id, code, name, capacity, active)
     values (v_restaurant_id, v_code, v_name, v_capacity, v_active)
     on conflict (restaurant_id, code) do update set
@@ -252,7 +224,6 @@ begin
     'name',       t.name,
     'capacity',   t.capacity,
     'active',     t.active,
-    'qrToken',    t.qr_token,
     'createdAt',  t.created_at,
     'updatedAt',  t.updated_at
   )
@@ -262,33 +233,3 @@ end;
 $$;
 
 grant execute on function public.save_admin_table(text, jsonb) to anon, authenticated;
-
--- ============================================================================
--- 4. RPC: lookup público de mesa por QR token
---    Sin PIN requerido — cualquier persona con el QR puede acceder al menú.
---    Solo devuelve mesa si está active y el restaurante está active.
---    Mantiene el patrón de seguridad: el qr_token es un UUID v4 impredecible.
--- ============================================================================
-create or replace function public.get_table_by_qr(p_qr_token uuid)
-returns jsonb
-language sql
-security definer
-set search_path = public
-as $$
-  select jsonb_build_object(
-    'id',         t.id,
-    'code',       t.code,
-    'name',       t.name,
-    'capacity',   t.capacity,
-    'active',     t.active,
-    'qrToken',    t.qr_token
-  )
-  from public.tables t
-  join public.restaurants r on r.id = t.restaurant_id
-  where t.qr_token = p_qr_token
-    and t.active
-    and r.active
-  limit 1;
-$$;
-
-grant execute on function public.get_table_by_qr(uuid) to anon, authenticated;

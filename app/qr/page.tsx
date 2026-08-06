@@ -9,7 +9,6 @@ export const dynamic = "force-dynamic";
 type DbTable = {
   code: string;
   name: string;
-  qrToken: string;
   active: boolean;
 };
 
@@ -25,7 +24,7 @@ export default async function QRPage() {
     console.error("admin_tables failed", error.code, error.message);
   }
 
-  const tables: DbTable[] = ((data ?? []) as DbTable[]).filter((t) => t.active !== false);
+  const tables = ((data ?? []) as DbTable[]).filter((t) => t.active !== false);
 
   return (
     <main className="min-h-screen pb-12">
@@ -46,7 +45,6 @@ export default async function QRPage() {
           appUrl={appUrl}
           tables={tables.map((t) => ({
             code: t.code,
-            qrToken: t.qrToken,
             name: t.name
           }))}
         />

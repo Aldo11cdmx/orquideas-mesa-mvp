@@ -1070,7 +1070,7 @@ function TablesAdmin({ pin }: { pin: string }) {
         </div>
         <button
           className="focus-ring flex items-center gap-2 rounded-xl bg-[var(--brown)] px-4 py-3 font-bold text-white"
-          onClick={() => setEditing({ id: "", code: "", name: "", capacity: 4, active: true, qrToken: "" })}
+          onClick={() => setEditing({ id: "", code: "", name: "", capacity: 4, active: true })}
         >
           <Plus size={18} /> Nueva mesa
         </button>
@@ -1133,13 +1133,10 @@ function TablesAdmin({ pin }: { pin: string }) {
                   </span>
                 )}
 
-                <div className="mt-3 border-t border-[var(--line)] pt-2">
-                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
-                    QR Token
-                  </p>
-                  <p className="font-mono text-xs text-[var(--brown-dark)] break-all">
-                    {table.qrToken}
-                  </p>
+                <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2">
+                  <span className="text-xs text-[var(--muted)]">
+                    QR apunta a /mesa/{table.code}
+                  </span>
                 </div>
               </article>
             );

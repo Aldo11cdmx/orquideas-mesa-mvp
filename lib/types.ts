@@ -161,7 +161,6 @@ export type RestaurantTable = {
   name: string;
   capacity: number;
   active: boolean;
-  qrToken: string;
   createdAt?: string;
   updatedAt?: string;
   status?: TableStatus;

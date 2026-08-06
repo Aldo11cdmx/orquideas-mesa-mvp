@@ -82,6 +82,8 @@ where restaurant_id = (select id from public.restaurants where active limit 1)
 
 -- ============================================================================
 -- 4. Override place_order
+--    DROP FUNCTION IF EXISTS garantiza una definición limpia, evitando que
+--    una versión corrupida (doble definición pegada) persista en la base.
 --    Firma idéntica a migración 028: (text, jsonb, text, uuid, uuid)
 --    Arquitectura: un CTE `validated` computa unit_price (extras + option_modifier)
 --    una sola vez. Los resultados se almacenan en temp_validated_items (tabla
@@ -95,6 +97,8 @@ where restaurant_id = (select id from public.restaurants where active limit 1)
 --    - La lógica de validación de extras (comida-corrida y carta) se preserva
 --    - Los pedidos históricos sin optionPriceModifier siguen funcionando (default 0)
 -- ============================================================================
+drop function if exists public.place_order(text, jsonb, text, uuid, uuid);
+
 create or replace function public.place_order(
   p_table_code text,
   p_items jsonb,

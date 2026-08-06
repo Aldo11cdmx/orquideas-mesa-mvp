@@ -8,6 +8,18 @@ export type OrderStatus =
 
 export type PaymentMethod = "cash" | "card";
 
+export type ProductExtra = {
+  name: string;
+  price: number;
+  active?: boolean;
+};
+
+export type ProductSubstitute = {
+  group: string;
+  original: string;
+  replacement: string;
+};
+
 export type Product = {
   id: string;
   slug: string;
@@ -27,12 +39,14 @@ export type Product = {
   availableFrom?: string;
   availableUntil?: string;
   active?: boolean;
+  extrasConfig?: ProductExtra[];
 };
 
 export type ProductOptionGroup = {
   id: string;
   label: string;
   choices: string[];
+  choicePrices?: number[];
   required?: boolean;
 };
 
@@ -55,7 +69,9 @@ export type CartItem = {
   quantity: number;
   notes: string;
   option?: string;
+  priceModifier?: number;
   extras?: Array<{ name: string; price: number }>;
+  substitutes?: ProductSubstitute[];
   image: string;
 };
 
@@ -63,6 +79,7 @@ export type Order = {
   id: string;
   folio: string;
   tableCode: string;
+  sessionId?: string | null;
   status: OrderStatus;
   items: CartItem[];
   notes: string;
@@ -123,4 +140,15 @@ export type TrialStatus = {
   active: boolean;
   daysRemaining: number;
   hoursRemaining: number;
+};
+
+export type SessionStatus = "active" | "closing" | "closed";
+
+export type TableSession = {
+  id: string;
+  tableCode: string;
+  status: SessionStatus;
+  createdAt: string;
+  updatedAt: string;
+  orders?: Order[];
 };

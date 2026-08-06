@@ -10,21 +10,24 @@ const orderSchema = z.object({
   tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$/),
   idempotencyKey: z.string().uuid(),
   notes: note.default(""),
+  sessionId: z.string().uuid().optional(),
   items: z
     .array(
       z.object({
         productId: z.string().min(1).max(80),
         quantity: z.number().int().min(1).max(10),
         notes: note.default(""),
-        option: z.string().trim().max(80).optional(),
-        extras: z
-          .array(
-            z.object({
-              name: z.string().trim().min(1).max(80)
-            })
-          )
-          .max(12)
-          .optional()
+         option: z.string().trim().max(80).optional(),
+         optionPriceModifier: z.number().int().min(0).optional(),
+         extras: z
+           .array(
+             z.object({
+               name: z.string().trim().min(1).max(80),
+               price: z.number().min(0).optional()
+             })
+           )
+           .max(12)
+           .optional()
       })
     )
     .min(1)
@@ -45,7 +48,8 @@ export async function POST(request: NextRequest) {
     p_table_code: parsed.data.tableCode,
     p_items: parsed.data.items,
     p_notes: parsed.data.notes,
-    p_idempotency_key: parsed.data.idempotencyKey
+    p_idempotency_key: parsed.data.idempotencyKey,
+    p_session_id: parsed.data.sessionId ?? null
   });
 
   if (error) {

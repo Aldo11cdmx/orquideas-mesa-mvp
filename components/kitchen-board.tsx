@@ -67,6 +67,8 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [tableFilter, setTableFilter] = useState("");
   const [sound, setSound] = useState(false);
   const [readyNotice, setReadyNotice] = useState<Order | null>(null);
+  const [sessionView, setSessionView] = useState<{ sessionId: string; tableCode: string } | null>(null);
+  const [closingSession, setClosingSession] = useState(false);
   const [online, setOnline] = useState(true);
   const [realtimeStatus, setRealtimeStatus] = useState("CONNECTING");
   const [syncing, setSyncing] = useState(false);
@@ -411,8 +413,30 @@ function StaffBoard({ role }: { role: StaffRole }) {
     }
 
     const updated = payload as Order;
-    upsert(updated);
-    await channelRef.current?.send({ type: "edited", order: updated });
+      upsert(updated);
+      await channelRef.current?.send({ type: "edited", order: updated });
+  }
+
+  async function closeSession(sessionId: string) {
+    setClosingSession(true);
+    try {
+      const response = await fetch(`/api/sessions/${sessionId}/close`, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        window.alert(payload?.error || "No fue posible cerrar la sesión.");
+        return;
+      }
+      void loadOrders(pin);
+      setSessionView(null);
+    } catch {
+      window.alert("No fue posible cerrar la sesión.");
+    } finally {
+      setClosingSession(false);
+    }
   }
 
   if (!unlocked) {
@@ -623,16 +647,19 @@ function StaffBoard({ role }: { role: StaffRole }) {
                   </span>
                 </div>
                 <div className="mt-2 space-y-3">
-                  {columnOrders.map((order) => (
-                    <KitchenCard
-                      key={order.id}
-                      order={order}
-                      now={now}
-                      role={role}
-                      onStatus={changeStatus}
-                      onRemoveItem={removeItem}
-                    />
-                  ))}
+                   {columnOrders.map((order) => (
+                     <KitchenCard
+                       key={order.id}
+                       order={order}
+                       now={now}
+                       role={role}
+                       onStatus={changeStatus}
+                       onRemoveItem={removeItem}
+                       onViewSession={() => {
+                         if (order.sessionId) setSessionView({ sessionId: order.sessionId, tableCode: order.tableCode });
+                       }}
+                     />
+                   ))}
                   {columnOrders.length === 0 && (
                     <div className="rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center text-sm text-[var(--muted)]">
                       <Utensils className="mx-auto mb-3 opacity-50" size={26} />
@@ -645,6 +672,23 @@ function StaffBoard({ role }: { role: StaffRole }) {
           })}
         </div>
       </div>
+
+      {sessionView && (
+        <SessionAccountModal
+          sessionId={sessionView.sessionId}
+          tableCode={sessionView.tableCode}
+          orders={orders.filter(
+            (o) =>
+              o.sessionId === sessionView.sessionId &&
+              !["delivered", "cancelled"].includes(o.status)
+          )}
+          allOrders={orders.filter((o) => o.sessionId === sessionView.sessionId)}
+          onClose={() => setSessionView(null)}
+          onCloseSession={() => closeSession(sessionView.sessionId)}
+          closing={closingSession}
+          pin={pin}
+        />
+      )}
     </main>
   );
 }
@@ -654,13 +698,15 @@ function KitchenCard({
   now,
   role,
   onStatus,
-  onRemoveItem
+  onRemoveItem,
+  onViewSession
 }: {
   order: Order;
   now: number;
   role: StaffRole;
   onStatus: (order: Order, status: OrderStatus, paymentMethod?: PaymentMethod) => void;
   onRemoveItem: (order: Order, itemId: string) => void;
+  onViewSession: () => void;
 }) {
   const minutes = orderAgeMinutes(order, now);
   const urgency = urgencyLevel(order, now);
@@ -688,6 +734,9 @@ function KitchenCard({
         <div className="text-right">
           <StatusPill status={order.status} />
           <p className="mt-2 text-xs">{order.folio}</p>
+          {order.sessionId && (
+            <p className="mt-1 text-[10px] text-[#d9c17f]">Sesión #{order.sessionId.slice(0, 8)}</p>
+          )}
         </div>
       </div>
       <div className="p-4">
@@ -733,6 +782,15 @@ function KitchenCard({
                 <p className="ml-6 mt-1 rounded-lg bg-[#edf3ec] px-2 py-1.5 text-xs font-bold text-[var(--green)]">
                   Elecciones: {item.option}
                 </p>
+              )}
+              {item.extras && item.extras.length > 0 && (
+                <div className="ml-6 mt-1 space-y-0.5">
+                  {item.extras.map((extra, extraIndex) => (
+                    <p key={extraIndex} className="text-xs text-[var(--terracotta)]">
+                      + {extra.name} {extra.price !== undefined ? money(extra.price) : ""}
+                    </p>
+                  ))}
+                </div>
               )}
               {item.notes && (
                 <p className="ml-6 mt-1 rounded-lg bg-[#f4dfb4] p-2 text-xs font-bold text-[#694500]">
@@ -787,7 +845,162 @@ function KitchenCard({
             <XCircle size={15} /> Cancelar pedido completo
           </button>
         )}
+        {role === "waiter" && order.sessionId && (
+          <button
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#f4dfb4] px-4 text-xs font-bold text-[#694500] hover:bg-[#e8c87a]"
+            onClick={onViewSession}
+          >
+            <Search size={15} /> Ver cuenta de mesa
+          </button>
+        )}
       </div>
     </article>
+  );
+}
+
+function SessionAccountModal({
+  sessionId,
+  tableCode,
+  orders,
+  allOrders,
+  onClose,
+  onCloseSession,
+  closing,
+  pin
+}: {
+  sessionId: string;
+  tableCode: string;
+  orders: Order[];
+  allOrders: Order[];
+  onClose: () => void;
+  onCloseSession: () => void;
+  closing: boolean;
+  pin: string;
+}) {
+  const allTotal = allOrders.reduce((sum, order) => sum + order.total, 0);
+  const pendingOrders = orders.length;
+  const canClose = pendingOrders === 0;
+
+  return (
+    <div className="fixed inset-0 z-[60] flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
+      <section
+        role="dialog"
+        aria-modal="true"
+        aria-labelledby="session-title"
+        className="animate-pop w-full max-w-2xl rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:rounded-[2rem]"
+      >
+        <div className="border-b border-[var(--line)] p-5 sm:p-7">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
+                Mesa {tableCode}
+              </p>
+              <h2 id="session-title" className="mt-1 font-display text-2xl font-bold">
+                Cuenta de sesión
+              </h2>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Sesión #{sessionId.slice(0, 8)} · {allOrders.length} pedidos
+              </p>
+            </div>
+            <button
+              className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-[#eee8dc]"
+              aria-label="Cerrar"
+              onClick={onClose}
+            >
+              <XCircle size={20} />
+            </button>
+          </div>
+        </div>
+
+        <div className="max-h-[60dvh] overflow-y-auto p-5 sm:p-7">
+          {allOrders.length === 0 ? (
+            <p className="text-center text-sm text-[var(--muted)]">
+              Esta sesión aún no tiene pedidos.
+            </p>
+          ) : (
+            <div className="space-y-4">
+              {allOrders.map((order) => (
+                <article key={order.id} className="paper rounded-2xl p-4 shadow-sm">
+                  <div className="flex items-start justify-between gap-3">
+                    <div>
+                      <strong className="font-display">{order.folio}</strong>
+                      <p className="mt-1 text-xs text-[var(--muted)]">
+                        {new Date(order.createdAt).toLocaleTimeString("es-MX", {
+                          hour: "2-digit",
+                          minute: "2-digit"
+                        })}
+                      </p>
+                    </div>
+                    <div className="text-right">
+                      <strong className="text-lg">{money(order.total)}</strong>
+                      <StatusPill status={order.status} />
+                    </div>
+                  </div>
+                  <ul className="mt-3 space-y-1.5 text-sm">
+                    {order.items.map((item, index) => (
+                      <li key={item.itemId || `${item.productId}-${index}`} className="flex justify-between">
+                        <span>
+                          {item.quantity}× {item.name}
+                          {item.option && <span className="text-[var(--muted)]"> · {item.option}</span>}
+                          {item.extras && item.extras.length > 0 && (
+                            <span className="block text-xs text-[var(--terracotta)]">
+                              Extras: {item.extras.map((e) => e.name).join(", ")}
+                            </span>
+                          )}
+                        </span>
+                        <span className="text-[var(--muted)]">{money(item.unitPrice * item.quantity)}</span>
+                      </li>
+                    ))}
+                  </ul>
+                  {order.notes && (
+                    <p className="mt-2 text-xs text-[var(--muted)]">Nota: {order.notes}</p>
+                  )}
+                </article>
+              ))}
+            </div>
+          )}
+        </div>
+
+        <div className="border-t border-[var(--line)] bg-[#faf7f3] p-5 sm:p-7">
+          <div className="mb-4 space-y-2 text-sm">
+            <div className="flex justify-between">
+              <span className="text-[var(--muted)]">Pedidos pendientes</span>
+              <strong>{pendingOrders}</strong>
+            </div>
+            <div className="flex justify-between">
+              <span className="text-[var(--muted)]">Total acumulado</span>
+              <strong className="text-xl text-[var(--brown)]">{money(allTotal)}</strong>
+            </div>
+          </div>
+
+          {canClose ? (
+            <button
+              className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--gold)] px-5 font-bold text-[var(--charcoal)] shadow-lg transition hover:opacity-90"
+              disabled={closing}
+              onClick={() => {
+                if (
+                  window.confirm(
+                    `¿Cerrar la sesión de la mesa ${tableCode}? Se marcarán todos los pedidos como cerrados.\n\nPIN: ${pin}`
+                  )
+                ) {
+                  onCloseSession();
+                }
+              }}
+            >
+              {closing ? "Cerrando…" : "Cerrar sesión"}
+            </button>
+          ) : (
+            <div className="rounded-2xl bg-[#f4dfb4]/60 p-4 text-sm">
+              <p className="font-bold text-[#694500]">
+                Quedan {pendingOrders} pedido(s) pendientes.
+              </p>
+              <p className="mt-1 text-xs text-[#694500]/80">
+                Marca todos los pedidos como entregados para poder cerrar la cuenta.
+              </p>
+            </div>
+          )}
+        </div>
+      </section>
+    </div>
   );
 }

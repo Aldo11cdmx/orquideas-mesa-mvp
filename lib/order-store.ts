@@ -1,13 +1,14 @@
 "use client";
 
 import { createClient } from "@/lib/supabase/client";
-import type { DailyMenuConfig, Order, OrderStatus, Product } from "@/lib/types";
+import type { DailyMenuConfig, Order, OrderStatus, Product, TableSession } from "@/lib/types";
 
 export type AppChannelPayload = {
   type: string;
   order?: Order;
   product?: Product;
   dailyMenu?: DailyMenuConfig;
+  session?: TableSession;
 };
 
 const STORAGE_KEY = "orquideas-demo-orders";
@@ -75,6 +76,11 @@ export function connectOrderChannel(
     .on(
       "postgres_changes",
       { event: "*", schema: "public", table: "order_items" },
+      () => callback({ type: "database_change" })
+    )
+    .on(
+      "postgres_changes",
+      { event: "*", schema: "public", table: "table_sessions" },
       () => callback({ type: "database_change" })
     );
   channel.subscribe((status) => onStatus?.(status));

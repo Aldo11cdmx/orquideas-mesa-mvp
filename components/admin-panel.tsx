@@ -338,6 +338,31 @@ function EditProduct({
   onSave: (product: Product) => void;
 }) {
   const [draft, setDraft] = useState(product);
+  const [showExtraEditor, setShowExtraEditor] = useState(false);
+  const [extraName, setExtraName] = useState("");
+  const [extraPrice, setExtraPrice] = useState("");
+
+  function toggleExtra(extraName: string) {
+    const current = draft.extrasConfig ?? [];
+    setDraft({
+      ...draft,
+      extrasConfig: current.map((e) => (e.name === extraName ? { ...e, active: !e.active } : e))
+    });
+  }
+
+  function addExtra() {
+    const name = extraName.trim();
+    if (!name) return;
+    const price = Number(extraPrice);
+    if (isNaN(price) || price < 0) return;
+    const current = draft.extrasConfig ?? [];
+    setDraft({
+      ...draft,
+      extrasConfig: [...current, { name, price, active: true }]
+    });
+    setExtraName("");
+    setExtraPrice("");
+  }
   return (
     <div className="fixed inset-0 z-50 grid place-items-center bg-[#10211b]/55 p-4">
       <form
@@ -386,6 +411,92 @@ function EditProduct({
             ))}
           </select>
         </label>
+
+        <div className="mt-4 flex gap-6">
+          <label className="flex items-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={draft.active !== false}
+              onChange={(event) => setDraft({ ...draft, active: event.target.checked })}
+            />
+            Activo
+          </label>
+          <label className="flex items-center gap-2 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={draft.soldOut === true}
+              onChange={(event) => setDraft({ ...draft, soldOut: event.target.checked })}
+            />
+            Agotado
+          </label>
+        </div>
+
+        {product.extrasConfig && product.extrasConfig.length > 0 && (
+          <fieldset className="mt-4 rounded-2xl border border-[var(--line)] p-4">
+            <legend className="px-1 font-display text-xl font-bold">Extras disponibles</legend>
+            <p className="mb-3 text-xs text-[var(--muted)]">
+              Estos extras se ofrecen al cliente al agregar este producto.
+            </p>
+            <div className="grid gap-2">
+              {(draft.extrasConfig || []).map((extra) => (
+                <div className="flex items-center justify-between rounded-xl border border-[var(--line)] px-3 py-2" key={extra.name}>
+                  <span className="font-medium">{extra.name}</span>
+                  <span className="text-sm text-[var(--muted)]">{money(extra.price)}</span>
+                  <label className="flex items-center gap-1 text-xs font-bold">
+                    <input
+                      type="checkbox"
+                      checked={extra.active !== false}
+                      onChange={() => toggleExtra(extra.name)}
+                    />
+                    Activo
+                  </label>
+                </div>
+              ))}
+            </div>
+          </fieldset>
+        )}
+
+        {showExtraEditor && (
+          <fieldset className="mt-4 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
+            <legend className="px-1 font-display text-xl font-bold">Agregar extra</legend>
+            <div className="mt-3 grid gap-3 sm:grid-cols-[1fr_120px_auto]">
+              <input
+                className="h-11 rounded-xl border border-[var(--line)] px-3 font-normal"
+                placeholder="Nombre del extra"
+                maxLength={80}
+                value={extraName}
+                onChange={(event) => setExtraName(event.target.value)}
+              />
+              <input
+                className="h-11 rounded-xl border border-[var(--line)] px-3 font-normal"
+                placeholder="Precio"
+                min="0"
+                step="0.5"
+                type="number"
+                value={extraPrice}
+                onChange={(event) => setExtraPrice(event.target.value)}
+              />
+              <button
+                className="focus-ring h-11 rounded-xl bg-[var(--green)] px-4 font-bold text-white"
+                type="button"
+                disabled={!extraName.trim() || !Number(extraPrice)}
+                onClick={addExtra}
+              >
+                +
+              </button>
+            </div>
+          </fieldset>
+        )}
+
+        {(draft.extrasConfig || []).length === 0 && product.category !== "Bebidas" && product.category !== "Comidas a la carta" && (
+          <button
+            className="focus-ring mt-4 text-sm font-bold text-[var(--brown)] hover:underline"
+            type="button"
+            onClick={() => setShowExtraEditor(!showExtraEditor)}
+          >
+            {showExtraEditor ? "Cancelar" : "+ Agregar extras con costo"}
+          </button>
+        )}
         <div className="mt-6 flex gap-3">
           <button
             className="focus-ring h-12 flex-1 rounded-xl border border-[var(--line)] font-bold"

@@ -24,6 +24,16 @@ const productSchema = z.object({
   options: z.array(z.string().trim().min(1).max(80)).max(20).optional(),
   optionGroups: z.array(optionGroup).max(8).optional(),
   packageIncludes: z.array(z.string().trim().min(1).max(80)).max(10).optional(),
+  extrasConfig: z
+    .array(
+      z.object({
+        name: z.string().trim().min(1).max(80),
+        price: z.number().min(0).max(10000),
+        active: z.boolean().optional()
+      })
+    )
+    .max(20)
+    .optional(),
   availableFrom: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   availableUntil: z.string().regex(/^\d{2}:\d{2}$/).optional()
 });

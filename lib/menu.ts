@@ -1,4 +1,4 @@
-import type { Product } from "@/lib/types";
+import type { Product, ProductExtra, ProductOptionGroup } from "@/lib/types";
 
 export const restaurant = {
   name: "Imperio",
@@ -36,6 +36,11 @@ const extendedBreakfastSlugs = [
 ];
 
 const breakfastPackage = ["Fruta de temporada", "Café de la casa"];
+const cartaExtras: ProductExtra[] = [
+  { name: "Café", price: 15, active: true },
+  { name: "Fruta extra", price: 10, active: true }
+];
+
 const salsaGroup = {
   id: "salsa",
   label: "Elige tu salsa",
@@ -84,6 +89,14 @@ const drinkGroup = {
   id: "agua",
   label: "Agua",
   choices: ["Agua de fruta", "Agua simple"],
+  required: true
+};
+
+const cafeTypeGroup: ProductOptionGroup = {
+  id: "cafe-tipo",
+  label: "Tipo de café",
+  choices: ["Café normal", "Café con leche evaporada"],
+  choicePrices: [0, 15],
   required: true
 };
 
@@ -258,6 +271,7 @@ export const products: Product[] = [
     price: 90,
     category: "Desayunos",
     image: "/menu/imperio/arrachera-actual.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -288,6 +302,7 @@ export const products: Product[] = [
         required: true
       }
     ],
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -298,6 +313,7 @@ export const products: Product[] = [
     price: 45,
     category: "A la carta",
     image: "/menu/imperio/papas-francesas.jpg",
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -309,6 +325,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/ensalada.jpg",
     options: ["Pollo", "Atún"],
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -320,6 +337,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/club-sandwich.jpg",
     popular: true,
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -341,6 +359,7 @@ export const products: Product[] = [
     price: 25,
     category: "Panes y más",
     image: "/menu/imperio/bisquet-nuevo.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -351,6 +370,7 @@ export const products: Product[] = [
     price: 40,
     category: "Panes y más",
     image: "/menu/imperio/pan-frances.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -361,6 +381,7 @@ export const products: Product[] = [
     price: 40,
     category: "Panes y más",
     image: "/menu/imperio/hot-cakes-nuevos.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -371,6 +392,7 @@ export const products: Product[] = [
     price: 45,
     category: "Panes y más",
     image: "/menu/imperio/waffles-nuevos.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -381,6 +403,7 @@ export const products: Product[] = [
     price: 35,
     category: "Panes y más",
     image: "/menu/imperio/cuernito.jpg",
+    extrasConfig: cartaExtras,
     ...breakfastHours
   },
   {
@@ -413,11 +436,22 @@ export const products: Product[] = [
     ...allDayHours
   },
   {
-    id: "cafe-leche",
-    slug: "cafe-leche",
-    name: "Café con leche evaporada",
+    id: "cafe",
+    slug: "cafe",
+    name: "Café",
     description: "Café caliente preparado al momento.",
-    price: 25,
+    price: 15,
+    category: "Bebidas",
+    image: "/menu/imperio/cafe-leche.jpg",
+    optionGroups: [cafeTypeGroup],
+    ...allDayHours
+  },
+  {
+    id: "te",
+    slug: "te",
+    name: "Té",
+    description: "Té caliente preparado al momento.",
+    price: 15,
     category: "Bebidas",
     image: "/menu/imperio/cafe-leche.jpg",
     ...allDayHours
@@ -469,6 +503,7 @@ export const products: Product[] = [
     price: 90,
     category: "A la carta",
     image: "/menu/imperio/enfrijoladas.jpg",
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -480,6 +515,7 @@ export const products: Product[] = [
     category: "A la carta",
     image: "/menu/imperio/salchipulpos-papas.jpg",
     isNew: true,
+    extrasConfig: cartaExtras,
     ...allDayHours
   },
   {
@@ -490,6 +526,7 @@ export const products: Product[] = [
     price: 85,
     category: "Comidas a la carta",
     image: "/menu/imperio/pollo-empanizado.jpg",
+    extrasConfig: cartaExtras,
     ...lunchHours
   },
   {
@@ -500,6 +537,7 @@ export const products: Product[] = [
     price: 85,
     category: "Comidas a la carta",
     image: "/menu/imperio/pechuga-plancha.jpg",
+    extrasConfig: cartaExtras,
     ...lunchHours
   },
   {
@@ -510,6 +548,7 @@ export const products: Product[] = [
     price: 85,
     category: "Comidas a la carta",
     image: "/menu/imperio/milanesa-res.jpg",
+    extrasConfig: cartaExtras,
     ...lunchHours
   },
   {
@@ -521,6 +560,7 @@ export const products: Product[] = [
     category: "Comidas a la carta",
     image: "/menu/imperio/pechuga-rellena.jpg",
     popular: true,
+    extrasConfig: cartaExtras,
     ...lunchHours
   },
   {
@@ -531,6 +571,7 @@ export const products: Product[] = [
     price: 95,
     category: "Comidas a la carta",
     image: "/menu/imperio/pescado-empanizado.jpg",
+    extrasConfig: cartaExtras,
     ...lunchHours
   },
   {
@@ -541,7 +582,8 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enchiladas-suizas.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
+    extrasConfig: cartaExtras
   },
   {
     id: "arrachera-comida",
@@ -551,7 +593,8 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/arrachera-actual.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
+    extrasConfig: cartaExtras
   },
   {
     id: "enchiladas-mole-comida",
@@ -561,7 +604,8 @@ export const products: Product[] = [
     price: 100,
     category: "Comidas a la carta",
     image: "/menu/imperio/enmoladas.jpg",
-    optionGroups: [firstCourseGroup, sideGroup, drinkGroup]
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
+    extrasConfig: cartaExtras
   }
 ];
 

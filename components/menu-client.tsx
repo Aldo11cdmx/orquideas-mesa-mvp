@@ -25,7 +25,8 @@ import {
   timeToMinutes
 } from "@/lib/menu";
 import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
-import type { CartItem, DailyMenuConfig, Order, Product } from "@/lib/types";
+import { calculateCartTotal, cartItemTotal } from "@/lib/order-utils";
+import type { CartItem, DailyMenuConfig, Order, Product, TableSession } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
 
@@ -70,6 +71,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [catalog, setCatalog] = useState<Product[]>(seedProducts);
   const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
   const [justAdded, setJustAdded] = useState(false);
+  const [session, setSession] = useState<TableSession | null>(null);
+  const [sessionLoading, setSessionLoading] = useState(true);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
@@ -96,6 +99,30 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     if (next.length) setCatalog(next);
   }, []);
 
+  const loadSession = useCallback(async () => {
+    if (!tableCode) return;
+    const response = await fetch(`/api/sessions?tableCode=${encodeURIComponent(tableCode)}`, {
+      cache: "no-store"
+    });
+    if (response.ok) {
+      const data = (await response.json()) as TableSession | null;
+      if (data) {
+        setSession(data);
+      } else {
+        const createResponse = await fetch("/api/sessions", {
+          method: "POST",
+          headers: { "content-type": "application/json" },
+          body: JSON.stringify({ tableCode })
+        });
+        if (createResponse.ok) {
+          const created = (await createResponse.json()) as TableSession;
+          setSession(created);
+        }
+      }
+    }
+    setSessionLoading(false);
+  }, [tableCode]);
+
   useEffect(() => {
     let active = true;
     const initialTimer = window.setTimeout(() => {
@@ -103,17 +130,19 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         if (active) setDailyMenuLoading(false);
       });
       void loadCatalog();
+      void loadSession();
     }, 0);
     const timer = window.setInterval(() => {
       void loadDailyMenu();
       void loadCatalog();
+      void loadSession();
     }, 15000);
     return () => {
       active = false;
       window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
-  }, [loadCatalog, loadDailyMenu]);
+  }, [loadCatalog, loadDailyMenu, loadSession]);
 
   useEffect(() => {
     channelRef.current = connectOrderChannel(({ type, order: incoming, product, dailyMenu: menu }) => {
@@ -143,10 +172,11 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       if (type === "database_change") {
         void loadCatalog();
         void loadDailyMenu();
+        void loadSession();
       }
     });
     return () => channelRef.current?.close();
-  }, [loadCatalog, loadDailyMenu]);
+  }, [loadCatalog, loadDailyMenu, loadSession]);
 
   useEffect(() => {
     if (!order) return;
@@ -187,24 +217,26 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   }, [catalog, category, query]);
 
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
-  const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const subtotal = calculateCartTotal(cart);
 
   function addItem(
     product: Product,
     quantity: number,
     notes: string,
     option?: string,
-    extras?: Array<{ name: string; price: number }>
+    extras?: Array<{ name: string; price: number }>,
+    priceModifier?: number
   ) {
     setCart((current) => [
       ...current,
       {
         productId: product.slug || product.id,
         name: product.name,
-        unitPrice: product.price,
+        unitPrice: product.price + (priceModifier || 0),
         quantity,
         notes,
         option,
+        priceModifier,
         extras: extras && extras.length > 0 ? extras : undefined,
         image: product.image
       }
@@ -261,15 +293,17 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         signal: controller.signal,
         body: JSON.stringify({
           tableCode,
-          items: cart.map(({ productId, quantity, notes, option, extras }) => ({
+          items: cart.map(({ productId, quantity, notes, option, extras, priceModifier }) => ({
             productId,
             quantity,
             notes,
             option,
+            optionPriceModifier: priceModifier,
             extras: extras?.map((extra) => ({ name: extra.name }))
           })),
           notes: generalNotes,
-          idempotencyKey
+          idempotencyKey,
+          sessionId: session?.id ?? null
         })
       });
       const payload = await response.json().catch(() => null);
@@ -304,6 +338,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       <OrderTracking
         order={order}
         tableCode={tableCode}
+        session={session}
         onOrderAgain={() => {
           setOrder(null);
           setMode("fixed");
@@ -346,6 +381,22 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
               </span>
               <strong className="mt-1 block font-display text-3xl">{tableCode}</strong>
             </div>
+            {session && session.status === "active" && (
+              <div className="hidden min-w-32 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                  Sesión
+                </span>
+                <strong className="mt-1 block font-display text-3xl">activa</strong>
+              </div>
+            )}
+            {!session && !sessionLoading && (
+              <div className="hidden min-w-32 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                  Sin sesión
+                </span>
+                <strong className="mt-1 block font-display text-3xl">—</strong>
+              </div>
+            )}
           </div>
         </div>
       </header>
@@ -649,17 +700,19 @@ function ProductDialog({
 }: {
   product: Product;
   onClose: () => void;
-  onAdd: (
+   onAdd: (
     product: Product,
     quantity: number,
     notes: string,
     option?: string,
-    extras?: Array<{ name: string; price: number }>
+    extras?: Array<{ name: string; price: number }>,
+    priceModifier?: number
   ) => void;
   dailyMenu: DailyMenuConfig | null;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
+  const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
   const isComidaALaCarta = product.category === "Comidas a la carta";
   const groups = useMemo(() => {
     const baseGroups = product.optionGroups || (
@@ -694,6 +747,13 @@ function ProductDialog({
   const hasCompleteSelection = groups.every(
     (group) => group.choices.length > 0 && Boolean(selections[group.id])
   );
+  const priceModifier = useMemo(() => {
+    const pricedGroup = product.optionGroups?.find((g) => g.choicePrices && g.choicePrices.length > 0);
+    if (!pricedGroup) return 0;
+    const selectedIdx = pricedGroup.choices.indexOf(selections[pricedGroup.id]);
+    if (selectedIdx < 0) return 0;
+    return pricedGroup.choicePrices?.[selectedIdx] ?? 0;
+  }, [product.optionGroups, selections]);
   const selectionSummary = groups
     .map((group) => {
       const shortLabel =
@@ -717,7 +777,9 @@ function ProductDialog({
                           ? "Acompañamiento"
                           : group.id === "agua"
                             ? "Agua"
-                            : "Opción";
+                            : group.id === "cafe-tipo"
+                              ? "Tipo"
+                              : "Opción";
       return `${shortLabel}: ${selections[group.id]}`;
     })
     .join(" · ")
@@ -809,6 +871,57 @@ function ProductDialog({
                 onChange={(event) => setNotes(event.target.value)}
               />
             </label>
+            {product.extrasConfig && product.extrasConfig.length > 0 && (
+              <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
+                <legend className="font-display text-xl font-bold">Extras con costo</legend>
+                <p className="mt-1 text-xs text-[var(--muted)]">
+                  Puedes sumar extras y el precio se actualizará al momento.
+                </p>
+                <div className="mt-3 grid gap-2">
+                  {product.extrasConfig
+                    .filter((extra) => extra.active !== false)
+                    .map((extra) => {
+                      const selected = selectedExtras.includes(extra.name);
+                      return (
+                        <label
+                          className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
+                            selected
+                              ? "border-[var(--brown)] bg-[#f4e6d8] shadow-sm"
+                              : "border-[var(--line)] bg-white hover:bg-[var(--cream)]"
+                          }`}
+                          key={extra.name}
+                        >
+                          <span className="flex items-center gap-2">
+                            <span
+                              className={`grid h-5 w-5 place-items-center rounded border-2 ${
+                                selected
+                                  ? "border-[var(--brown)] bg-[var(--brown)] text-white"
+                                  : "border-[var(--line)]"
+                              }`}
+                            >
+                              {selected && <Check size={12} strokeWidth={3} />}
+                            </span>
+                            <span className="font-medium">{extra.name}</span>
+                          </span>
+                          <strong className="text-sm text-[var(--brown)]">+{money(extra.price)}</strong>
+                          <input
+                            checked={selected}
+                            type="checkbox"
+                            className="sr-only"
+                            onChange={() =>
+                              setSelectedExtras((current) =>
+                                selected
+                                  ? current.filter((item) => item !== extra.name)
+                                  : [...current, extra.name]
+                              )
+                            }
+                          />
+                        </label>
+                      );
+                    })}
+                </div>
+              </fieldset>
+            )}
             <div className="mt-5 grid gap-3 sm:grid-cols-[auto_1fr]">
               <div className="flex items-center justify-center rounded-xl border border-[var(--line)]">
                 <button
@@ -830,17 +943,31 @@ function ProductDialog({
               <button
                 className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"
                 disabled={isComidaALaCarta && !hasCompleteSelection}
-                onClick={() =>
+                onClick={() => {
+                  const chosenExtras = (product.extrasConfig || [])
+                    .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))
+                    .map((extra) => ({ name: extra.name, price: extra.price }));
                   onAdd(
                     product,
                     quantity,
                     notes.trim(),
-                    selectionSummary || undefined
-                  )
-                }
+                    selectionSummary || undefined,
+                    chosenExtras.length > 0 ? chosenExtras : undefined,
+                    priceModifier
+                  );
+                  setSelectedExtras([]);
+                }}
               >
                 <span>Agregar</span>
-                <span>{money(product.price * quantity)}</span>
+                <span>
+                  {money(
+                    (product.price + priceModifier +
+                      (product.extrasConfig || [])
+                        .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))
+                        .reduce((sum, extra) => sum + extra.price, 0)) *
+                    quantity
+                  )}
+                </span>
               </button>
             </div>
           </div>
@@ -867,7 +994,7 @@ function CartDrawer({
   onChange: (items: CartItem[]) => void;
   onSubmit: () => void;
 }) {
-  const subtotal = cart.reduce((sum, item) => sum + item.unitPrice * item.quantity, 0);
+  const subtotal = calculateCartTotal(cart);
   return (
     <div className="fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">
       <section
@@ -906,7 +1033,7 @@ function CartDrawer({
                   <div className="min-w-0 flex-1">
                     <div className="flex justify-between gap-3">
                       <h3 className="font-bold">{item.name}</h3>
-                      <strong>{money(item.unitPrice * item.quantity)}</strong>
+                      <strong>{money(cartItemTotal(item))}</strong>
                     </div>
                     {item.option && (
                       <p className="mt-1 text-xs font-medium text-[var(--brown)]">{item.option}</p>
@@ -996,10 +1123,12 @@ function CartDrawer({
 function OrderTracking({
   order,
   tableCode,
+  session,
   onOrderAgain
 }: {
   order: Order;
   tableCode: string;
+  session: TableSession | null;
   onOrderAgain: () => void;
 }) {
   const steps = ["accepted", "preparing", "ready", "delivered"] as const;
@@ -1093,6 +1222,17 @@ function OrderTracking({
             <Clock3 size={18} />
             El estado se actualiza automáticamente.
           </div>
+          {session && session.status === "active" && (
+            <div className="mt-4 rounded-2xl bg-[#eee8dc] p-4">
+              <div className="flex items-center justify-between">
+                <span className="text-xs uppercase text-[var(--muted)]">Mesa en sesión</span>
+                <span className="text-xs font-bold text-[var(--brown)]">#{session.id?.slice(0, 8)}</span>
+              </div>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Puedes seguir ordenando y acumularemos todo en una sola cuenta.
+              </p>
+            </div>
+          )}
           {(order.status === "delivered" || order.status === "cancelled") && (
             <button
               className="focus-ring mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--terracotta)] px-5 font-bold text-white"

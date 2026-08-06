@@ -152,3 +152,19 @@ export type TableSession = {
   updatedAt: string;
   orders?: Order[];
 };
+
+export type TableStatus = "free" | "occupied" | "pending_payment";
+
+export type RestaurantTable = {
+  id: string;
+  code: string;
+  name: string;
+  capacity: number;
+  active: boolean;
+  qrToken: string;
+  createdAt?: string;
+  updatedAt?: string;
+  status?: TableStatus;
+  orderCount?: number;
+  tableTotal?: number;
+};

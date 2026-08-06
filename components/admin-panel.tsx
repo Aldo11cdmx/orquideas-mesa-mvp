@@ -25,7 +25,7 @@ import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
-import type { DailyMenuConfig, DailyMenuDrink, Product, SalesReport } from "@/lib/types";
+import type { DailyMenuConfig, DailyMenuDrink, Product, RestaurantTable, SalesReport } from "@/lib/types";
 
 export function AdminPanel() {
   const [pin, setPin] = useState("");
@@ -230,7 +230,7 @@ export function AdminPanel() {
             />
           )}
           {tab === "daily" && <DailyAdmin pin={pin} />}
-          {tab === "tables" && <TablesAdmin />}
+          {tab === "tables" && <TablesAdmin pin={pin} />}
             {tab === "sales" && <SalesAdmin pin={pin} />}
           </div>
         </section>
@@ -1002,25 +1002,265 @@ function DailyAdmin({ pin }: { pin: string }) {
   );
 }
 
-function TablesAdmin() {
-  const [tables, setTables] = useState(["A1", "A2", "A3", "B1", "B2", "B3"]);
+function TablesAdmin({ pin }: { pin: string }) {
+  const [tables, setTables] = useState<RestaurantTable[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [editing, setEditing] = useState<RestaurantTable | null>(null);
+
+  const loadTables = useCallback(async () => {
+    setLoading(true);
+    setNotice("");
+    const response = await fetch(`/api/admin/tables?pin=${encodeURIComponent(pin)}`, {
+      cache: "no-store"
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setNotice(payload?.error || "No fue posible cargar las mesas");
+    } else {
+      setTables(Array.isArray(payload) ? payload : []);
+    }
+    setLoading(false);
+  }, [pin]);
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => void loadTables(), 0);
+    return () => window.clearTimeout(timer);
+  }, [loadTables]);
+
+  const saveTable = async (code: string, name: string, capacity: number, active: boolean): Promise<RestaurantTable | null> => {
+    setNotice("");
+    const response = await fetch("/api/admin/tables", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        pin,
+        table: { ...(editing ?? {}), code, name, capacity, active }
+      })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setNotice(payload?.error || "No fue posible guardar la mesa");
+      return null;
+    }
+    const updated = payload as RestaurantTable;
+    setTables(tables.map((t) => (t.id === updated.id ? updated : t)));
+    setEditing(null);
+    void loadTables();
+    return updated;
+  };
+
+  const statusLabel = (status?: string) => {
+    switch (status) {
+      case "occupied": return { text: "Ocupada", color: "text-[#e67e3a]" };
+      case "pending_payment": return { text: "Pendiente pago", color: "text-[#2563eb]" };
+      default: return { text: "Libre", color: "text-[#377359]" };
+    }
+  };
+
   return (
     <div>
-      <h1 className="font-display text-4xl font-bold">Mesas</h1>
-      <div className="mt-5 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-3">
-        {tables.map((table) => (
-          <div className="paper flex items-center justify-between rounded-2xl p-5" key={table}>
-            <strong className="font-display text-3xl">{table}</strong>
-            <ToggleRight className="text-[#377359]" />
-          </div>
-        ))}
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="eyebrow text-[var(--terracotta)]">Gestión de mesas</p>
+          <h1 className="font-display text-4xl font-bold">Mesas</h1>
+          <p className="mt-2 text-sm text-[var(--muted)]">
+            Configura mesas, activa/desactiva y consulta el estado de pedidos en tiempo real.
+          </p>
+        </div>
         <button
-          className="focus-ring flex min-h-24 items-center justify-center gap-2 rounded-2xl border-2 border-dashed border-[#bdb4a5] font-bold"
-          onClick={() => setTables([...tables, `C${tables.length - 5}`])}
+          className="focus-ring flex items-center gap-2 rounded-xl bg-[var(--brown)] px-4 py-3 font-bold text-white"
+          onClick={() => setEditing({ id: "", code: "", name: "", capacity: 4, active: true, qrToken: "" })}
         >
-          <Plus /> Agregar
+          <Plus size={18} /> Nueva mesa
         </button>
       </div>
+
+      {notice && (
+        <p className="mt-3 text-sm text-[#be011f]">{notice}</p>
+      )}
+
+      {loading ? (
+        <div className="mt-6 space-y-3">
+          {Array.from({ length: 6 }).map((_, i) => (
+            <div key={i} className="paper h-28 rounded-2xl animate-pulse" />
+          ))}
+        </div>
+      ) : (
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
+          {tables.map((table) => {
+            const { text: statusText, color: statusColor } = statusLabel(table.status);
+            return (
+              <article
+                key={table.id}
+                className={`paper relative overflow-hidden rounded-2xl border p-5 ${
+                  table.active ? "border-[var(--line)]" : "border-red-300 bg-[#fef2f2]"
+                }`}
+              >
+                <div className="flex items-start justify-between">
+                  <div>
+                    <h2 className="font-display text-4xl font-bold text-[var(--brown-dark)]">{table.code}</h2>
+                    {table.name && (
+                      <p className="mt-1 text-sm text-[var(--muted)]">{table.name}</p>
+                    )}
+                    {table.capacity > 0 && (
+                      <p className="mt-1 text-xs text-[var(--muted)]">Capacidad: {table.capacity} personas</p>
+                    )}
+                  </div>
+                  <button
+                    className="focus-ring rounded-lg p-1 text-[var(--muted)] hover:text-[var(--brown)]"
+                    onClick={() => setEditing(table)}
+                  >
+                    <Pencil size={18} />
+                  </button>
+                </div>
+
+                <div className="mt-3 flex items-center gap-4 text-sm">
+                  <span className={`font-bold ${statusColor}`}>{statusText}</span>
+                  {table.orderCount && table.orderCount > 0 && (
+                    <>
+                      <span className="text-[var(--muted)]">·</span>
+                      <span className="text-[var(--muted)]">{table.orderCount} pedido(s)</span>
+                      <span className="text-[var(--muted)]">·</span>
+                      <span className="font-bold text-[var(--green)]">{money(table.tableTotal ?? 0)}</span>
+                    </>
+                  )}
+                </div>
+
+                {!table.active && (
+                  <span className="mt-2 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
+                    Inactiva
+                  </span>
+                )}
+
+                <div className="mt-3 border-t border-[var(--line)] pt-2">
+                  <p className="text-[10px] uppercase tracking-wider text-[var(--muted)]">
+                    QR Token
+                  </p>
+                  <p className="font-mono text-xs text-[var(--brown-dark)] break-all">
+                    {table.qrToken}
+                  </p>
+                </div>
+              </article>
+            );
+          })}
+          {tables.length === 0 && !loading && (
+            <p className="mt-6 text-sm text-[var(--muted)]">No hay mesas configuradas.</p>
+          )}
+        </div>
+      )}
+
+      {editing && (
+        <TableEditor
+          table={editing}
+          onClose={() => setEditing(null)}
+          onSave={saveTable}
+        />
+      )}
+    </div>
+  );
+}
+
+function TableEditor({
+  table,
+  onClose,
+  onSave
+}: {
+  table: RestaurantTable;
+  onClose: () => void;
+  onSave: (code: string, name: string, capacity: number, active: boolean) => Promise<RestaurantTable | null>;
+}) {
+  const [code, setCode] = useState(table.code);
+  const [name, setName] = useState(table.name ?? "");
+  const [capacity, setCapacity] = useState((table.capacity ?? 0).toString());
+  const [active, setActive] = useState(table.active);
+  const [saving, setSaving] = useState(false);
+
+  const handleSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setSaving(true);
+    try {
+      await onSave(code.toUpperCase(), name, parseInt(capacity, 10) || 0, active);
+      onClose();
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
+      <form
+        className="paper w-full max-w-md rounded-3xl p-8 shadow-2xl"
+        onSubmit={handleSubmit}
+      >
+        <h2 className="font-display text-2xl font-bold">
+          {table.id ? "Editar mesa" : "Nueva mesa"}
+        </h2>
+
+        <div className="mt-4 space-y-4">
+          <label className="block text-sm font-bold">
+            Código de mesa
+            <input
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              value={code}
+              onChange={(e) => setCode(e.target.value.toUpperCase())}
+              pattern="[A-Z][0-9]{0,2}"
+              placeholder="Ej: A1"
+              required
+              disabled={saving}
+            />
+          </label>
+          <label className="block text-sm font-bold">
+            Nombre (opcional)
+            <input
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              placeholder="Ej: Mesa de la ventana"
+              disabled={saving}
+            />
+          </label>
+          <label className="block text-sm font-bold">
+            Capacidad
+            <input
+              type="number"
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              value={capacity}
+              onChange={(e) => setCapacity(e.target.value)}
+              min={0}
+              max={50}
+              disabled={saving}
+            />
+          </label>
+          <label className="flex items-center gap-3 text-sm font-bold">
+            <input
+              type="checkbox"
+              checked={active}
+              onChange={(e) => setActive(e.target.checked)}
+              disabled={saving}
+            />
+            Activa
+          </label>
+        </div>
+
+        <div className="mt-6 flex gap-3">
+          <button
+            type="button"
+            className="flex-1 rounded-xl border border-[var(--line)] px-4 py-3 font-bold"
+            onClick={onClose}
+            disabled={saving}
+          >
+            Cancelar
+          </button>
+          <button
+            type="submit"
+            disabled={saving}
+            className="focus-ring flex-1 rounded-xl bg-[var(--green)] px-4 py-3 font-bold text-white hover:bg-green-800"
+          >
+            {saving ? "Guardando…" : table.id ? "Actualizar" : "Crear"}
+          </button>
+        </div>
+      </form>
     </div>
   );
 }

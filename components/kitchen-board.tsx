@@ -798,9 +798,8 @@ function StaffBoard({ role }: { role: StaffRole }) {
                 </div>
               </section>
             );
-          })}
+          }))}
         </div>
-          )}
 
         {role === "waiter" && groupByTable && (
           <TableGroupedView

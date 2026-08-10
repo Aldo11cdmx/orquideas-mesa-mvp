@@ -727,9 +727,14 @@ function StaffBoard({ role }: { role: StaffRole }) {
                      />
                    ))}
                   {columnOrders.length === 0 && (
-                    <div className="rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center text-sm text-[var(--muted)]">
-                      <Utensils className="mx-auto mb-3 opacity-50" size={26} />
-                      Nada por aquí
+                    <div className="animate-fade-in rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center text-sm text-[var(--muted)]">
+                      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/50">
+                        <Utensils size={26} />
+                      </div>
+                      <p className="font-bold">Sin pedidos</p>
+                      <p className="mt-1 text-xs">
+                        {column.id === "new" ? "Aún no han llegado pedidos nuevos" : column.id === "ready" ? "Cocina no ha marcado nada como listo" : "Nada en preparación"}
+                      </p>
                     </div>
                   )}
                 </div>
@@ -788,7 +793,7 @@ function KitchenCard({
   const action = next[order.status];
   return (
     <article
-      className={`paper order-card animate-pop overflow-hidden rounded-2xl ${
+      className={`paper order-card card-enter card-hover animate-pop overflow-hidden rounded-2xl ${
         order.status === "sent" ? "ring-2 ring-[var(--gold)]" : ""
       } ${urgency === "critical" ? "order-card-critical" : urgency === "warning" ? "order-card-warning" : ""}`}
     >
@@ -948,12 +953,12 @@ function SessionAccountModal({
   const canClose = pendingOrders === 0;
 
   return (
-    <div className="fixed inset-0 z-[60] flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
+    <div className="animate-fade-in fixed inset-0 z-[60] flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="session-title"
-        className="animate-pop w-full max-w-2xl rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:rounded-[2rem]"
+        className="animate-scale-in w-full max-w-2xl rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:rounded-[2rem]"
       >
         <div className="border-b border-[var(--line)] p-5 sm:p-7">
           <div className="flex items-center justify-between">

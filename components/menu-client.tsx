@@ -459,7 +459,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                   <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>
                 </div>
               </div>
-              <label className="paper flex items-center gap-3 rounded-2xl px-4 py-3">
+              <label className="paper search-glow flex items-center gap-3 rounded-2xl px-4 py-3 transition-shadow">
                 <Search size={19} aria-hidden="true" />
                 <span className="sr-only">Buscar platillos</span>
                 <input
@@ -478,9 +478,9 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                 {categories.map((item) => (
                   <button
                     key={item}
-                    className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold ${
+                    className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold category-pill ${
                       category === item
-                        ? "bg-[var(--brown)] text-white"
+                        ? "bg-[var(--brown)] text-white shadow-sm"
                         : "border border-[var(--line)] bg-[var(--paper)]"
                     }`}
                     onClick={() => setCategory(item)}
@@ -514,12 +514,20 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                 ))}
               </div>
             ) : (
-              <div className="paper rounded-3xl px-6 py-14 text-center">
-                <Search className="mx-auto text-[var(--brown)]" size={34} />
-                <h3 className="mt-4 font-display text-2xl font-bold">No encontramos ese platillo</h3>
-                <p className="mt-2 text-sm text-[var(--muted)]">
+              <div className="animate-fade-in paper rounded-3xl px-6 py-14 text-center">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#f4dfb4]/60">
+                  <Search className="text-[var(--brown)]" size={28} />
+                </div>
+                <h3 className="mt-5 font-display text-2xl font-bold">No encontramos ese platillo</h3>
+                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                   Intenta con otro nombre o cambia de categoría.
                 </p>
+                <button
+                  className="focus-ring mt-4 rounded-full bg-[var(--brown)] px-5 py-2.5 text-sm font-bold text-white"
+                  onClick={() => { setQuery(""); setCategory("Favoritos"); }}
+                >
+                  Ver todo el menú
+                </button>
               </div>
             )}
           </>
@@ -528,8 +536,10 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
       {justAdded && (
         <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-          <div className="animate-pop flex items-center gap-2 rounded-full bg-[var(--green)] px-5 py-3 text-sm font-bold text-white shadow-2xl">
-            <Check size={18} strokeWidth={3} />
+          <div className="toast-enter flex items-center gap-2.5 rounded-full bg-[var(--charcoal)] px-5 py-3.5 text-sm font-bold text-white shadow-2xl ring-1 ring-white/10">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--gold)]">
+              <Check size={14} strokeWidth={3} className="text-[var(--charcoal)]" />
+            </span>
             Producto agregado al pedido
           </div>
         </div>
@@ -538,11 +548,11 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       {itemCount > 0 && (
         <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:p-5">
           <button
-            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"
+            className="focus-ring btn-press mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"
             onClick={() => setCartOpen(true)}
           >
             <span className="flex items-center gap-3">
-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20">
+              <span className={`grid h-8 w-8 place-items-center rounded-full bg-white/20 ${justAdded ? "animate-bounce-in" : ""}`}>
                 {itemCount}
               </span>
               Ver mi pedido
@@ -586,15 +596,17 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       </div>
 
       {cartOpen && (
-        <CartDrawer
-          cart={cart}
-          notes={generalNotes}
-          sending={sending}
-          onNotes={setGeneralNotes}
-          onClose={() => setCartOpen(false)}
-          onChange={setCart}
-          onSubmit={submitOrder}
-        />
+        <div className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">
+          <CartDrawer
+            cart={cart}
+            notes={generalNotes}
+            sending={sending}
+            onNotes={setGeneralNotes}
+            onClose={() => setCartOpen(false)}
+            onChange={setCart}
+            onSubmit={submitOrder}
+          />
+        </div>
       )}
     </main>
   );
@@ -825,12 +837,12 @@ function ProductDialog({
     .join(" · ")
     .slice(0, 80);
   return (
-    <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
+    <div className="animate-fade-in fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
       <section
         role="dialog"
         aria-modal="true"
         aria-labelledby="product-title"
-        className="animate-pop max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"
+        className="animate-scale-in max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"
       >
         <div className="relative grid min-w-0 lg:grid-cols-[0.9fr_1.1fr]">
           <button
@@ -1037,13 +1049,12 @@ function CartDrawer({
 }) {
   const subtotal = calculateCartTotal(cart);
   return (
-    <div className="fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="cart-title"
-        className="animate-pop flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"
-      >
+    <section
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="cart-title"
+      className="animate-slide-in-right flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"
+    >
         <div className="flex items-center gap-3 border-b border-[var(--line)] px-5 py-4">
           <button
             className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-[#eee8dc]"
@@ -1157,7 +1168,6 @@ function CartDrawer({
           </button>
         </div>
       </section>
-    </div>
   );
 }
 
@@ -1221,10 +1231,10 @@ function OrderTracking({
           ) : (
             <ol className="mt-7 space-y-0">
               {steps.map((step, index) => (
-                <li className="flex gap-4" key={step}>
+                <li className={`flex gap-4 ${index === current ? "step-active" : ""}`} key={step}>
                   <div className="flex flex-col items-center">
                     <span
-                      className={`grid h-8 w-8 place-items-center rounded-full ${
+                      className={`step-circle grid h-8 w-8 place-items-center rounded-full ${
                         index <= current
                           ? "bg-[var(--green)] text-white"
                           : "border-2 border-[var(--line)] bg-white"
@@ -1309,22 +1319,40 @@ function LunchMenu({
 }) {
   if (loading) {
     return (
-      <div className="paper mt-6 rounded-[2rem] p-10 text-center text-[var(--muted)]">
-        Cargando la comida corrida de hoy…
-      </div>
+      <section className="paper mt-6 overflow-hidden rounded-[2rem]">
+        <div className="bg-[var(--brown)]/10 px-6 py-7">
+          <div className="skeleton mb-4 h-6 w-36" />
+          <div className="skeleton mb-2 h-10 w-80" />
+          <div className="skeleton h-5 w-44" />
+        </div>
+        <div className="space-y-4 p-6">
+          {[1, 2, 3].map((i) => (
+            <div key={i} className="space-y-3 border-b border-[var(--line)] py-4 last:border-0">
+              <div className="skeleton h-6 w-32" />
+              <div className="grid gap-2 sm:grid-cols-2">
+                <div className="skeleton h-12 rounded-xl" />
+                <div className="skeleton h-12 rounded-xl" />
+              </div>
+            </div>
+          ))}
+          <div className="skeleton mt-4 h-14 w-full rounded-xl" />
+        </div>
+      </section>
     );
   }
 
   if (!menu || !menu.availableToday) {
     return (
-      <section className="paper mt-6 rounded-[2rem] p-7 text-center">
-        <Clock3 className="mx-auto text-[var(--terracotta)]" size={34} />
-        <h2 className="mt-4 font-display text-3xl font-bold">Hoy no hay comida corrida publicada</h2>
-        <p className="mt-2 text-sm text-[var(--muted)]">
+      <section className="animate-fade-in paper mt-6 rounded-[2rem] p-7 text-center">
+        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#f4dfb4]/60">
+          <Clock3 className="text-[var(--terracotta)]" size={30} />
+        </div>
+        <h2 className="mt-5 font-display text-3xl font-bold">Hoy no hay comida corrida</h2>
+        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
           Puedes ordenar cualquiera de los productos del menú fijo.
         </p>
         <button
-          className="focus-ring mt-5 rounded-2xl bg-[var(--green)] px-6 py-3 font-bold text-white"
+          className="focus-ring btn-press mt-5 rounded-2xl bg-[var(--green)] px-6 py-3 font-bold text-white shadow-md transition hover:opacity-90"
           onClick={onShowFixed}
         >
           Ver menú fijo

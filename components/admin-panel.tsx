@@ -4,6 +4,7 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
   Coffee,
+  CupSoda,
   Banknote,
   CalendarDays,
   CircleDollarSign,
@@ -24,6 +25,7 @@ import {
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
+import { DrinksAdmin } from "@/components/drinks-admin";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, DailyMenuDrink, Product, RestaurantTable, SalesReport } from "@/lib/types";
@@ -180,6 +182,7 @@ export function AdminPanel() {
   const nav = [
     ["menu", "Menú", LayoutGrid],
     ["breakfast", "Desayunos", Coffee],
+    ["drinks", "Bebidas", CupSoda],
     ["daily", "Comida corrida", Store],
     ["tables", "Mesas", Settings2],
     ["sales", "Corte de caja", BarChart3]
@@ -232,6 +235,7 @@ export function AdminPanel() {
             />
           )}
           {tab === "breakfast" && <BreakfastAdmin pin={pin} />}
+          {tab === "drinks" && <DrinksAdmin pin={pin} />}
           {tab === "daily" && <DailyAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin pin={pin} />}
             {tab === "sales" && <SalesAdmin pin={pin} />}

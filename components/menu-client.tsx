@@ -79,6 +79,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [sessionExisted, setSessionExisted] = useState(false);
   const [sendTogether, setSendTogether] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<CartItem[][]>([]);
+  const [drinkFlavors, setDrinkFlavors] = useState<Array<{drinkType: string; name: string; priceModifier: number}>>([]);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
@@ -142,6 +143,10 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       });
       void loadCatalog();
       void loadSession();
+      void fetch("/api/drink-flavors", { cache: "no-store" })
+        .then((r) => r.json().catch(() => []))
+        .then((data) => { if (active && Array.isArray(data)) setDrinkFlavors(data); })
+        .catch(() => {});
     }, 0);
     const timer = window.setInterval(() => {
       void loadDailyMenu();
@@ -684,6 +689,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           onClose={() => setSelected(null)}
           onAdd={addItem}
           dailyMenu={dailyMenu}
+          drinkFlavors={drinkFlavors}
         />
       )}
       {/* Botón flotante Llamar mesero */}
@@ -864,7 +870,8 @@ function ProductDialog({
   product,
   onClose,
   onAdd,
-  dailyMenu
+  dailyMenu,
+  drinkFlavors
 }: {
   product: Product;
   onClose: () => void;
@@ -877,6 +884,7 @@ function ProductDialog({
     priceModifier?: number
   ) => void;
   dailyMenu: DailyMenuConfig | null;
+  drinkFlavors: Array<{drinkType: string; name: string; priceModifier: number}>;
 }) {
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
@@ -906,7 +914,34 @@ function ProductDialog({
     }
     return (product.extrasConfig || []).filter((e) => e.active !== false);
   }, [isBreakfast, breakfastExtras, product.extrasConfig]);
+  // Map product IDs to drink flavor types
+  const drinkTypeMap: Record<string, string> = {
+    cafe: "cafe",
+    malteada: "malteada",
+    licuado: "licuado",
+    "agua-fruta": "agua-fruta"
+  };
+  const drinkType = drinkTypeMap[product.id];
+  const dynamicFlavors = useMemo(() => {
+    if (!drinkType || !drinkFlavors.length) return null;
+    const flavors = drinkFlavors.filter((f) => f.drinkType === drinkType);
+    if (!flavors.length) return null;
+    return flavors;
+  }, [drinkType, drinkFlavors]);
+
   const groups = useMemo(() => {
+    // If this is a drink with dynamic flavors, use those instead of hardcoded options
+    if (dynamicFlavors) {
+      const flavorChoices = dynamicFlavors.map((f) => f.name);
+      const flavorPrices = dynamicFlavors.map((f) => f.priceModifier);
+      return [{
+        id: "sabor",
+        label: "Elige tu sabor",
+        choices: flavorChoices,
+        choicePrices: flavorPrices.some((p) => p > 0) ? flavorPrices : undefined,
+        required: true
+      }];
+    }
     const baseGroups = product.optionGroups || (
       product.options?.length
         ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }]
@@ -915,7 +950,7 @@ function ProductDialog({
     return isComidaALaCarta
       ? resolveDailyCourseGroups(baseGroups, dailyMenu?.courses)
       : baseGroups;
-  }, [isComidaALaCarta, product, dailyMenu?.courses]);
+  }, [dynamicFlavors, isComidaALaCarta, product, dailyMenu?.courses]);
   const [selections, setSelections] = useState<Record<string, string>>(() =>
     Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))
   );
@@ -940,12 +975,14 @@ function ProductDialog({
     (group) => group.choices.length > 0 && Boolean(selections[group.id])
   );
   const priceModifier = useMemo(() => {
-    const pricedGroup = product.optionGroups?.find((g) => g.choicePrices && g.choicePrices.length > 0);
+    // Check both product.optionGroups and dynamic groups (drink flavors)
+    const allGroups = groups;
+    const pricedGroup = allGroups.find((g) => g.choicePrices && g.choicePrices.length > 0);
     if (!pricedGroup) return 0;
     const selectedIdx = pricedGroup.choices.indexOf(selections[pricedGroup.id]);
     if (selectedIdx < 0) return 0;
     return pricedGroup.choicePrices?.[selectedIdx] ?? 0;
-  }, [product.optionGroups, selections]);
+  }, [groups, selections]);
   const selectionSummary = groups
     .map((group) => {
       const shortLabel =

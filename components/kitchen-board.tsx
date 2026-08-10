@@ -455,7 +455,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
         return;
       }
       const newTotal = updatedItems.reduce(
-        (s, i) => s + i.price * i.quantity + ((i as any).optionPriceModifier || 0),
+        (s, i) => s + i.unitPrice * i.quantity + (i.priceModifier || 0),
         0
       );
       const updated = { ...order, items: updatedItems, total: newTotal, updatedAt: new Date().toISOString() };
@@ -471,7 +471,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
       return;
     }
     const newTotal = updatedItems.reduce(
-      (s, i) => s + i.price * i.quantity + ((i as any).optionPriceModifier || 0),
+      (s, i) => s + i.unitPrice * i.quantity + (i.priceModifier || 0),
       0
     );
     const updated = { ...order, items: updatedItems, total: newTotal, updatedAt: new Date().toISOString() };

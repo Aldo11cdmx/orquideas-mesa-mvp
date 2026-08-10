@@ -348,8 +348,15 @@ function StaffBoard({ role }: { role: StaffRole }) {
           (statusFilter === "all" || (statusFilter === "active" ? active : order.status === statusFilter)) &&
           (!tableFilter || order.tableCode.toLowerCase().includes(tableFilter.toLowerCase()))
         );
+      }).sort((a, b) => {
+        // Sort by urgency then by time
+        const urgencyOrder: Record<string, number> = { critical: 0, warning: 1, normal: 2 };
+        const ua = urgencyLevel(a, now);
+        const ub = urgencyLevel(b, now);
+        if (ua !== ub) return (urgencyOrder[ua] ?? 2) - (urgencyOrder[ub] ?? 2);
+        return +new Date(a.createdAt) - +new Date(b.createdAt);
       }),
-    [orders, role, statusFilter, tableFilter]
+    [orders, role, statusFilter, tableFilter, now]
   );
   const activeCount = orders.filter(
     (order) => !["delivered", "cancelled"].includes(order.status)
@@ -714,6 +721,19 @@ function StaffBoard({ role }: { role: StaffRole }) {
                     {columnOrders.length}
                   </span>
                 </div>
+                {role === "kitchen" && column.id === "ready" && columnOrders.length > 0 && (
+                  <button
+                    className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-3 text-xs font-bold text-white transition hover:opacity-90"
+                    onClick={async () => {
+                      if (!window.confirm(`¿Marcar los ${columnOrders.length} pedidos listos como entregados?`)) return;
+                      for (const o of columnOrders) {
+                        await changeStatus(o, "delivered");
+                      }
+                    }}
+                  >
+                    <CheckCircle2 size={14} /> Marcar todos entregados
+                  </button>
+                )}
                 <div className="mt-2 space-y-3">
                    {columnOrders.map((order) => (
                      <KitchenCard

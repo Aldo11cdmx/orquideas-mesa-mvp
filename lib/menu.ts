@@ -618,7 +618,7 @@ export const categories = [
   "Comidas a la carta"
 ];
 
-export const activeTables = ["A1", "A2", "A3", "B1", "B2", "B3"];
+export const activeTables = ["A1", "A2", "A3", "B1", "B2", "B3", "LLEVAR"];
 
 export const takeoutCode = "LLEVAR";
 

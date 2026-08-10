@@ -1174,8 +1174,8 @@ function ProductDialog({
                 className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"
                 disabled={isComidaALaCarta && !hasCompleteSelection}
                 onClick={() => {
-                  const chosenExtras = (product.extrasConfig || [])
-                    .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))
+                  const chosenExtras = allExtras
+                    .filter((extra) => selectedExtras.includes(extra.name))
                     .map((extra) => ({ name: extra.name, price: extra.price }));
                   onAdd(
                     product,
@@ -1192,8 +1192,8 @@ function ProductDialog({
                 <span>
                   {money(
                     (product.price + priceModifier +
-                      (product.extrasConfig || [])
-                        .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))
+                      allExtras
+                        .filter((extra) => selectedExtras.includes(extra.name))
                         .reduce((sum, extra) => sum + extra.price, 0)) *
                     quantity
                   )}

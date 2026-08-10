@@ -1019,7 +1019,7 @@ function KitchenCard({
             {action.label}
           </button>
         ) : null}
-        {role === "waiter" && order.status === "accepted" && (
+        {role === "waiter" && ["sent", "accepted", "preparing"].includes(order.status) && (
           <button
             className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
             onClick={() => onStatus(order, "cancelled")}

@@ -88,6 +88,9 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const ordersRef = useRef<Order[]>([]);
   const hasLoadedRef = useRef(false);
   const requestRef = useRef<Promise<void> | null>(null);
+  const cancelledIdsRef = useRef<Set<string>>(
+    new Set(JSON.parse(sessionStorage.getItem("orquideas-cancelled") || "[]"))
+  );
   const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
   useEffect(() => {
@@ -205,6 +208,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
             }
             const returnedIds = new Set(rows.map((order) => order.id));
             const next = mergeOrders(ordersRef.current, rows).filter((order) => {
+              if (cancelledIdsRef.current.has(order.id)) return false;
               const stillReturned = returnedIds.has(order.id);
               const terminal = ["delivered", "cancelled"].includes(order.status);
               return stillReturned || !terminal;
@@ -417,6 +421,13 @@ function StaffBoard({ role }: { role: StaffRole }) {
       saveDemoOrder(updated);
     }
     upsert(updated);
+    if (status === "cancelled") {
+      cancelledIdsRef.current.add(order.id);
+      sessionStorage.setItem("orquideas-cancelled", JSON.stringify([...cancelledIdsRef.current]));
+      // También remover de demo si existe
+      const key = `orquideas-demo-order-${order.id}`;
+      try { localStorage.removeItem(key); } catch { /* ok */ }
+    }
     await channelRef.current?.send({ type: "status", order: updated });
   }
 

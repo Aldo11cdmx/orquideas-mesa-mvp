@@ -303,7 +303,20 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     }
 
     if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
-    await sendOrderToApi(cart, generalNotes);
+    setSending(true);
+    try {
+      const created = await sendOrderToApi(cart, generalNotes);
+      setCart([]);
+      setCartOpen(false);
+      setGeneralNotes("");
+      if (created) {
+        setOrder(created);
+      }
+    } catch {
+      // Error already shown by sendOrderToApi
+    } finally {
+      setSending(false);
+    }
   }
 
   async function sendAllTogether() {

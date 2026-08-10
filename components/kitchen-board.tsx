@@ -677,16 +677,35 @@ function StaffBoard({ role }: { role: StaffRole }) {
           <strong>Pedidos confirmados:</strong> los pedidos llegan directamente desde la confirmación del cliente.
         </div>
         <div className="mb-5 flex flex-wrap items-center gap-3">
-          <label className="flex min-h-11 items-center gap-2 rounded-xl bg-white px-3">
-            <Search size={17} />
-            <span className="sr-only">Filtrar por mesa</span>
-            <input
-              className="w-32 outline-none"
-              placeholder="Mesa A1"
-              value={tableFilter}
-              onChange={(event) => setTableFilter(event.target.value)}
-            />
-          </label>
+          {/* Table filter chips */}
+          <div className="flex flex-1 flex-wrap items-center gap-2">
+            {(() => {
+              const tables = [...new Set(orders.filter(o => !["delivered", "cancelled"].includes(o.status)).map(o => o.tableCode))].sort();
+              if (tables.length === 0) return null;
+              return (
+                <>
+                  <button
+                    className={`focus-ring min-h-10 rounded-xl px-3 text-xs font-bold ${!tableFilter ? "bg-[var(--brown)] text-white" : "border border-[var(--line)] bg-white"}`}
+                    onClick={() => setTableFilter("")}
+                  >
+                    Todas
+                  </button>
+                  {tables.map((t) => (
+                    <button
+                      key={t}
+                      className={`focus-ring min-h-10 rounded-xl px-3 text-xs font-bold transition ${tableFilter === t ? "bg-[var(--brown)] text-white shadow" : "border border-[var(--line)] bg-white"}`}
+                      onClick={() => setTableFilter(tableFilter === t ? "" : t)}
+                    >
+                      {t === "LLEVAR" ? "🥡 Llevar" : t}
+                    </button>
+                  ))}
+                </>
+              );
+            })()}
+            {!tableFilter && orders.filter(o => !["delivered", "cancelled"].includes(o.status)).length === 0 && (
+              <span className="text-xs text-[var(--muted)]">Las mesas activas aparecerán aquí</span>
+            )}
+          </div>
           <select
             aria-label="Filtrar por estado"
             className="min-h-11 rounded-xl border-0 bg-white px-3 font-bold outline-none"
@@ -749,6 +768,19 @@ function StaffBoard({ role }: { role: StaffRole }) {
                     {columnOrders.length}
                   </span>
                 </div>
+                {role === "kitchen" && column.id === "new" && columnOrders.length > 0 && (
+                  <button
+                    className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brown)] px-3 text-xs font-bold text-white transition hover:opacity-90"
+                    onClick={async () => {
+                      if (!window.confirm(`¿Iniciar preparación de los ${columnOrders.length} pedidos nuevos?`)) return;
+                      for (const o of columnOrders) {
+                        await changeStatus(o, "preparing");
+                      }
+                    }}
+                  >
+                    <ChefHat size={14} /> Preparar todos
+                  </button>
+                )}
                 {role === "kitchen" && column.id === "ready" && columnOrders.length > 0 && (
                   <button
                     className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--green)] px-3 text-xs font-bold text-white transition hover:opacity-90"
@@ -892,11 +924,16 @@ function KitchenCard({
             }`}
           >
             <Clock3 size={urgency === "critical" ? 22 : urgency === "warning" ? 20 : 16} />
-            {minutes} min
+            {minutes < 1 ? "ahora" : `${minutes} min`}
           </span>
           {urgency !== "normal" && (
             <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-[#9b261c] text-white animate-pulse" : "bg-[#f4dfb4] text-[#694500]"}`}>
               {urgency === "critical" ? "⚠️ Urgente" : "Revisar"}
+            </span>
+          )}
+          {urgency === "normal" && minutes >= 25 && (
+            <span className="rounded-full bg-[#f4dfb4] px-2.5 py-1 text-xs font-bold text-[#694500]">
+              ⏳ {minutes} min
             </span>
           )}
           <span className="ml-auto text-xs font-bold text-[var(--muted)]">

@@ -89,7 +89,11 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const hasLoadedRef = useRef(false);
   const requestRef = useRef<Promise<void> | null>(null);
   const cancelledIdsRef = useRef<Set<string>>(
-    new Set(JSON.parse(sessionStorage.getItem("orquideas-cancelled") || "[]"))
+    new Set(
+      typeof window !== "undefined"
+        ? JSON.parse(sessionStorage.getItem("orquideas-cancelled") || "[]")
+        : []
+    )
   );
   const boardColumns = role === "kitchen" ? kitchenColumns : waiterColumns;
 
@@ -423,7 +427,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
     upsert(updated);
     if (status === "cancelled") {
       cancelledIdsRef.current.add(order.id);
-      sessionStorage.setItem("orquideas-cancelled", JSON.stringify([...cancelledIdsRef.current]));
+      try { sessionStorage.setItem("orquideas-cancelled", JSON.stringify([...cancelledIdsRef.current])); } catch { /* ok */ }
       // También remover de demo si existe
       const key = `orquideas-demo-order-${order.id}`;
       try { localStorage.removeItem(key); } catch { /* ok */ }

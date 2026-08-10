@@ -620,6 +620,8 @@ export const categories = [
 
 export const activeTables = ["A1", "A2", "A3", "B1", "B2", "B3"];
 
+export const takeoutCode = "LLEVAR";
+
 export const money = (value: number) =>
   new Intl.NumberFormat("es-MX", {
     style: "currency",

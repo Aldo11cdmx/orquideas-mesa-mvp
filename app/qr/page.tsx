@@ -1,8 +1,9 @@
 import Link from "next/link";
-import { ArrowLeft, Printer } from "lucide-react";
+import { ArrowLeft, Printer, ShoppingBag } from "lucide-react";
 import { createServerClient } from "@/lib/supabase/server";
 import { PrintButton } from "@/components/print-button";
 import { QRGrid } from "@/components/qr-grid";
+import { LlevarQR } from "./llevar-qr";
 
 export const dynamic = "force-dynamic";
 
@@ -48,6 +49,19 @@ export default async function QRPage() {
             name: t.name
           }))}
         />
+        <div className="mt-12">
+          <p className="eyebrow mb-5 text-center text-[var(--brown)]">QR para llevar</p>
+          <div className="glass-card mx-auto max-w-xs rounded-[2rem] p-6 text-center">
+            <div className="mb-4 flex items-center justify-center gap-2">
+              <ShoppingBag size={18} className="text-[var(--brown)]" />
+              <span className="text-xs font-bold uppercase tracking-wider text-[var(--brown)]">Para llevar</span>
+            </div>
+            <LlevarQR url={`${appUrl}/llevar`} />
+            <p className="mt-3 text-xs text-[var(--muted)]">
+              Escanea para ordenar y recoger
+            </p>
+          </div>
+        </div>
         <p className="no-print mt-6 flex items-center justify-center gap-2 text-sm text-[var(--muted)]">
           <Printer size={16} /> Imprime en tamaño carta al 100%.
         </p>

@@ -7,6 +7,7 @@ import {
   HandPlatter,
   QrCode,
   ShieldCheck,
+  ShoppingBag,
   Smartphone,
   Tablet
 } from "lucide-react";
@@ -120,6 +121,12 @@ export function OperationsHome() {
               href="/admin"
             >
               Abrir administración <ArrowRight size={18} />
+            </Link>
+            <Link
+              className="focus-ring mt-3 flex min-h-14 items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-5 font-bold"
+              href="/llevar"
+            >
+              Pedidos para llevar <ShoppingBag size={18} />
             </Link>
             <Link
               className="focus-ring mt-3 flex min-h-14 items-center justify-between rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-5 font-bold"

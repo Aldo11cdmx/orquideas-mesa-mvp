@@ -3,6 +3,7 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import {
   BarChart3,
+  Coffee,
   Banknote,
   CalendarDays,
   CircleDollarSign,
@@ -178,6 +179,7 @@ export function AdminPanel() {
 
   const nav = [
     ["menu", "Menú", LayoutGrid],
+    ["breakfast", "Desayunos", Coffee],
     ["daily", "Comida corrida", Store],
     ["tables", "Mesas", Settings2],
     ["sales", "Corte de caja", BarChart3]
@@ -229,6 +231,7 @@ export function AdminPanel() {
               }
             />
           )}
+          {tab === "breakfast" && <BreakfastAdmin pin={pin} />}
           {tab === "daily" && <DailyAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin pin={pin} />}
             {tab === "sales" && <SalesAdmin pin={pin} />}
@@ -1552,6 +1555,175 @@ function EmptySales({ message }: { message: string }) {
   return (
     <div className="my-6 rounded-2xl border border-dashed border-[#bdb4a5] px-5 py-10 text-center text-sm text-[var(--muted)]">
       {message}
+    </div>
+  );
+}
+
+// ─── Admin: Extras de Desayunos ───────────────────────────────────────────
+type BreakfastExtra = {
+  id: string;
+  name: string;
+  price: number;
+  active: boolean;
+  sortOrder: number;
+};
+
+function BreakfastAdmin({ pin }: { pin: string }) {
+  const [extras, setExtras] = useState<BreakfastExtra[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [notice, setNotice] = useState("");
+  const [name, setName] = useState("");
+  const [price, setPrice] = useState("");
+
+  const loadExtras = useCallback(async () => {
+    setLoading(true);
+    setNotice("");
+    try {
+      const response = await fetch(`/api/admin/breakfast-extras?pin=${encodeURIComponent(pin)}`, { cache: "no-store" });
+      const data = await response.json().catch(() => []);
+      if (Array.isArray(data)) setExtras(data);
+    } catch {
+      setNotice("No se pudieron cargar los extras.");
+    } finally {
+      setLoading(false);
+    }
+  }, [pin]);
+
+  useEffect(() => { void loadExtras(); }, [loadExtras]);
+
+  async function saveExtra(extra?: BreakfastExtra) {
+    const trimmedName = name.trim() || (extra?.name ?? "");
+    if (!trimmedName) return;
+    const numPrice = Number(price) || (extra?.price ?? 0);
+    if (isNaN(numPrice) || numPrice < 0) return;
+
+    setNotice("");
+    const response = await fetch("/api/admin/breakfast-extras", {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        pin,
+        id: extra?.id ?? null,
+        name: extra ? extra.name : trimmedName,
+        price: extra ? extra.price : numPrice,
+        active: extra ? !extra.active : true,
+        sortOrder: extra?.sortOrder ?? extras.length
+      })
+    });
+
+    if (!response.ok) {
+      setNotice("Error al guardar.");
+      return;
+    }
+    setName("");
+    setPrice("");
+    void loadExtras();
+  }
+
+  async function deleteExtra(id: string) {
+    if (!window.confirm("¿Eliminar este extra de desayunos?")) return;
+    setNotice("");
+    const response = await fetch("/api/admin/breakfast-extras", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, id })
+    });
+    if (!response.ok) {
+      setNotice("Error al eliminar.");
+      return;
+    }
+    void loadExtras();
+  }
+
+  return (
+    <div>
+      <div className="flex items-center justify-between">
+        <div>
+          <h2 className="font-display text-3xl font-bold">Extras de Desayunos</h2>
+          <p className="mt-1 text-sm text-[var(--muted)]">
+            Estos extras aparecen en todos los productos de la categoría Desayunos.
+          </p>
+        </div>
+        <button
+          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--brown)] px-4 text-sm font-bold text-white"
+          onClick={() => void loadExtras()}
+          disabled={loading}
+        >
+          <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
+          {loading ? "Cargando" : "Actualizar"}
+        </button>
+      </div>
+
+      {notice && (
+        <div className="mt-4 rounded-2xl bg-[#f8e8e2] p-3 text-sm font-bold text-[#8a3b30]">{notice}</div>
+      )}
+
+      {/* Add new */}
+      <div className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--line)] bg-white p-4">
+        <label className="flex-1">
+          <span className="text-xs font-bold text-[var(--muted)]">Nombre</span>
+          <input
+            className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
+            placeholder="Ej: Bistec asado"
+            value={name}
+            onChange={(e) => setName(e.target.value)}
+          />
+        </label>
+        <label className="w-28">
+          <span className="text-xs font-bold text-[var(--muted)]">Precio ($)</span>
+          <input
+            className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
+            type="number"
+            min="0"
+            placeholder="35"
+            value={price}
+            onChange={(e) => setPrice(e.target.value)}
+          />
+        </label>
+        <button
+          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--green)] px-4 text-sm font-bold text-white disabled:opacity-50"
+          disabled={!name.trim() || !price}
+          onClick={() => void saveExtra()}
+        >
+          <Plus size={16} /> Agregar
+        </button>
+      </div>
+
+      {/* List */}
+      <div className="mt-5 space-y-2">
+        {extras.length === 0 && !loading && (
+          <p className="rounded-2xl border border-dashed border-[#bdb4a5] py-10 text-center text-sm text-[var(--muted)]">
+            No hay extras configurados. Agrega el primero arriba.
+          </p>
+        )}
+        {extras.map((extra) => (
+          <div
+            key={extra.id}
+            className={`flex items-center gap-3 rounded-2xl border p-3 transition ${
+              extra.active ? "border-[var(--line)] bg-white" : "border-transparent bg-[#f5f2ed] opacity-60"
+            }`}
+          >
+            <button
+              className="focus-ring grid h-10 w-10 shrink-0 place-items-center rounded-xl border border-[var(--line)] bg-white"
+              onClick={() => void saveExtra(extra)}
+              title={extra.active ? "Desactivar" : "Activar"}
+            >
+              {extra.active ? <ToggleRight size={20} className="text-[var(--green)]" /> : <ToggleLeft size={20} className="text-[var(--muted)]" />}
+            </button>
+            <div className="min-w-0 flex-1">
+              <p className="font-bold">{extra.name}</p>
+              <p className="text-xs text-[var(--muted)]">+${extra.price}</p>
+            </div>
+            <button
+              className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
+              onClick={() => void deleteExtra(extra.id)}
+              title="Eliminar"
+            >
+              <Trash2 size={16} />
+            </button>
+          </div>
+        ))}
+      </div>
     </div>
   );
 }

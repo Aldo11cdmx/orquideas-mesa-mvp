@@ -881,7 +881,31 @@ function ProductDialog({
   const [quantity, setQuantity] = useState(1);
   const [notes, setNotes] = useState("");
   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);
+  const [breakfastExtras, setBreakfastExtras] = useState<Array<{name: string; price: number; active: boolean}>>([]);
+  const isBreakfast = product.category === "Desayunos";
   const isComidaALaCarta = product.category === "Comidas a la carta";
+
+  // Load global breakfast extras for Desayunos products
+  useEffect(() => {
+    if (!isBreakfast) return;
+    fetch("/api/breakfast-extras", { cache: "no-store" })
+      .then((r) => r.json().catch(() => []))
+      .then((data) => {
+        if (Array.isArray(data)) setBreakfastExtras(data.filter((e: any) => e.active !== false));
+      })
+      .catch(() => setBreakfastExtras([]));
+  }, [isBreakfast]);
+
+  // Merge product extras + global breakfast extras
+  const allExtras = useMemo(() => {
+    if (isBreakfast && breakfastExtras.length > 0) {
+      // Global breakfast extras take priority
+      const globalNames = new Set(breakfastExtras.map((e) => e.name));
+      const productExtras = (product.extrasConfig || []).filter((e) => e.active !== false && !globalNames.has(e.name));
+      return [...breakfastExtras.map((e) => ({ name: e.name, price: e.price, active: true })), ...productExtras];
+    }
+    return (product.extrasConfig || []).filter((e) => e.active !== false);
+  }, [isBreakfast, breakfastExtras, product.extrasConfig]);
   const groups = useMemo(() => {
     const baseGroups = product.optionGroups || (
       product.options?.length
@@ -1040,16 +1064,16 @@ function ProductDialog({
                 onChange={(event) => setNotes(event.target.value)}
               />
             </label>
-            {product.extrasConfig && product.extrasConfig.length > 0 && (
+            {allExtras.length > 0 && (
               <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
-                <legend className="font-display text-xl font-bold">Extras con costo</legend>
+                <legend className="font-display text-xl font-bold">
+                  {isBreakfast ? "Extras de desayuno" : "Extras con costo"}
+                </legend>
                 <p className="mt-1 text-xs text-[var(--muted)]">
                   Puedes sumar extras y el precio se actualizará al momento.
                 </p>
                 <div className="mt-3 grid gap-2">
-                  {product.extrasConfig
-                    .filter((extra) => extra.active !== false)
-                    .map((extra) => {
+                  {allExtras.map((extra) => {
                       const selected = selectedExtras.includes(extra.name);
                       return (
                         <label

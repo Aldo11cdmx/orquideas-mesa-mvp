@@ -269,3 +269,50 @@ select:focus {
     box-shadow: none;
   }
 }
+
+/* ── PWA & iPad touch optimization ── */
+
+/* Prevent text selection on interactive elements for app-like feel */
+.staff-column button,
+.order-card button,
+.no-select {
+  -webkit-user-select: none;
+  user-select: none;
+}
+
+/* iPad / large tablet: even bigger touch targets */
+@media (min-width: 768px) and (pointer: coarse) {
+  .staff-column button {
+    min-height: 52px;
+    padding-left: 1rem;
+    padding-right: 1rem;
+  }
+
+  .staff-column .order-card button {
+    min-height: 48px;
+  }
+}
+
+/* iPhone notch / Dynamic Island safe areas */
+@supports (padding-bottom: env(safe-area-inset-bottom)) {
+  body {
+    padding-bottom: env(safe-area-inset-bottom);
+    padding-left: env(safe-area-inset-left);
+    padding-right: env(safe-area-inset-right);
+  }
+
+  /* Push floating buttons above the home indicator */
+  .fixed.bottom-0,
+  .fixed.bottom-20,
+  .fixed.bottom-24 {
+    padding-bottom: env(safe-area-inset-bottom);
+  }
+}
+
+/* Prevent pull-to-refresh in PWA standalone mode */
+@media (display-mode: standalone) {
+  body {
+    overscroll-behavior-y: none;
+    -webkit-overflow-scrolling: touch;
+  }
+}

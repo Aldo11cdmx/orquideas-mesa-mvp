@@ -1,0 +1,24 @@
+{
+  "name": "Imperio · Orquídeas",
+  "short_name": "Imperio",
+  "description": "Sistema de pedidos desde mesa con QR para el restaurante Imperio",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#faf7f2",
+  "theme_color": "#5c3d2e",
+  "orientation": "any",
+  "icons": [
+    {
+      "src": "/icon-192.svg",
+      "sizes": "192x192",
+      "type": "image/svg+xml",
+      "purpose": "any"
+    },
+    {
+      "src": "/icon-512.svg",
+      "sizes": "512x512",
+      "type": "image/svg+xml",
+      "purpose": "any maskable"
+    }
+  ]
+}

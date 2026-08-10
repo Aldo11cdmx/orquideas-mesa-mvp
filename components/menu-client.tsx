@@ -563,7 +563,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       {/* Botón flotante Llamar mesero */}
       <div className="fixed bottom-20 right-4 z-40 sm:bottom-24">
         <button
-          className={`focus-ring flex items-center gap-2 rounded-full px-5 py-3.5 font-bold text-white shadow-2xl transition-all ${
+          className={`focus-ring flex items-center gap-2.5 rounded-full px-5 py-4 font-bold text-white shadow-2xl transition-all ${
             waiterCalled
               ? "bg-[var(--green)] cursor-default"
               : "bg-[var(--terracotta)] hover:bg-[#b03a2a] hover:scale-105 active:scale-95"

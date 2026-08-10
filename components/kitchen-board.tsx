@@ -564,7 +564,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
             </button>
           </div>
           <button
-            className="focus-ring mt-4 min-h-11 w-full rounded-xl bg-[var(--gold)] font-bold text-[var(--charcoal)]"
+            className="focus-ring mt-4 min-h-14 w-full rounded-xl bg-[var(--gold)] text-base font-bold text-[var(--charcoal)]"
             onClick={() => {
               setTableFilter(readyNotice.tableCode);
               setStatusFilter("ready");
@@ -882,13 +882,13 @@ function KitchenCard({
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
-                className="focus-ring min-h-12 rounded-xl bg-[var(--green)] px-3 font-bold text-white"
+                className="focus-ring min-h-14 rounded-xl bg-[var(--green)] px-3 text-base font-bold text-white"
                 onClick={() => onStatus(order, "delivered", "cash")}
               >
                 Efectivo
               </button>
               <button
-                className="focus-ring min-h-12 rounded-xl bg-[var(--brown)] px-3 font-bold text-white"
+                className="focus-ring min-h-14 rounded-xl bg-[var(--brown)] px-3 text-base font-bold text-white"
                 onClick={() => onStatus(order, "delivered", "card")}
               >
                 Tarjeta
@@ -897,7 +897,7 @@ function KitchenCard({
           </div>
         ) : action ? (
           <button
-            className="focus-ring mt-4 min-h-12 w-full rounded-xl bg-[var(--brown)] px-4 font-bold text-white shadow-md hover:bg-[var(--brown-dark)]"
+            className="focus-ring mt-4 min-h-14 w-full rounded-xl bg-[var(--brown)] px-4 text-base font-bold text-white shadow-md hover:bg-[var(--brown-dark)]"
             onClick={() => onStatus(order, action.status)}
           >
             {action.label}

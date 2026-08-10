@@ -949,7 +949,7 @@ function KitchenCard({
               <div className="flex items-start gap-2 font-bold">
                 <span className="text-[var(--terracotta)]">{item.quantity}×</span>
                 <span className="min-w-0 flex-1">{item.name}</span>
-                {role === "waiter" && order.status === "sent" && item.itemId && (
+                {role === "waiter" && ["sent", "accepted"].includes(order.status) && item.itemId && (
                   <button
                     className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
                     aria-label={`Eliminar ${item.name}`}

@@ -521,18 +521,28 @@ function StaffBoard({ role }: { role: StaffRole }) {
               className={`flex items-center gap-2 rounded-full px-3 py-2 text-xs font-bold ${
                 online && realtimeStatus === "SUBSCRIBED"
                   ? "bg-[#dce8c8] text-[#274a27]"
-                  : online
+                  : online && realtimeStatus === "CONNECTING"
                     ? "bg-[#f4dfb4] text-[#694500]"
-                    : "bg-[#f1d0ca] text-[#7a2c22]"
+                    : online
+                      ? "bg-[#f4dfb4] text-[#694500]"
+                      : "bg-[#f1d0ca] text-[#7a2c22]"
               }`}
             >
-              {online ? <Wifi size={16} /> : <WifiOff size={16} />}
               {!online
-                ? "Sin conexión"
+                ? <><WifiOff size={16} /> Sin conexión</>
                 : realtimeStatus === "SUBSCRIBED"
-                  ? "Tiempo real"
-                  : "Reconectando"}
+                  ? <><Wifi size={16} /> En vivo</>
+                  : <><RefreshCw size={14} className="animate-spin" /> Reconectando</>
+              }
             </span>
+            {(!online || realtimeStatus !== "SUBSCRIBED") && (
+              <button
+                className="focus-ring flex min-h-9 items-center gap-1 rounded-full bg-white px-3 text-xs font-bold shadow-sm"
+                onClick={() => void loadOrders(pin)}
+              >
+                <RefreshCw size={14} /> Actualizar
+              </button>
+            )}
             <button
               className={`focus-ring flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold ${
                 sound ? "bg-[var(--green)] text-white" : "border border-[var(--line)] bg-white"
@@ -711,7 +721,22 @@ function StaffBoard({ role }: { role: StaffRole }) {
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
-          {boardColumns.map((column) => {
+          {filtered.length === 0 && !syncing ? (
+            <div className="md:col-span-3 animate-fade-in rounded-[1.75rem] border border-dashed border-[#b9b2a5] py-16 text-center">
+              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-white/60">
+                {role === "kitchen" ? <ChefHat size={34} className="text-[var(--brown)]" /> : <HandPlatter size={34} className="text-[var(--brown)]" />}
+              </div>
+              <p className="font-display text-2xl font-bold">
+                {role === "kitchen" ? "Cocina despejada ✨" : "Todo en orden ✨"}
+              </p>
+              <p className="mt-2 text-sm text-[var(--muted)]">
+                {role === "kitchen"
+                  ? "No hay pedidos pendientes. Cuando llegue uno, aparecerá aquí al instante."
+                  : "No hay pedidos por entregar. Recibirás alertas cuando cocina termine algo."}
+              </p>
+            </div>
+          ) : (
+            boardColumns.map((column) => {
             const ColumnIcon = column.icon;
             const columnOrders = filtered.filter((order) => column.statuses.includes(order.status));
             return (
@@ -758,7 +783,15 @@ function StaffBoard({ role }: { role: StaffRole }) {
                       </div>
                       <p className="font-bold">Sin pedidos</p>
                       <p className="mt-1 text-xs">
-                        {column.id === "new" ? "Aún no han llegado pedidos nuevos" : column.id === "ready" ? "Cocina no ha marcado nada como listo" : "Nada en preparación"}
+                        {column.id === "new"
+                          ? "Aún no han llegado pedidos nuevos"
+                          : column.id === "ready"
+                            ? role === "waiter"
+                              ? "No hay pedidos para entregar"
+                              : "Cocina no ha marcado nada como listo"
+                            : column.id === "kitchen"
+                              ? "No hay pedidos en cocina"
+                              : "Nada en preparación"}
                       </p>
                     </div>
                   )}
@@ -767,6 +800,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
             );
           })}
         </div>
+          )}
 
         {role === "waiter" && groupByTable && (
           <TableGroupedView

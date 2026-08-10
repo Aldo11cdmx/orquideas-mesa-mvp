@@ -423,25 +423,61 @@ function StaffBoard({ role }: { role: StaffRole }) {
       return;
     }
 
-    if (backend !== "supabase") {
-      window.alert("La edición de productos requiere conexión con Supabase.");
-      return;
-    }
-
-    const response = await fetch(`/api/orders/${order.id}/items/${itemId}`, {
-      method: "DELETE",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ pin })
-    });
-    const payload = await response.json().catch(() => null);
-    if (!response.ok) {
-      window.alert(payload?.error || "No fue posible eliminar el producto.");
-      return;
-    }
-
-    const updated = payload as Order;
+    if (backend === "supabase") {
+      const response = await fetch(`/api/orders/${order.id}/items/${itemId}`, {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        window.alert(payload?.error || "No fue posible eliminar el producto.");
+        return;
+      }
+      const updated = payload as Order;
       upsert(updated);
       await channelRef.current?.send({ type: "edited", order: updated });
+      return;
+    }
+
+    // Modo demo: eliminar localmente
+    const itemIndex = order.items.findIndex(
+      (i) => (i.itemId || i.productId) === itemId
+    );
+    if (itemIndex === -1) {
+      // Try by productId as last resort
+      const byProduct = order.items.findIndex((i) => i.productId === itemId);
+      if (byProduct === -1) return;
+      const updatedItems = [...order.items];
+      updatedItems.splice(byProduct, 1);
+      if (updatedItems.length === 0) {
+        window.alert("No puedes eliminar el último producto; cancela el pedido completo.");
+        return;
+      }
+      const newTotal = updatedItems.reduce(
+        (s, i) => s + i.price * i.quantity + ((i as any).optionPriceModifier || 0),
+        0
+      );
+      const updated = { ...order, items: updatedItems, total: newTotal, updatedAt: new Date().toISOString() };
+      updateDemoOrder(updated.id, order.status);
+      saveDemoOrder(updated);
+      upsert(updated);
+      return;
+    }
+    const updatedItems = [...order.items];
+    updatedItems.splice(itemIndex, 1);
+    if (updatedItems.length === 0) {
+      window.alert("No puedes eliminar el último producto; cancela el pedido completo.");
+      return;
+    }
+    const newTotal = updatedItems.reduce(
+      (s, i) => s + i.price * i.quantity + ((i as any).optionPriceModifier || 0),
+      0
+    );
+    const updated = { ...order, items: updatedItems, total: newTotal, updatedAt: new Date().toISOString() };
+    updateDemoOrder(updated.id, order.status);
+    saveDemoOrder(updated);
+    upsert(updated);
   }
 
   async function closeSession(sessionId: string) {
@@ -949,12 +985,12 @@ function KitchenCard({
               <div className="flex items-start gap-2 font-bold">
                 <span className="text-[var(--terracotta)]">{item.quantity}×</span>
                 <span className="min-w-0 flex-1">{item.name}</span>
-                {role === "waiter" && ["sent", "accepted"].includes(order.status) && item.itemId && (
+                {role === "waiter" && ["sent", "accepted"].includes(order.status) && (
                   <button
                     className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
                     aria-label={`Eliminar ${item.name}`}
                     title="Eliminar producto"
-                    onClick={() => onRemoveItem(order, item.itemId!)}
+                    onClick={() => onRemoveItem(order, item.itemId || item.productId)}
                   >
                     <Trash2 size={15} />
                   </button>

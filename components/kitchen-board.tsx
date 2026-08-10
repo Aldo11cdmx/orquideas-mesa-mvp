@@ -388,6 +388,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   ) {
     if (status === "cancelled" && !window.confirm(`¿Cancelar el pedido ${order.folio}?`)) return;
     let updated: Order | null = null;
+    let apiError = "";
     if (backend === "supabase") {
       const response = await fetch(`/api/orders/${order.id}`, {
         method: "PATCH",
@@ -396,10 +397,15 @@ function StaffBoard({ role }: { role: StaffRole }) {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        window.alert(payload?.error || "No fue posible actualizar el pedido.");
-        return;
+        apiError = payload?.error || "No fue posible actualizar el pedido.";
+        // Si es cancelación, forzar localmente aunque falle el backend
+        if (status !== "cancelled") {
+          window.alert(apiError);
+          return;
+        }
+      } else {
+        updated = payload as Order;
       }
-      updated = payload as Order;
     }
     if (!updated) {
       updated = updateDemoOrder(order.id, status) || {

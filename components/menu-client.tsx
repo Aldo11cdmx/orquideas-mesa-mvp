@@ -2,9 +2,11 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
+  BellRing,
   Check,
   ChevronLeft,
   Clock3,
+  Hand,
   Minus,
   Plus,
   Search,
@@ -66,6 +68,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [order, setOrder] = useState<Order | null>(null);
   const [sending, setSending] = useState(false);
   const [generalNotes, setGeneralNotes] = useState("");
+  const [waiterCalled, setWaiterCalled] = useState(false);
   const [dailyMenu, setDailyMenu] = useState<DailyMenuConfig | null>(null);
   const [dailyMenuLoading, setDailyMenuLoading] = useState(true);
   const [catalog, setCatalog] = useState<Product[]>(seedProducts);
@@ -333,6 +336,18 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     }
   }
 
+  function callWaiter() {
+    if (waiterCalled) return;
+    setWaiterCalled(true);
+    const call = {
+      id: crypto.randomUUID(),
+      tableCode,
+      timestamp: new Date().toISOString()
+    };
+    void channelRef.current?.send({ type: "waiter-call", waiterCall: call });
+    window.setTimeout(() => setWaiterCalled(false), 30000);
+  }
+
   if (order) {
     return (
       <OrderTracking
@@ -545,6 +560,31 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           dailyMenu={dailyMenu}
         />
       )}
+      {/* Botón flotante Llamar mesero */}
+      <div className="fixed bottom-20 right-4 z-40 sm:bottom-24">
+        <button
+          className={`focus-ring flex items-center gap-2.5 rounded-full px-5 py-4 font-bold text-white shadow-2xl transition-all ${
+            waiterCalled
+              ? "bg-[var(--green)] cursor-default"
+              : "bg-[var(--terracotta)] hover:bg-[#b03a2a] hover:scale-105 active:scale-95"
+          }`}
+          onClick={callWaiter}
+          disabled={waiterCalled}
+        >
+          {waiterCalled ? (
+            <>
+              <Check size={20} strokeWidth={3} />
+              <span className="text-sm">Mesero avisado</span>
+            </>
+          ) : (
+            <>
+              <Hand size={20} />
+              <span className="text-sm">Llamar mesero</span>
+            </>
+          )}
+        </button>
+      </div>
+
       {cartOpen && (
         <CartDrawer
           cart={cart}
@@ -598,7 +638,7 @@ function ProductCard({
         disabled={product.soldOut || !available}
       >
         <div className="relative">
-          <ProductImage src={product.image} alt={product.name} className="aspect-[4/3] w-full" />
+          <ProductImage src={product.image} alt={product.name} category={product.category} className="aspect-[4/3] w-full" />
           <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-[#24211f]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-lg backdrop-blur-md">
             {product.category}
           </span>
@@ -803,6 +843,7 @@ function ProductDialog({
           <ProductImage
             src={product.image}
             alt={product.name}
+            category={product.category}
             className="h-56 w-full sm:h-72 lg:h-full lg:min-h-[34rem]"
           />
           <div className="min-w-0 p-5 sm:p-7 lg:flex lg:min-h-[34rem] lg:flex-col lg:justify-center lg:p-10">
@@ -1027,7 +1068,7 @@ function CartDrawer({
                 <div className="flex gap-3">
                   <ProductImage
                     src={item.image}
-                    alt=""
+                    alt={item.name}
                     className="h-20 w-20 shrink-0 rounded-xl"
                   />
                   <div className="min-w-0 flex-1">

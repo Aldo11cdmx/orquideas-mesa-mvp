@@ -6,6 +6,15 @@ export const metadata: Metadata = {
   title: "Imperio · Servicio en mesa",
   description: "Desayunos, comida corrida y pedidos desde mesa en tiempo real",
   manifest: "/manifest.webmanifest",
+  appleWebApp: {
+    capable: true,
+    statusBarStyle: "black-translucent",
+    title: "Imperio"
+  },
+  other: {
+    "apple-mobile-web-app-capable": "yes",
+    "apple-mobile-web-app-status-bar-style": "black-translucent"
+  },
   openGraph: {
     title: "Imperio · Cocina de barrio",
     description: "Desayunos de 9 a 5 y comida corrida de 1 a 5.",
@@ -22,12 +31,18 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  themeColor: "#35322f"
+  maximumScale: 1,
+  userScalable: false,
+  themeColor: "#5c3d2e",
+  viewportFit: "cover"
 };
 
 export default function RootLayout({ children }: Readonly<{ children: React.ReactNode }>) {
   return (
     <html lang="es">
+      <head>
+        <link rel="apple-touch-icon" href="/icon-192.svg" />
+      </head>
       <body>{children}</body>
     </html>
   );

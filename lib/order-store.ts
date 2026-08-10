@@ -3,12 +3,19 @@
 import { createClient } from "@/lib/supabase/client";
 import type { DailyMenuConfig, Order, OrderStatus, Product, TableSession } from "@/lib/types";
 
+export type WaiterCall = {
+  id: string;
+  tableCode: string;
+  timestamp: string;
+};
+
 export type AppChannelPayload = {
   type: string;
   order?: Order;
   product?: Product;
   dailyMenu?: DailyMenuConfig;
   session?: TableSession;
+  waiterCall?: WaiterCall;
 };
 
 const STORAGE_KEY = "orquideas-demo-orders";

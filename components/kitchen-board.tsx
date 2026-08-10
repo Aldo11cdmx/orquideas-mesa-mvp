@@ -79,6 +79,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [backend, setBackend] = useState<"supabase" | "demo">("supabase");
   const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([]);
+  const [groupByTable, setGroupByTable] = useState(false);
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
@@ -642,29 +643,23 @@ function StaffBoard({ role }: { role: StaffRole }) {
           </div>
         )}
         <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo">
-          <div className="paper rounded-2xl p-4">
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Activos</p>
+          <button className="paper rounded-2xl p-4 text-left transition hover:shadow-md" onClick={() => setStatusFilter("active")}>
+            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Pendientes</p>
             <strong className="mt-1 block font-display text-3xl">{activeCount}</strong>
-          </div>
-          <div className={`rounded-2xl p-4 ${urgentCount ? "bg-[#7a2c22] text-white shadow-lg" : "paper"}`}>
-            <p className={`text-xs font-bold uppercase tracking-wider ${urgentCount ? "text-white/70" : "text-[var(--muted)]"}`}>
-              Con demora
-            </p>
-            <strong className="mt-1 flex items-center gap-2 font-display text-3xl">
-              {urgentCount > 0 && <Flame size={24} />} {urgentCount}
-            </strong>
-          </div>
-          <div className="paper rounded-2xl p-4">
+          </button>
+          <button className={`rounded-2xl p-4 text-left transition hover:shadow-md ${urgentCount ? "bg-[#7a2c22] text-white shadow-lg" : "paper"}`} onClick={() => setStatusFilter("active")}>
+            <p className={`text-xs font-bold uppercase tracking-wider ${urgentCount ? "text-white/70" : "text-[var(--muted)]"}`}>Con demora</p>
+            <strong className="mt-1 flex items-center gap-2 font-display text-3xl">{urgentCount > 0 && <Flame size={24} />} {urgentCount}</strong>
+          </button>
+          <button className="paper rounded-2xl p-4 text-left transition hover:shadow-md" onClick={() => setStatusFilter("ready")}>
             <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Listos</p>
             <strong className="mt-1 block font-display text-3xl">{readyCount}</strong>
-          </div>
+          </button>
           <div className={`rounded-2xl p-4 ${peakMode ? "bg-[var(--charcoal)] text-white shadow-lg" : "paper"}`}>
-            <p className={`text-xs font-bold uppercase tracking-wider ${peakMode ? "text-[#d9c17f]" : "text-[var(--muted)]"}`}>
-              Operación
-            </p>
-            <strong className="mt-1 block text-lg">{peakMode ? "Hora pico activa" : "Flujo normal"}</strong>
+            <p className={`text-xs font-bold uppercase tracking-wider ${peakMode ? "text-[#d9c17f]" : "text-[var(--muted)]"}`}>Operación</p>
+            <strong className="mt-1 block text-lg">{peakMode ? "Hora pico" : "Flujo normal"}</strong>
             <span className={`text-xs ${peakMode ? "text-white/65" : "text-[var(--muted)]"}`}>
-              {syncing ? "Sincronizando…" : lastSync ? `Actualizado ${new Date(lastSync).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : "Preparando tablero"}
+              {syncing ? "Sincronizando…" : lastSync ? `Actualizado ${new Date(lastSync).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : "Cargando"}
             </span>
           </div>
         </section>
@@ -702,6 +697,14 @@ function StaffBoard({ role }: { role: StaffRole }) {
             <RefreshCw className={syncing ? "animate-spin" : ""} size={17} />
             {syncing ? "Sincronizando" : "Actualizar"}
           </button>
+          {role === "waiter" && (
+            <button
+              className={`focus-ring flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold ${groupByTable ? "bg-[var(--brown)] text-white" : "border border-[var(--line)] bg-white"}`}
+              onClick={() => setGroupByTable((v) => !v)}
+            >
+              {groupByTable ? "Por estado" : "Por mesa"}
+            </button>
+          )}
           <span className="ml-auto text-sm text-[var(--muted)]">
             {filtered.length} pedidos visibles
           </span>
@@ -764,6 +767,16 @@ function StaffBoard({ role }: { role: StaffRole }) {
             );
           })}
         </div>
+
+        {role === "waiter" && groupByTable && (
+          <TableGroupedView
+            orders={filtered}
+            now={now}
+            onStatus={changeStatus}
+            onRemoveItem={removeItem}
+            onViewSession={(sessionId, tableCode) => setSessionView({ sessionId, tableCode })}
+          />
+        )}
       </div>
 
       {sessionView && (
@@ -821,8 +834,10 @@ function KitchenCard({
     >
       <div className="premium-header flex items-start justify-between p-4 text-white">
         <div>
-          <p className="text-xs uppercase tracking-wider text-[#d9c17f]">Mesa</p>
-          <strong className="font-display text-4xl">{order.tableCode}</strong>
+          <p className="text-xs uppercase tracking-wider text-[#d9c17f]">
+            {order.tableCode === "LLEVAR" ? "Llevar 🥡" : `Mesa ${order.tableCode}`}
+          </p>
+          <strong className="font-display text-4xl">{order.folio}</strong>
         </div>
         <div className="text-right">
           <StatusPill status={order.status} />
@@ -835,21 +850,25 @@ function KitchenCard({
       <div className="p-4">
         <div className="mb-3 flex items-center justify-between gap-2">
           <span
-            className={`flex items-center gap-2 text-sm font-bold ${
+            className={`flex items-center gap-2 font-bold ${
               urgency === "critical"
-                ? "text-[#9b261c]"
+                ? "text-lg text-[#9b261c]"
                 : urgency === "warning"
-                  ? "text-[var(--terracotta)]"
-                  : "text-[var(--muted)]"
+                  ? "text-base text-[var(--terracotta)]"
+                  : "text-sm text-[var(--muted)]"
             }`}
           >
-            <Clock3 size={16} /> Hace {minutes} min
+            <Clock3 size={urgency === "critical" ? 22 : urgency === "warning" ? 20 : 16} />
+            {minutes} min
           </span>
           {urgency !== "normal" && (
-            <span className={`rounded-full px-2 py-1 text-[10px] font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-[#9b261c] text-white" : "bg-[#f4dfb4] text-[#694500]"}`}>
-              {urgency === "critical" ? "Prioridad alta" : "Revisar tiempo"}
+            <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-[#9b261c] text-white animate-pulse" : "bg-[#f4dfb4] text-[#694500]"}`}>
+              {urgency === "critical" ? "⚠️ Urgente" : "Revisar"}
             </span>
           )}
+          <span className="ml-auto text-xs font-bold text-[var(--muted)]">
+            {order.items.reduce((s, i) => s + i.quantity, 0)} items
+          </span>
         </div>
         <ul className="space-y-3">
           {order.items.map((item, index) => (
@@ -1122,6 +1141,101 @@ function SessionAccountModal({
           )}
         </div>
       </section>
+    </div>
+  );
+}
+
+function TableGroupedView({
+  orders,
+  now,
+  onStatus,
+  onRemoveItem,
+  onViewSession
+}: {
+  orders: Order[];
+  now: number;
+  onStatus: (order: Order, status: OrderStatus, paymentMethod?: PaymentMethod) => void;
+  onRemoveItem: (order: Order, itemId: string) => void;
+  onViewSession: (sessionId: string, tableCode: string) => void;
+}) {
+  const grouped = useMemo(() => {
+    const map = new Map<string, Order[]>();
+    for (const order of orders) {
+      const key = order.tableCode;
+      const existing = map.get(key) || [];
+      existing.push(order);
+      map.set(key, existing);
+    }
+    return Array.from(map.entries()).sort(([a], [b]) => a.localeCompare(b));
+  }, [orders]);
+
+  if (grouped.length === 0) {
+    return (
+      <div className="animate-fade-in rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/50"><HandPlatter size={26} /></div>
+        <p className="font-bold">Sin pedidos activos</p>
+      </div>
+    );
+  }
+
+  return (
+    <div className="mt-4 grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+      {grouped.map(([tableCode, tableOrders]) => {
+        const total = tableOrders.reduce((s, o) => s + o.total, 0);
+        const readyCount = tableOrders.filter((o) => o.status === "ready").length;
+        return (
+          <article key={tableCode} className="glass-card overflow-hidden rounded-2xl">
+            <div className="flex items-center justify-between bg-[var(--charcoal)] px-4 py-3 text-white">
+              <div>
+                <p className="text-xs text-[#d9c17f]">
+                  {tableCode === "LLEVAR" ? "Llevar 🥡" : "Mesa"}
+                </p>
+                <strong className="font-display text-2xl">{tableCode === "LLEVAR" ? "🥡" : tableCode}</strong>
+              </div>
+              <div className="text-right">
+                <strong className="text-lg">{money(total)}</strong>
+                <p className="text-xs text-white/60">{tableOrders.length} pedidos · {readyCount} listos</p>
+              </div>
+            </div>
+            <div className="divide-y divide-[var(--line)]/40 p-3">
+              {tableOrders.map((order) => {
+                const minutes = orderAgeMinutes(order, now);
+                const urgency = urgencyLevel(order, now);
+                return (
+                  <div key={order.id} className="flex items-center gap-3 py-2.5">
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-center gap-2">
+                        <span className="text-xs font-bold text-[var(--muted)]">{order.folio}</span>
+                        <StatusPill status={order.status} />
+                      </div>
+                      <p className="mt-1 text-xs text-[var(--muted)]">
+                        {order.items.map((i) => `${i.quantity}× ${i.name}`).join(", ").slice(0, 80)}
+                      </p>
+                    </div>
+                    <div className="shrink-0 text-right">
+                      <strong className="text-sm">{money(order.total)}</strong>
+                      <p className={`text-xs font-bold ${urgency !== "normal" ? "text-[var(--terracotta)]" : "text-[var(--muted)]"}`}>
+                        {minutes} min
+                      </p>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+            {tableOrders.some((o) => o.sessionId) && (
+              <button
+                className="focus-ring flex min-h-10 w-full items-center justify-center gap-1 bg-[#f4dfb4]/60 text-xs font-bold text-[#694500]"
+                onClick={() => {
+                  const sessionOrder = tableOrders.find((o) => o.sessionId);
+                  if (sessionOrder?.sessionId) onViewSession(sessionOrder.sessionId, tableCode);
+                }}
+              >
+                Ver cuenta completa
+              </button>
+            )}
+          </article>
+        );
+      })}
     </div>
   );
 }

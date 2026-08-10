@@ -6,6 +6,7 @@ import {
   BellRing,
   CheckCircle2,
   ChefHat,
+  Hand,
   HandPlatter,
   Clock3,
   Flame,
@@ -27,6 +28,7 @@ import {
   updateDemoOrder
 } from "@/lib/order-store";
 import type { Order, OrderStatus, PaymentMethod } from "@/lib/types";
+import type { WaiterCall } from "@/lib/order-store";
 import {
   mergeOrders,
   orderAgeMinutes,
@@ -74,6 +76,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
   const [syncing, setSyncing] = useState(false);
   const [lastSync, setLastSync] = useState<number | null>(null);
   const [backend, setBackend] = useState<"supabase" | "demo">("supabase");
+  const [waiterCalls, setWaiterCalls] = useState<WaiterCall[]>([]);
   const [now, setNow] = useState(0);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const soundRef = useRef(false);
@@ -234,18 +237,32 @@ function StaffBoard({ role }: { role: StaffRole }) {
   useEffect(() => {
     if (!unlocked) return;
     channelRef.current = connectOrderChannel(
-      ({ order, type }) => {
+      ({ order, type, waiterCall }) => {
         if (order) {
           upsert(order);
           notifyStaff(order);
         } else if (type === "database_change") {
           void loadOrders(pin);
+        } else if (type === "waiter-call" && waiterCall && role === "waiter") {
+          setWaiterCalls((current) => {
+            const exists = current.some((c) => c.id === waiterCall.id);
+            if (exists) return current;
+            beep();
+            navigator.vibrate?.([600, 200, 600]);
+            if ("Notification" in window && Notification.permission === "granted") {
+              new Notification(`Mesa ${waiterCall.tableCode} solicita atención`, {
+                body: "El cliente está llamando al mesero.",
+                tag: `orquideas-call-${waiterCall.tableCode}`
+              });
+            }
+            return [...current.slice(-9), waiterCall];
+          });
         }
       },
       setRealtimeStatus
     );
     return () => channelRef.current?.close();
-  }, [loadOrders, notifyStaff, pin, unlocked, upsert]);
+  }, [loadOrders, notifyStaff, pin, unlocked, upsert, role, beep]);
 
   async function toggleAlerts() {
     if (sound) {
@@ -556,6 +573,55 @@ function StaffBoard({ role }: { role: StaffRole }) {
           >
             Ver pedido listo
           </button>
+        </div>
+      )}
+
+      {role === "waiter" && waiterCalls.length > 0 && (
+        <div className="fixed inset-x-4 top-4 z-[55] mx-auto max-w-lg space-y-2">
+          {waiterCalls.map((call) => (
+            <div
+              key={call.id}
+              aria-live="polite"
+              className="animate-pop flex items-center gap-3 rounded-2xl border-2 border-[var(--terracotta)] bg-[#f8e8e2] p-4 shadow-2xl"
+              role="alert"
+            >
+              <div className="grid h-11 w-11 shrink-0 place-items-center rounded-xl bg-[var(--terracotta)] text-white">
+                <Hand size={22} />
+              </div>
+              <div className="min-w-0 flex-1">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
+                  Cliente solicita atención
+                </p>
+                <strong className="font-display text-xl">Mesa {call.tableCode}</strong>
+                <p className="text-xs text-[var(--terracotta)]/70">
+                  {new Date(call.timestamp).toLocaleTimeString("es-MX", {
+                    hour: "2-digit",
+                    minute: "2-digit"
+                  })}
+                </p>
+              </div>
+              <button
+                aria-label={`Atender mesa ${call.tableCode}`}
+                className="focus-ring shrink-0 rounded-xl bg-[var(--terracotta)] px-4 py-2.5 text-sm font-bold text-white hover:opacity-90"
+                onClick={() => {
+                  setTableFilter(call.tableCode);
+                  setStatusFilter("all");
+                  setWaiterCalls((current) => current.filter((c) => c.id !== call.id));
+                }}
+              >
+                Ver mesa
+              </button>
+              <button
+                aria-label="Descartar llamado"
+                className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full bg-white/60"
+                onClick={() =>
+                  setWaiterCalls((current) => current.filter((c) => c.id !== call.id))
+                }
+              >
+                <XCircle size={18} />
+              </button>
+            </div>
+          ))}
         </div>
       )}
 

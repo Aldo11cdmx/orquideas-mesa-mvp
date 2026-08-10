@@ -10,6 +10,8 @@ import {
   HandPlatter,
   Clock3,
   Flame,
+  Minus,
+  Plus,
   RefreshCw,
   Search,
   Trash2,
@@ -949,8 +951,10 @@ function SessionAccountModal({
   pin: string;
 }) {
   const allTotal = allOrders.reduce((sum, order) => sum + order.total, 0);
-  const pendingOrders = orders.length;
-  const canClose = pendingOrders === 0;
+  const pendingOrdersCount = orders.length;
+  const canClose = pendingOrdersCount === 0;
+  const [splitCount, setSplitCount] = useState(2);
+  const splitAmount = splitCount > 0 ? allTotal / splitCount : allTotal;
 
   return (
     <div className="animate-fade-in fixed inset-0 z-[60] flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
@@ -1036,11 +1040,37 @@ function SessionAccountModal({
           <div className="mb-4 space-y-2 text-sm">
             <div className="flex justify-between">
               <span className="text-[var(--muted)]">Pedidos pendientes</span>
-              <strong>{pendingOrders}</strong>
+              <strong>{pendingOrdersCount}</strong>
             </div>
             <div className="flex justify-between">
               <span className="text-[var(--muted)]">Total acumulado</span>
               <strong className="text-xl text-[var(--brown)]">{money(allTotal)}</strong>
+            </div>
+
+            {/* ── Dividir cuenta ── */}
+            <div className="rounded-2xl border border-[var(--line)] bg-white p-4">
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Dividir cuenta</p>
+              <div className="mt-3 flex items-center gap-3">
+                <button
+                  className="focus-ring grid h-9 w-9 place-items-center rounded-xl border border-[var(--line)] bg-white font-bold"
+                  aria-label="Menos personas"
+                  onClick={() => setSplitCount((v) => Math.max(1, v - 1))}
+                >
+                  <Minus size={16} />
+                </button>
+                <strong className="w-8 text-center text-lg">{splitCount}</strong>
+                <button
+                  className="focus-ring grid h-9 w-9 place-items-center rounded-xl border border-[var(--line)] bg-white font-bold"
+                  aria-label="Más personas"
+                  onClick={() => setSplitCount((v) => Math.min(20, v + 1))}
+                >
+                  <Plus size={16} />
+                </button>
+                <span className="text-sm text-[var(--muted)]">personas</span>
+                <span className="ml-auto font-display text-xl font-bold text-[var(--brown)]">
+                  {money(splitAmount)} c/u
+                </span>
+              </div>
             </div>
           </div>
 
@@ -1063,7 +1093,7 @@ function SessionAccountModal({
           ) : (
             <div className="rounded-2xl bg-[#f4dfb4]/60 p-4 text-sm">
               <p className="font-bold text-[#694500]">
-                Quedan {pendingOrders} pedido(s) pendientes.
+                Quedan {pendingOrdersCount} pedido(s) pendientes.
               </p>
               <p className="mt-1 text-xs text-[#694500]/80">
                 Marca todos los pedidos como entregados para poder cerrar la cuenta.

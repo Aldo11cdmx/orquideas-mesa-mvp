@@ -76,6 +76,9 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [justAdded, setJustAdded] = useState(false);
   const [session, setSession] = useState<TableSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
+  const [sessionExisted, setSessionExisted] = useState(false);
+  const [sendTogether, setSendTogether] = useState(false);
+  const [pendingOrders, setPendingOrders] = useState<CartItem[][]>([]);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
@@ -111,7 +114,11 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       const data = (await response.json()) as TableSession | null;
       if (data) {
         setSession(data);
+        setSessionExisted(true);
+        // Auto-enable sendTogether when joining an existing session
+        setSendTogether(true);
       } else {
+        setSessionExisted(false);
         const createResponse = await fetch("/api/sessions", {
           method: "POST",
           headers: { "content-type": "application/json" },
@@ -120,6 +127,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         if (createResponse.ok) {
           const created = (await createResponse.json()) as TableSession;
           setSession(created);
+          setSessionExisted(false);
         }
       }
     }
@@ -284,8 +292,43 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
   async function submitOrder() {
     if (sending || cart.length === 0) return;
+
+    if (sendTogether) {
+      // Queue mode: accumulate orders, send all at once later
+      setPendingOrders((current) => [...current, [...cart]]);
+      setCart([]);
+      setCartOpen(false);
+      setGeneralNotes("");
+      return;
+    }
+
     if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;
+    await sendOrderToApi(cart, generalNotes);
+  }
+
+  async function sendAllTogether() {
+    if (sending || pendingOrders.length === 0) return;
+    const totalItems = pendingOrders.reduce((sum, items) => sum + items.reduce((s, i) => s + i.quantity, 0), 0);
+    if (!window.confirm(`¿Enviar ${pendingOrders.length} pedidos (${totalItems} productos) juntos a cocina?`)) return;
     setSending(true);
+    let successCount = 0;
+    for (const items of pendingOrders) {
+      try {
+        await sendOrderToApi(items, "");
+        successCount++;
+      } catch {
+        // Continue with remaining orders
+      }
+    }
+    setPendingOrders([]);
+    setSending(false);
+    if (successCount > 0) {
+      setOrder({ id: "batch", folio: `${successCount} pedidos`, tableCode, status: "accepted", items: [], notes: "", subtotal: 0, total: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), source: "supabase" });
+    }
+  }
+
+  async function sendOrderToApi(items: CartItem[], notes: string) {
+    const total = calculateCartTotal(items);
     const idempotencyKey = crypto.randomUUID();
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
@@ -296,15 +339,15 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         signal: controller.signal,
         body: JSON.stringify({
           tableCode,
-          items: cart.map(({ productId, quantity, notes, option, extras, priceModifier }) => ({
+          items: items.map(({ productId, quantity, notes: n, option, extras, priceModifier }) => ({
             productId,
             quantity,
-            notes,
+            notes: n,
             option,
             optionPriceModifier: priceModifier,
             extras: extras?.map((extra) => ({ name: extra.name }))
           })),
-          notes: generalNotes,
+          notes,
           idempotencyKey,
           sessionId: session?.id ?? null
         })
@@ -313,24 +356,18 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       if (!response.ok) {
         throw new Error(payload?.error || "No fue posible registrar el pedido");
       }
-
       const created = payload as Order;
-      setOrder(created);
-      setCartOpen(false);
-      setCart([]);
-      setGeneralNotes("");
-      setSending(false);
-
       void channelRef.current?.send({ type: "new", order: created });
+      return created;
     } catch (error) {
       const message =
         error instanceof DOMException && error.name === "AbortError"
-          ? "El sistema tardó demasiado en responder. Intenta nuevamente."
+          ? "El sistema tardó demasiado en responder."
           : error instanceof Error
             ? error.message
             : "No fue posible enviar el pedido";
       window.alert(message);
-      setSending(false);
+      throw error;
     } finally {
       window.clearTimeout(timeout);
     }
@@ -401,7 +438,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
                   Sesión
                 </span>
-                <strong className="mt-1 block font-display text-3xl">activa</strong>
+                <strong className="mt-1 block font-display text-3xl">{sessionExisted ? "compartida" : "activa"}</strong>
               </div>
             )}
             {!session && !sessionLoading && (
@@ -417,6 +454,37 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       </header>
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
+        {sessionExisted && session && (
+          <div className="animate-fade-in glass-card -mt-3 relative z-10 mb-4 flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+            <div className="flex items-center gap-2.5 text-sm">
+              <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold text-[#5c3d2e]">👥</span>
+              <span className="font-bold text-[var(--ink)]">Mesa compartida</span>
+              <span className="text-[var(--muted)]">· Los pedidos se agrupan para cocina</span>
+            </div>
+            <label className="flex cursor-pointer items-center gap-2 shrink-0">
+              <span className="text-xs font-bold text-[var(--muted)]">Enviar juntos</span>
+              <button
+                role="switch"
+                aria-checked={sendTogether}
+                aria-label="Enviar pedidos juntos"
+                className={`relative h-7 w-12 rounded-full transition-colors ${
+                  sendTogether ? "bg-[var(--green)]" : "bg-[var(--line)]"
+                }`}
+                onClick={() => setSendTogether((v) => !v)}
+              >
+                <span
+                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${
+                    sendTogether ? "translate-x-5.5" : "translate-x-0.5"
+                  }`}
+                  style={{
+                    transform: sendTogether ? "translateX(22px)" : "translateX(2px)"
+                  }}
+                />
+              </button>
+            </label>
+          </div>
+        )}
+
         <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">
           <div className="grid grid-cols-2">
             {[
@@ -555,9 +623,44 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
               <span className={`grid h-8 w-8 place-items-center rounded-full bg-white/20 ${justAdded ? "animate-bounce-in" : ""}`}>
                 {itemCount}
               </span>
-              Ver mi pedido
+              {sendTogether ? "Agregar al grupo" : "Ver mi pedido"}
             </span>
             <span>{money(subtotal)}</span>
+          </button>
+        </div>
+      )}
+
+      {/* Pending orders queue + Send all button */}
+      {pendingOrders.length > 0 && (
+        <div className="fixed inset-x-0 bottom-24 z-30 mx-auto max-w-xl space-y-2 px-3 sm:bottom-28">
+          {pendingOrders.map((items, index) => {
+            const orderTotal = calculateCartTotal(items);
+            return (
+              <div key={index} className="animate-fade-in glass-card flex items-center justify-between rounded-xl px-4 py-2.5 text-sm">
+                <div className="flex items-center gap-2 min-w-0">
+                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold">{index + 1}</span>
+                  <span className="truncate font-bold">{items.length} productos</span>
+                </div>
+                <div className="flex items-center gap-2">
+                  <strong className="text-sm">{money(orderTotal)}</strong>
+                  <button
+                    className="focus-ring grid h-6 w-6 place-items-center rounded-full bg-[#f1d0ca] text-[#7a2c22]"
+                    aria-label="Quitar pedido"
+                    onClick={() => setPendingOrders((current) => current.filter((_, i) => i !== index))}
+                  >
+                    <X size={12} />
+                  </button>
+                </div>
+              </div>
+            );
+          })}
+          <button
+            className="focus-ring btn-press flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--green)] px-5 py-3.5 font-bold text-white shadow-xl transition hover:opacity-90 disabled:opacity-50"
+            disabled={sending}
+            onClick={sendAllTogether}
+          >
+            <ShoppingBag size={18} />
+            {sending ? "Enviando…" : `Enviar todos (${pendingOrders.length}) a cocina`}
           </button>
         </div>
       )}

@@ -9,13 +9,17 @@
   --green-2: #47413d;
   --terracotta: #784d36;
   --gold: #d2ad82;
+  --gold-light: #f4dfb4;
   --brown: #784d36;
   --brown-dark: #543525;
   --charcoal: #302c29;
+  --charcoal-light: #3c342f;
   --mist: #d5d1cb;
   --line: #c7c1b9;
   --shadow: 0 16px 45px rgb(48 44 41 / 10%);
   --shadow-lifted: 0 24px 70px rgb(48 44 41 / 18%);
+  --glass-bg: rgb(255 255 255 / 55%);
+  --glass-border: rgb(255 255 255 / 30%);
 }
 
 * {
@@ -442,4 +446,68 @@ select:focus {
     overscroll-behavior-y: none;
     -webkit-overflow-scrolling: touch;
   }
+}
+
+/* ── Premium glass & elevation ── */
+
+.glass {
+  background: var(--glass-bg);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid var(--glass-border);
+}
+
+.glass-card {
+  background: rgb(255 255 255 / 48%);
+  backdrop-filter: blur(24px) saturate(160%);
+  -webkit-backdrop-filter: blur(24px) saturate(160%);
+  border: 1px solid rgb(255 255 255 / 35%);
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 50%) inset,
+    0 8px 32px rgb(0 0 0 / 6%);
+}
+
+.glass-card:hover {
+  box-shadow:
+    0 1px 0 rgb(255 255 255 / 50%) inset,
+    0 16px 48px rgb(0 0 0 / 10%);
+}
+
+.elevation-1 { box-shadow: 0 2px 8px rgb(0 0 0 / 4%); }
+.elevation-2 { box-shadow: 0 4px 16px rgb(0 0 0 / 6%); }
+.elevation-3 { box-shadow: 0 8px 32px rgb(0 0 0 / 8%); }
+
+.premium-header {
+  background:
+    radial-gradient(ellipse at 20% 0%, rgb(210 173 130 / 25%), transparent 50%),
+    radial-gradient(ellipse at 80% 100%, rgb(120 77 54 / 15%), transparent 50%),
+    linear-gradient(160deg, #1f1c1a 0%, #2b2522 30%, #3c302a 70%, #4a3528 100%);
+}
+
+.premium-header::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      0deg,
+      transparent,
+      transparent 2px,
+      rgb(255 255 255 / 1.5%) 2px,
+      rgb(255 255 255 / 1.5%) 4px
+    );
+  pointer-events: none;
+}
+
+/* Chip / badge premium */
+.chip-gold {
+  background: linear-gradient(135deg, #f4dfb4, #d9b65d);
+  color: #5c3d2e;
+  font-weight: 700;
+}
+
+.chip-glass {
+  background: rgb(255 255 255 / 18%);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgb(255 255 255 / 20%);
 }

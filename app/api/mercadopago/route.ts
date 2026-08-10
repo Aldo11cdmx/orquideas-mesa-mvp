@@ -1,19 +1,37 @@
 import { NextRequest, NextResponse } from "next/server";
+import { z } from "zod";
 
 /**
  * Mercado Pago Checkout API
  *
  * Crea una preferencia de pago y devuelve la URL del checkout.
  * Requiere MERCADO_PAGO_ACCESS_TOKEN en las variables de entorno.
- *
- * Para obtener el token:
- * 1. Crear cuenta en https://www.mercadopago.com.mx
- * 2. Ir a Configuración → Credenciales → Access Token (producción o prueba)
- * 3. Agregar MERCADO_PAGO_ACCESS_TOKEN en .env.local
- *
- * Modo prueba: usa credenciales de test, no cobra realmente.
- * Modo producción: usa credenciales de producción.
  */
+
+// Validación del cuerpo de la solicitud
+const paymentSchema = z.object({
+  amount: z.number().min(1).max(50000),
+  description: z.string().trim().min(1).max(200),
+  customerName: z.string().trim().max(100).optional(),
+  customerPhone: z.string().trim().max(20).optional()
+});
+
+// Rate limiting simple en memoria (por IP)
+const rateLimitMap = new Map<string, { count: number; resetAt: number }>();
+const RATE_LIMIT_WINDOW_MS = 60_000; // 1 minuto
+const RATE_LIMIT_MAX = 5; // 5 requests por minuto por IP
+
+function checkRateLimit(ip: string): boolean {
+  const now = Date.now();
+  const entry = rateLimitMap.get(ip);
+  if (!entry || entry.resetAt < now) {
+    rateLimitMap.set(ip, { count: 1, resetAt: now + RATE_LIMIT_WINDOW_MS });
+    return true;
+  }
+  if (entry.count >= RATE_LIMIT_MAX) return false;
+  entry.count++;
+  return true;
+}
 
 export async function POST(request: NextRequest) {
   const accessToken = process.env.MERCADO_PAGO_ACCESS_TOKEN;
@@ -25,17 +43,25 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  const body = await request.json().catch(() => null);
-  if (!body || !body.amount) {
-    return NextResponse.json({ error: "Monto requerido" }, { status: 400 });
+  // Rate limiting
+  const clientIp = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  if (!checkRateLimit(clientIp)) {
+    return NextResponse.json(
+      { error: "Demasiadas solicitudes. Intenta en un momento.", url: null },
+      { status: 429 }
+    );
   }
 
-  const { amount, description, customerName, customerPhone } = body as {
-    amount: number;
-    description: string;
-    customerName: string;
-    customerPhone: string;
-  };
+  // Validar cuerpo
+  const parsed = paymentSchema.safeParse(await request.json().catch(() => null));
+  if (!parsed.success) {
+    return NextResponse.json(
+      { error: "Datos de pago inválidos", url: null },
+      { status: 400 }
+    );
+  }
+
+  const { amount, description, customerName, customerPhone } = parsed.data;
 
   const appUrl = process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000";
 
@@ -49,7 +75,7 @@ export async function POST(request: NextRequest) {
       body: JSON.stringify({
         items: [
           {
-            title: description || "Pedido para llevar · Imperio",
+            title: description,
             quantity: 1,
             currency_id: "MXN",
             unit_price: amount
@@ -72,8 +98,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!response.ok) {
-      const error = await response.json().catch(() => null);
-      console.error("Mercado Pago error:", error);
+      console.error("Mercado Pago API error", response.status);
       return NextResponse.json(
         { error: "No se pudo crear el pago", url: null },
         { status: 200 }
@@ -86,7 +111,7 @@ export async function POST(request: NextRequest) {
       preferenceId: data.id
     });
   } catch (err) {
-    console.error("Mercado Pago request failed:", err);
+    console.error("Mercado Pago request failed");
     return NextResponse.json(
       { error: "Servicio de pago no disponible", url: null },
       { status: 200 }

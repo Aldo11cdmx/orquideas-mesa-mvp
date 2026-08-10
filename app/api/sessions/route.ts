@@ -12,6 +12,10 @@ export async function GET(request: NextRequest) {
   const supabase = createServerClient();
 
   if (listActive === "active") {
+    const pin = request.nextUrl.searchParams.get("pin") || "";
+    if (pin !== process.env.STAFF_DEMO_PIN) {
+      return NextResponse.json({ error: "Acceso no autorizado" }, { status: 401 });
+    }
     const { data, error } = await supabase.rpc("get_active_sessions");
     if (error) {
       console.error("get_active_sessions failed", error);

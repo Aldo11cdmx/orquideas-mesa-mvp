@@ -1315,12 +1315,41 @@ function OrderTracking({
             <StatusPill status={order.status} />
             <span className="text-sm">Folio {order.folio}</span>
           </div>
+          {tableCode === "LLEVAR" && (
+            <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur">
+              <p className="text-xs text-white/70">
+                📱 Guarda esta página o compártela para seguir tu pedido.
+              </p>
+              <div className="mt-2 flex gap-2">
+                <button
+                  className="focus-ring rounded-lg bg-white/20 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/30"
+                  onClick={() => {
+                    const url = `${window.location.origin}/seguimiento/${order.folio}`;
+                    void navigator.clipboard.writeText(url);
+                    window.alert("Link copiado. Pégalo en WhatsApp o donde quieras.");
+                  }}
+                >
+                  📋 Copiar link
+                </button>
+                <a
+                  href={`https://wa.me/?text=${encodeURIComponent(`🍽️ Mi pedido en Imperio · ${order.folio}\n${typeof window !== "undefined" ? window.location.origin : ""}/seguimiento/${order.folio}`)}`}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="focus-ring rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"
+                >
+                  📱 WhatsApp
+                </a>
+              </div>
+            </div>
+          )}
         </div>
         <div className="p-6">
           <div className="flex items-center justify-between rounded-2xl bg-[#eee8dc] p-4">
             <span>
-              <span className="block text-xs uppercase text-[var(--muted)]">Mesa</span>
-              <strong className="text-2xl">{tableCode}</strong>
+              <span className="block text-xs uppercase text-[var(--muted)]">
+                {tableCode === "LLEVAR" ? "Para llevar" : "Mesa"}
+              </span>
+              <strong className="text-2xl">{tableCode === "LLEVAR" ? "🥡" : tableCode}</strong>
             </span>
             <span className="text-right">
               <span className="block text-xs uppercase text-[var(--muted)]">Total</span>

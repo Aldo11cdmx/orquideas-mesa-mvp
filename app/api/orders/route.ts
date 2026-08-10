@@ -7,7 +7,7 @@ let pendingOrderQuery: Promise<unknown> | null = null;
 
 const note = z.string().trim().max(250);
 const orderSchema = z.object({
-  tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$/),
+  tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$|^LLEVAR$/),
   idempotencyKey: z.string().uuid(),
   notes: note.default(""),
   sessionId: z.string().uuid().optional(),

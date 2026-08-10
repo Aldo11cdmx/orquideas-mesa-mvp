@@ -49,7 +49,7 @@ const kitchenColumns: Array<{
 ];
 
 const waiterColumns: typeof kitchenColumns = [
-  { id: "kitchen", title: "En cocina", statuses: ["accepted", "preparing"], icon: ChefHat },
+  { id: "kitchen", title: "En cocina", statuses: ["sent", "accepted", "preparing"], icon: ChefHat },
   { id: "ready", title: "Para entregar", statuses: ["ready"], icon: HandPlatter }
 ];
 

@@ -3,7 +3,7 @@ import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
 
 const sessionSchema = z.object({
-  tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$/)
+  tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$|^LLEVAR$/)
 });
 
 export async function GET(request: NextRequest) {

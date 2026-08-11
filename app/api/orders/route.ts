@@ -61,7 +61,7 @@ export async function POST(request: NextRequest) {
       tableCode: parsed.data.tableCode
     });
     return NextResponse.json(
-      { error: "No fue posible registrar el pedido" },
+      { error: "No fue posible registrar el pedido", _dbg: { code: error.code, msg: error.message, hint: error.hint } },
       { status: 503 }
     );
   }

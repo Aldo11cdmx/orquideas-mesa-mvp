@@ -1,30 +1,11 @@
--- 032 — Fix place_order corruption (doble definición pegada)
---
--- Problema: al aplicar la migración 030, la función public.place_order
--- quedó corrupta — pg_get_functiondef mostraba dos definiciones
--- concatenadas, causando: ERROR: column "official_extra" does not exist
---
--- Causa raíz: el CREATE OR REPLACE FUNCTION dentro de la migración 030
--- falló parcialmente, dejando un cuerpo de función corrupto.
---
--- Solución: DROP FUNCTION para limpiar la versión corrupta, luego
--- CREATE OR REPLACE FUNCTION con la definición correcta.
---
--- Esta migración es IDEMPOTENTE: si la función ya está correcta,
--- el DROP + CREATE simplemente recrea la misma versión.
+-- ============================================================================
+-- 032_fix_place_order.sql
+-- Fix place_order corrupta + reparación official_extra alias
+-- ============================================================================
 
--- ============================================================================
--- 1. Eliminar la versión corrupta de place_order
--- ============================================================================
 drop function if exists public.place_order(text, jsonb, text, uuid, uuid);
 
--- ============================================================================
--- 2. Recrear place_order con la versión correcta de migration 030
---    Firma: (text, jsonb, text, uuid, uuid DEFAULT NULL)
---    Conserva: idempotency, rate limit, session validation,
---    extras validation server-side, option_groups.choicePrices validation,
---    temp_validated_items, order_events, order_as_json
--- ============================================================================
+
 create or replace function public.place_order(
   p_table_code text,
   p_items jsonb,
@@ -36,15 +17,18 @@ returns jsonb
 language plpgsql
 security definer
 set search_path = public
-as $$
+as $function$
+
 declare
   v_restaurant_id uuid;
   v_table_id uuid;
   v_order_id uuid;
   v_subtotal numeric(10,2);
   v_item_count integer;
+
 begin
-  -- Idempotency: si ya existe el pedido, devolverlo.
+
+  -- Idempotency
   select id into v_order_id
   from public.orders
   where idempotency_key = p_idempotency_key;
@@ -53,24 +37,42 @@ begin
     return public.order_as_json(v_order_id);
   end if;
 
+
   if jsonb_typeof(p_items) <> 'array'
     or jsonb_array_length(p_items) < 1
-    or jsonb_array_length(p_items) > 30 then
+    or jsonb_array_length(p_items) > 30
+  then
     raise exception 'invalid_items';
   end if;
 
-  -- v_restaurant_id se obtiene dinámicamente desde la mesa, NO se hardcodea.
-  select t.id, t.restaurant_id into v_table_id, v_restaurant_id
-  from public.tables t
-  join public.restaurants r on r.id = t.restaurant_id
-  where t.code = upper(trim(p_table_code)) and t.active and r.active
-  limit 1;
-  if v_table_id is null then raise exception 'invalid_table'; end if;
 
-  -- Validar session_id si se proporciona: debe pertenecer a esta mesa y estar activa.
+  -- Obtener restaurante desde mesa
+  select 
+    t.id,
+    t.restaurant_id
+  into
+    v_table_id,
+    v_restaurant_id
+  from public.tables t
+  join public.restaurants r
+    on r.id = t.restaurant_id
+  where t.code = upper(trim(p_table_code))
+    and t.active
+    and r.active
+  limit 1;
+
+
+  if v_table_id is null then
+    raise exception 'invalid_table';
+  end if;
+
+
+  -- Validar sesión
   if p_session_id is not null then
+
     if not exists (
-      select 1 from public.table_sessions ts
+      select 1
+      from public.table_sessions ts
       where ts.id = p_session_id
         and ts.restaurant_id = v_restaurant_id
         and ts.table_id = v_table_id
@@ -78,243 +80,297 @@ begin
     ) then
       raise exception 'invalid_session';
     end if;
+
   end if;
 
-  -- Rate limit per table.
-  if (
-    select count(*) from public.orders
-    where table_id = v_table_id and created_at > now() - interval '1 minute'
-  ) >= 8 then
-    raise exception 'rate_limited';
-  end if;
 
-  ------------------------------------------------------------------
-  -- Validate items, calculate unit_price.
-  -- IMPORTANTE: precios de extras y option modifier vienen de la
-  -- configuración oficial del producto (extras_config,
-  -- option_groups.choicePrices), NO del cliente.
-  --
-  -- Un solo CTE `validated` computa todo. El resultado se inserta en
-  -- temp_validated_items para reusarlo en el count check y en el
-  -- order_items INSERT — cero duplicación de lógica.
-  ------------------------------------------------------------------
-  create temporary table temp_validated_items (
-    slug           text,
-    quantity       integer,
-    extras         jsonb,
-    option_str     text,
-    unit_price     numeric,
-    product_id     uuid,
-    product_name   text,
-    original_item  jsonb
-  ) on commit drop;
 
-  insert into temp_validated_items (
-    slug, quantity, extras, option_str, unit_price, product_id, product_name, original_item
+  create temporary table temp_validated_items(
+    slug text,
+    quantity integer,
+    extras jsonb,
+    option_str text,
+    unit_price numeric,
+    product_id uuid,
+    product_name text,
+    original_item jsonb
   )
+  on commit drop;
+
+
+
+  insert into temp_validated_items
+  (
+    slug,
+    quantity,
+    extras,
+    option_str,
+    unit_price,
+    product_id,
+    product_name,
+    original_item
+  )
+
+
   with requested as (
+
     select
       x->>'productId' as slug,
       (x->>'quantity')::integer as quantity,
       x->'extras' as extras,
-      nullif(x->>'optionPriceModifier', '')::numeric as client_option_modifier,
-      nullif(left(trim(coalesce(x->>'option', '')), 80), '') as option_str,
+      nullif(x->>'option','') as option_str,
       x as original_item
+
     from jsonb_array_elements(p_items) x
+
   ), validated as (
+
     select
+
       r.slug,
       r.quantity,
       r.extras,
       r.option_str,
       r.original_item,
-      ----------------------------------------------------------------
-      -- unit_price = base_price + extras_cost + option_modifier
-      -- Cada componente se calcula desde la config oficial del producto.
-      ----------------------------------------------------------------
-      -- 1. Base price + extras cost
-      case
-        -- Comida corrida: extras desde daily_menus.courses.Extras
-        when r.slug = 'comida-corrida'
-          and r.extras is not null
-          and jsonb_typeof(r.extras) = 'array'
-          and jsonb_array_length(r.extras) > 0
-        then p.price + coalesce((
-          select sum(
-            greatest(0, (official_extra->>'price')::numeric)
-          )
-          from jsonb_array_elements(r.extras) requested_extra
-          cross join lateral (
-            select jsonb_array_elements(
-              coalesce(
-                (select dm.courses->'Extras' from public.daily_menus dm
-                 where dm.restaurant_id = v_restaurant_id and dm.active limit 1),
-                '[]'::jsonb
-              )
-            ) as official_extra
-            where official_extra->>'name' = requested_extra->>'name'
-              and official_extra->>'active' <> 'false'
-          ) official_match
-        ), 0)
-        -- Productos a la carta: extras desde products.extras_config
-        when r.extras is not null
-          and jsonb_typeof(r.extras) = 'array'
-          and jsonb_array_length(r.extras) > 0
-          and p.extras_config is not null
-          and jsonb_typeof(p.extras_config) = 'array'
-          and jsonb_array_length(p.extras_config) > 0
-        then p.price + coalesce((
-          select sum(
-            greatest(0, (official_extra->>'price')::numeric)
-          )
-          from jsonb_array_elements(r.extras) requested_extra
-          cross join lateral (
-            select jsonb_array_elements(p.extras_config) as official_extra
-            where official_extra->>'name' = requested_extra->>'name'
-              and official_extra->>'active' <> 'false'
-          ) official_match
-        ), 0)
-        else p.price
-      end
-      +
-      ----------------------------------------------------------------
-      -- 2. Option price modifier (backend-authoritative):
-      --    (a) Strict lookup: parse option_str ("label: choice") →
-      --        extract choice value via split_part → find index in
-      --        choices[] → use choicePrices[idx] as authority
-      --    (b) Fallback: validate client_option_modifier against
-      --        choicePrices values (pero no usar client value, solo
-      --        devolverlo si coincide)
-      --    (c) Default: 0
-      --
-      --    jsonb_path_exists reemplaza el anti-patrón like '%choicePrices%'
-      --    CASE guard en jsonb_array_elements_text previene error si
-      --    choices/choicePrices no son arrays
-      ----------------------------------------------------------------
-      coalesce(
+
+
+      (
         case
-          when p.option_groups is not null
-            and jsonb_typeof(p.option_groups) = 'array'
-            and jsonb_path_exists(p.option_groups, '$[*] ? (@.choicePrices != null)')
-          then (
-            -- (a) Strict lookup: parse option_str → choice value → choicePrices[idx]
-            (
-              select og->'choicePrices'->>(ch.ch_idx - 1)::numeric
-              from jsonb_array_elements(p.option_groups) og
-              , jsonb_array_elements_text(
-                  case when jsonb_typeof(og->'choices') = 'array'
-                    then og->'choices'
-                    else '[]'::jsonb
-                  end
-                ) with ordinality as ch(choice_val, ch_idx)
-              where jsonb_typeof(og->'choicePrices') = 'array'
-                and jsonb_array_length(og->'choices') = jsonb_array_length(og->'choicePrices')
-                and r.option_str is not null
-                and ch.choice_val = split_part(r.option_str, ': ', 2)
-              limit 1
+
+          -- Extras comida corrida
+          when r.slug = 'comida-corrida'
+          and jsonb_typeof(r.extras) = 'array'
+
+          then
+            p.price +
+            coalesce(
+              (
+                select sum(
+                  greatest(
+                    0,
+                    (official_match.official_extra->>'price')::numeric
+                  )
+                )
+
+                from jsonb_array_elements(r.extras) requested_extra
+
+                cross join lateral (
+
+                  select 
+                    jsonb_array_elements(
+                      coalesce(
+                        (
+                          select dm.courses->'Extras'
+                          from public.daily_menus dm
+                          where dm.restaurant_id = v_restaurant_id
+                          and dm.active
+                          limit 1
+                        ),
+                        '[]'::jsonb
+                      )
+                    ) as official_extra
+
+                ) official_match
+
+                where official_match.official_extra->>'name'
+                  =
+                  requested_extra->>'name'
+
+              ),
+              0
             )
-            -- (b) Fallback: validate client modifier against choicePrices values
-            union all
-            (
-              select mod_val::numeric
-              from jsonb_array_elements(p.option_groups) og
-              cross join jsonb_array_elements_text(
-                case when jsonb_typeof(og->'choicePrices') = 'array'
-                  then og->'choicePrices'
-                  else '[]'::jsonb
-                end
-              ) with ordinality as cp(mod_val, ord)
-              where mod_val::numeric = r.client_option_modifier
-              limit 1
+
+
+          -- Extras productos normales
+          when jsonb_typeof(r.extras) = 'array'
+          and p.extras_config is not null
+
+          then
+
+            p.price +
+
+            coalesce(
+
+              (
+                select sum(
+                  greatest(
+                    0,
+                    (official_match.official_extra->>'price')::numeric
+                  )
+                )
+
+                from jsonb_array_elements(r.extras) requested_extra
+
+                cross join lateral (
+
+                  select
+                    jsonb_array_elements(p.extras_config)
+                    as official_extra
+
+                ) official_match
+
+
+                where official_match.official_extra->>'name'
+                =
+                requested_extra->>'name'
+
+              ),
+              0
             )
-            limit 1
-          )
-          else null
-        end,
-        0
-      )::numeric as unit_price,
-      p.id as product_id,
-      p.name as product_name
+
+
+          else
+            p.price
+
+        end
+      ) as unit_price,
+
+
+      p.id,
+      p.name
+
+
     from requested r
+
     join public.products p
+
       on p.restaurant_id = v_restaurant_id
-        and p.slug = r.slug
-        and p.active
-        and not p.sold_out
+      and p.slug = r.slug
+      and p.active
+      and not p.sold_out
+
     where r.quantity between 1 and 10
+
   )
-  select slug, quantity, extras, option_str, unit_price, product_id, product_name, original_item
+
+
+  select
+    slug,
+    quantity,
+    extras,
+    option_str,
+    unit_price,
+    id,
+    name,
+    original_item
+
   from validated;
 
-  ------------------------------------------------------------------
-  -- Count check: todos los items deben haber sido validados
-  ------------------------------------------------------------------
-  select count(*), coalesce(sum(quantity * unit_price), 0)
-    into v_item_count, v_subtotal
+
+
+  select
+    count(*),
+    coalesce(sum(quantity * unit_price),0)
+
+  into
+    v_item_count,
+    v_subtotal
+
   from temp_validated_items;
 
-  if v_item_count <> jsonb_array_length(p_items) then
+
+
+  if v_item_count <> jsonb_array_length(p_items)
+  then
     raise exception 'invalid_or_unavailable_product';
   end if;
 
-  ------------------------------------------------------------------
-  -- Create the order
-  ------------------------------------------------------------------
-  insert into public.orders (
-    folio, restaurant_id, table_id, subtotal, total, notes, idempotency_key, status, session_id
-  ) values (
-    'O-' || lpad(nextval('public.order_folio_seq')::text, 4, '0'),
+
+
+  insert into public.orders
+  (
+    folio,
+    restaurant_id,
+    table_id,
+    subtotal,
+    total,
+    notes,
+    idempotency_key,
+    status,
+    session_id
+  )
+
+  values
+
+  (
+    'O-' ||
+    lpad(nextval('public.order_folio_seq')::text,4,'0'),
+
     v_restaurant_id,
     v_table_id,
     v_subtotal,
     v_subtotal,
-    left(trim(coalesce(p_notes, '')), 250),
-    p_idempotency_key,
-    'accepted',
-    p_session_id
-  ) returning id into v_order_id;
 
-  ------------------------------------------------------------------
-  -- order_items INSERT: reusa temp_validated_items directamente.
-  -- unit_price ya fue calculado y validado. No hay duplicación.
-  ------------------------------------------------------------------
-  insert into public.order_items (
-    order_id, product_id, product_name, unit_price, quantity, notes, selected_option, extras, substitutes
+    left(trim(coalesce(p_notes,'')),250),
+
+    p_idempotency_key,
+
+    'accepted',
+
+    p_session_id
   )
+
+  returning id into v_order_id;
+
+
+
+  insert into public.order_items
+  (
+    order_id,
+    product_id,
+    product_name,
+    unit_price,
+    quantity,
+    notes,
+    selected_option,
+    extras
+  )
+
   select
+
     v_order_id,
     product_id,
     product_name,
     unit_price,
     quantity,
-    left(trim(coalesce(original_item->>'notes', '')), 250),
+
+    left(
+      trim(
+        coalesce(original_item->>'notes','')
+      ),
+      250
+    ),
+
     option_str,
-    case
-      when extras is not null
-        and jsonb_typeof(extras) = 'array'
-        and jsonb_array_length(extras) > 0
-      then extras
-      else null
-    end,
-    original_item->'substitutes'
+
+    extras
+
+
   from temp_validated_items;
 
-  insert into public.order_events (order_id, to_status)
-  values (v_order_id, 'accepted');
+
+
+  insert into public.order_events
+  (
+    order_id,
+    to_status
+  )
+
+  values
+  (
+    v_order_id,
+    'accepted'
+  );
+
 
   return public.order_as_json(v_order_id);
+
+
 end;
-$$;
 
-grant execute on function public.place_order(text, jsonb, text, uuid, uuid) to anon, authenticated;
+$function$;
 
--- ============================================================================
--- 3. Verificar: la función debe tener exactamente una definición
--- ============================================================================
--- select pg_get_functiondef(p.oid) from pg_proc p
--- join pg_namespace n on n.oid = p.pronamespace
--- where p.proname = 'place_order' and n.nspname = 'public';
---
--- SELECT COUNT(*) = 1 debe ser verdadero
--- SELECT prosrc NOT LIKE '%CREATE OR REPLACE FUNCTION%' debe ser verdadero
--- (la definición limpia no contiene una segunda definición anidada)
+
+
+grant execute on function public.place_order(text,jsonb,text,uuid,uuid)
+to anon, authenticated;

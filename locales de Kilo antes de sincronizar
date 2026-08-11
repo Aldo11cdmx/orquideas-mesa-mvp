@@ -1,0 +1,39 @@
+[33m7629389[m[33m ([m[1;31morigin/main[m[33m, [m[1;31morigin/HEAD[m[33m)[m fix: jsonb -> bigint (42883) - castear indice de ordinality a integer
+[33ma9861d2[m debug: restaurar _dbg temporal para ver error actual de place_order
+[33m06338ec[m fix: jsonb ->> numeric (42883) - usar -> para indice de array JSON
+[33m0f74325[m debug: restaurar logging detallado de place_order error (code/message/details/hint)
+[33m1a6fc54[m fix: place_order column alias 'oe' in WHERE (42703) - jsonb_array_elements en FROM, no en SELECT
+[33m80e004f[m fix: restaurar place_order de migración 032 (versión funcional) + breakfast/drink extras
+[33md79e41f[m debug: mostrar error exacto de place_order en respuesta 503 (temporal)
+[33m04a5785[m fix: place_order simplificado - sin with ordinality ni row_number
+[33m87866f2[m fix: polling del cliente no actualizaba estados del pedido
+[33m55155af[m fix: type 'num' does not exist -> usar 'numeric'
+[33m5bc722c[m fix: migración compacta - Supabase SQL Editor cortaba la versión larga
+[33m3ad6d19[m fix: place_order v2 - extras con LEFT JOIN y prioridad correcta
+[33me91377d[m fix: extras de desayuno no se sumaban + pedidos cancelados en cuenta
+[33mfef263f[m security: endurecimiento de la app sin romper funcionalidad
+[33me4cafa8[m feat: integrar sabores dinámicos de bebidas en admin y menú
+[33mbf1534c[m feat: componente DrinksAdmin + pestaña Bebidas en admin
+[33md87d2fb[m feat: admin de sabores de bebidas (café, malteada, licuado, agua de fruta)
+[33mc1fe547[m redesign: interfaz minimalista, menos ruido visual
+[33ma535b00[m fix: seguridad - admin usa service_role, sin políticas RLS inseguras
+[33m6aad9a4[m feat: admin de extras para Desayunos + integración en menú
+[33macab822[m fix: SSR - sessionStorage no existe en servidor durante prerender
+[33m3ea5f48[m fix: pedido cancelado no reaparece + envío individual muestra proceso
+[33mf2db304[m fix: cancelar pedido fuerza localmente si falla el backend
+[33m2b4a202[m fix: mesero puede cancelar pedidos 'ready' también
+[33m4bb7e70[m fix: type error - CartItem usa unitPrice y priceModifier, no price
+[33m5bb845e[m fix: eliminar productos funcional en modo demo + sin itemId
+[33m81aa890[m fix: botón eliminar producto ahora visible en 'sent' y 'accepted'
+[33m893d2ec[m fix: botón cancelar visible en pedidos 'sent' y 'preparing' del mesero
+[33m8093157[m feat: filtro por chips de mesa + preparar todos + timer mejorado
+[33m1071782[m fix: 3 bugs críticos
+[33m4d459dc[m fix: syntax error en kitchen-board.tsx (cierre de ternario JSX)
+[33mf64c9ea[m fix: estados vacíos correctos en meseros + indicador realtime mejorado
+[33m234a16e[m feat: UX cocina + meseros: cards claras, timers visibles, vista por mesa
+[33m6c38ea3[m feat: seguimiento de pedido para llevar + compartir WhatsApp
+[33mb63d744[m fix: /llevar usa MenuClient completo + polish staff boards
+[33mcdd22c5[m feat: QR para llevar + Mercado Pago + acceso desde inicio
+[33mecad627[m feat: mesa compartida + enviar juntos + dividir cuenta + premium CSS (#19)
+[33m36843f5[m polish: UX/UI refinements — animaciones, skeletons, estados vacíos (#18)
+[33m8ab0627[m feat: botón Llamar mesero + PWA + placeholder de imágenes (#17)

@@ -1,0 +1,802 @@
+[1mdiff --git a/components/menu-client.tsx b/components/menu-client.tsx[m
+[1mindex d97133c..183b678 100644[m
+[1m--- a/components/menu-client.tsx[m
+[1m+++ b/components/menu-client.tsx[m
+[36m@@ -5,6 +5,7 @@[m [mimport {[m
+   Check,[m
+   ChevronLeft,[m
+   Clock3,[m
+[32m+[m[32m  Hand,[m
+   Minus,[m
+   Plus,[m
+   Search,[m
+[36m@@ -66,6 +67,7 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+   const [order, setOrder] = useState<Order | null>(null);[m
+   const [sending, setSending] = useState(false);[m
+   const [generalNotes, setGeneralNotes] = useState("");[m
+[32m+[m[32m  const [waiterCalled, setWaiterCalled] = useState(false);[m
+   const [dailyMenu, setDailyMenu] = useState<DailyMenuConfig | null>(null);[m
+   const [dailyMenuLoading, setDailyMenuLoading] = useState(true);[m
+   const [catalog, setCatalog] = useState<Product[]>(seedProducts);[m
+[36m@@ -73,7 +75,16 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+   const [justAdded, setJustAdded] = useState(false);[m
+   const [session, setSession] = useState<TableSession | null>(null);[m
+   const [sessionLoading, setSessionLoading] = useState(true);[m
+[32m+[m[32m  const [sessionExisted, setSessionExisted] = useState(false);[m
+[32m+[m[32m  const [sendTogether, setSendTogether] = useState(false);[m
+[32m+[m[32m  const [pendingOrders, setPendingOrders] = useState<CartItem[][]>([]);[m
+[32m+[m[32m  const [drinkFlavors, setDrinkFlavors] = useState<Array<{drinkType: string; name: string; priceModifier: number}>>([]);[m
+   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);[m
+[32m+[m[32m  const latestOrderRef = useRef<Order | null>(null);[m
+[32m+[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    latestOrderRef.current = order;[m
+[32m+[m[32m  }, [order]);[m
+ [m
+   useEffect(() => {[m
+     const updateClock = () => setServiceMinutes(mexicoCityMinutes());[m
+[36m@@ -108,7 +119,25 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       const data = (await response.json()) as TableSession | null;[m
+       if (data) {[m
+         setSession(data);[m
+[32m+[m[32m        setSessionExisted(true);[m
+[32m+[m[32m        setSendTogether(true);[m
+[32m+[m[32m        const activeOrders = (data.orders || []).filter([m
+[32m+[m[32m          (item) => !["delivered", "cancelled"].includes(item.status)[m
+[32m+[m[32m        );[m
+[32m+[m[32m        if (activeOrders.length) {[m
+[32m+[m[32m          const mostRecent = activeOrders.reduce((a, b) =>[m
+[32m+[m[32m            +new Date(a.updatedAt) >= +new Date(b.updatedAt) ? a : b[m
+[32m+[m[32m          );[m
+[32m+[m[32m          setOrder((current) => {[m
+[32m+[m[32m            if (!current) return mostRecent;[m
+[32m+[m[32m            if (current.id !== mostRecent.id) return mostRecent;[m
+[32m+[m[32m            return +new Date(mostRecent.updatedAt) >= +new Date(current.updatedAt)[m
+[32m+[m[32m              ? mostRecent[m
+[32m+[m[32m              : current;[m
+[32m+[m[32m          });[m
+[32m+[m[32m        }[m
+       } else {[m
+[32m+[m[32m        setSessionExisted(false);[m
+         const createResponse = await fetch("/api/sessions", {[m
+           method: "POST",[m
+           headers: { "content-type": "application/json" },[m
+[36m@@ -117,6 +146,7 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+         if (createResponse.ok) {[m
+           const created = (await createResponse.json()) as TableSession;[m
+           setSession(created);[m
+[32m+[m[32m          setSessionExisted(false);[m
+         }[m
+       }[m
+     }[m
+[36m@@ -131,6 +161,10 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       });[m
+       void loadCatalog();[m
+       void loadSession();[m
+[32m+[m[32m      void fetch("/api/drink-flavors", { cache: "no-store" })[m
+[32m+[m[32m        .then((r) => r.json().catch(() => []))[m
+[32m+[m[32m        .then((data) => { if (active && Array.isArray(data)) setDrinkFlavors(data); })[m
+[32m+[m[32m        .catch(() => {});[m
+     }, 0);[m
+     const timer = window.setInterval(() => {[m
+       void loadDailyMenu();[m
+[36m@@ -150,6 +184,7 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+         const nextOrder = incoming;[m
+         setOrder((current) => {[m
+           if (!current || current.id !== nextOrder.id) return current;[m
+[32m+[m[32m          if (nextOrder.status !== current.status) return nextOrder;[m
+           return +new Date(nextOrder.updatedAt) >= +new Date(current.updatedAt)[m
+             ? nextOrder[m
+             : current;[m
+[36m@@ -173,6 +208,16 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+         void loadCatalog();[m
+         void loadDailyMenu();[m
+         void loadSession();[m
+[32m+[m[32m        const current = latestOrderRef.current;[m
+[32m+[m[32m        if (current?.id) {[m
+[32m+[m[32m          const token = current.accessToken || "";[m
+[32m+[m[32m          void fetch(`/api/orders/${current.id}?token=${encodeURIComponent(token)}`)[m
+[32m+[m[32m            .then((r) => (r.ok ? r.json() : null))[m
+[32m+[m[32m            .then((data) => {[m
+[32m+[m[32m              if (data && data.id === current.id) setOrder(data);[m
+[32m+[m[32m            })[m
+[32m+[m[32m            .catch(() => undefined);[m
+[32m+[m[32m        }[m
+       }[m
+     });[m
+     return () => channelRef.current?.close();[m
+[36m@@ -193,15 +238,26 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       }, 1500);[m
+       return () => window.clearInterval(demoTimer);[m
+     }[m
+[31m-    if (!order.accessToken) return;[m
+[31m-    const timer = window.setInterval(async () => {[m
+[31m-      const response = await fetch([m
+[31m-        `/api/orders/${order.id}?token=${encodeURIComponent(order.accessToken!)}`[m
+[31m-      );[m
+[31m-      if (response.ok) setOrder(await response.json());[m
+[31m-    }, 6000);[m
+[32m+[m[32m    const orderId = order.id;[m
+[32m+[m[32m    const token = order.accessToken || "";[m
+[32m+[m[32m    const pollOrder = async () => {[m
+[32m+[m[32m      try {[m
+[32m+[m[32m        const response = await fetch([m
+[32m+[m[32m          `/api/orders/${orderId}?token=${encodeURIComponent(token)}`[m
+[32m+[m[32m        );[m
+[32m+[m[32m        if (response.ok) {[m
+[32m+[m[32m          const updated = await response.json();[m
+[32m+[m[32m          if (updated && updated.id === orderId) setOrder(updated);[m
+[32m+[m[32m        }[m
+[32m+[m[32m      } catch {[m
+[32m+[m[32m        // ignore polling errors[m
+[32m+[m[32m      }[m
+[32m+[m[32m    };[m
+[32m+[m[32m    const timer = window.setInterval(pollOrder, 4000);[m
+[32m+[m[32m    void pollOrder();[m
+     return () => window.clearInterval(timer);[m
+[31m-  }, [order]);[m
+[32m+[m[32m    // eslint-disable-next-line react-hooks/exhaustive-deps[m
+[32m+[m[32m  }, [order?.id, order?.accessToken]);[m
+ [m
+   const visible = useMemo(() => {[m
+     const normalized = query.trim().toLocaleLowerCase("es");[m
+[36m@@ -281,8 +337,55 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+ [m
+   async function submitOrder() {[m
+     if (sending || cart.length === 0) return;[m
+[32m+[m
+[32m+[m[32m    if (sendTogether) {[m
+[32m+[m[32m      // Queue mode: accumulate orders, send all at once later[m
+[32m+[m[32m      setPendingOrders((current) => [...current, [...cart]]);[m
+[32m+[m[32m      setCart([]);[m
+[32m+[m[32m      setCartOpen(false);[m
+[32m+[m[32m      setGeneralNotes("");[m
+[32m+[m[32m      return;[m
+[32m+[m[32m    }[m
+[32m+[m
+     if (!window.confirm(`¿Enviar este pedido de ${money(subtotal)} a cocina?`)) return;[m
+     setSending(true);[m
+[32m+[m[32m    try {[m
+[32m+[m[32m      const created = await sendOrderToApi(cart, generalNotes);[m
+[32m+[m[32m      setCart([]);[m
+[32m+[m[32m      setCartOpen(false);[m
+[32m+[m[32m      setGeneralNotes("");[m
+[32m+[m[32m      if (created) {[m
+[32m+[m[32m        setOrder(created);[m
+[32m+[m[32m      }[m
+[32m+[m[32m    } catch {[m
+[32m+[m[32m      // Error already shown by sendOrderToApi[m
+[32m+[m[32m    } finally {[m
+[32m+[m[32m      setSending(false);[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  async function sendAllTogether() {[m
+[32m+[m[32m    if (sending || pendingOrders.length === 0) return;[m
+[32m+[m[32m    const totalItems = pendingOrders.reduce((sum, items) => sum + items.reduce((s, i) => s + i.quantity, 0), 0);[m
+[32m+[m[32m    if (!window.confirm(`¿Enviar ${pendingOrders.length} pedidos (${totalItems} productos) juntos a cocina?`)) return;[m
+[32m+[m[32m    setSending(true);[m
+[32m+[m[32m    let successCount = 0;[m
+[32m+[m[32m    for (const items of pendingOrders) {[m
+[32m+[m[32m      try {[m
+[32m+[m[32m        await sendOrderToApi(items, "");[m
+[32m+[m[32m        successCount++;[m
+[32m+[m[32m      } catch {[m
+[32m+[m[32m        // Continue with remaining orders[m
+[32m+[m[32m      }[m
+[32m+[m[32m    }[m
+[32m+[m[32m    setPendingOrders([]);[m
+[32m+[m[32m    setSending(false);[m
+[32m+[m[32m    if (successCount > 0) {[m
+[32m+[m[32m      setOrder({ id: "batch", folio: `${successCount} pedidos`, tableCode, status: "accepted", items: [], notes: "", subtotal: 0, total: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), source: "supabase" });[m
+[32m+[m[32m    }[m
+[32m+[m[32m  }[m
+[32m+[m
+[32m+[m[32m  async function sendOrderToApi(items: CartItem[], notes: string) {[m
+     const idempotencyKey = crypto.randomUUID();[m
+     const controller = new AbortController();[m
+     const timeout = window.setTimeout(() => controller.abort(), 15000);[m
+[36m@@ -293,15 +396,15 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+         signal: controller.signal,[m
+         body: JSON.stringify({[m
+           tableCode,[m
+[31m-          items: cart.map(({ productId, quantity, notes, option, extras, priceModifier }) => ({[m
+[32m+[m[32m          items: items.map(({ productId, quantity, notes: n, option, extras, priceModifier }) => ({[m
+             productId,[m
+             quantity,[m
+[31m-            notes,[m
+[32m+[m[32m            notes: n,[m
+             option,[m
+             optionPriceModifier: priceModifier,[m
+             extras: extras?.map((extra) => ({ name: extra.name }))[m
+           })),[m
+[31m-          notes: generalNotes,[m
+[32m+[m[32m          notes,[m
+           idempotencyKey,[m
+           sessionId: session?.id ?? null[m
+         })[m
+[36m@@ -310,29 +413,35 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       if (!response.ok) {[m
+         throw new Error(payload?.error || "No fue posible registrar el pedido");[m
+       }[m
+[31m-[m
+       const created = payload as Order;[m
+[31m-      setOrder(created);[m
+[31m-      setCartOpen(false);[m
+[31m-      setCart([]);[m
+[31m-      setGeneralNotes("");[m
+[31m-      setSending(false);[m
+[31m-[m
+       void channelRef.current?.send({ type: "new", order: created });[m
+[32m+[m[32m      return created;[m
+     } catch (error) {[m
+       const message =[m
+         error instanceof DOMException && error.name === "AbortError"[m
+[31m-          ? "El sistema tardó demasiado en responder. Intenta nuevamente."[m
+[32m+[m[32m          ? "El sistema tardó demasiado en responder."[m
+           : error instanceof Error[m
+             ? error.message[m
+             : "No fue posible enviar el pedido";[m
+       window.alert(message);[m
+[31m-      setSending(false);[m
+[32m+[m[32m      throw error;[m
+     } finally {[m
+       window.clearTimeout(timeout);[m
+     }[m
+   }[m
+ [m
+[32m+[m[32m  function callWaiter() {[m
+[32m+[m[32m    if (waiterCalled) return;[m
+[32m+[m[32m    setWaiterCalled(true);[m
+[32m+[m[32m    const call = {[m
+[32m+[m[32m      id: crypto.randomUUID(),[m
+[32m+[m[32m      tableCode,[m
+[32m+[m[32m      timestamp: new Date().toISOString()[m
+[32m+[m[32m    };[m
+[32m+[m[32m    void channelRef.current?.send({ type: "waiter-call", waiterCall: call });[m
+[32m+[m[32m    window.setTimeout(() => setWaiterCalled(false), 30000);[m
+[32m+[m[32m  }[m
+[32m+[m
+   if (order) {[m
+     return ([m
+       <OrderTracking[m
+[36m@@ -386,7 +495,7 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+                 <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">[m
+                   Sesión[m
+                 </span>[m
+[31m-                <strong className="mt-1 block font-display text-3xl">activa</strong>[m
+[32m+[m[32m                <strong className="mt-1 block font-display text-3xl">{sessionExisted ? "compartida" : "activa"}</strong>[m
+               </div>[m
+             )}[m
+             {!session && !sessionLoading && ([m
+[36m@@ -402,6 +511,37 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       </header>[m
+ [m
+       <div className="mx-auto max-w-6xl px-4 sm:px-6">[m
+[32m+[m[32m        {sessionExisted && session && ([m
+[32m+[m[32m          <div className="animate-fade-in glass-card -mt-3 relative z-10 mb-4 flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">[m
+[32m+[m[32m            <div className="flex items-center gap-2.5 text-sm">[m
+[32m+[m[32m              <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold text-[#5c3d2e]">👥</span>[m
+[32m+[m[32m              <span className="font-bold text-[var(--ink)]">Mesa compartida</span>[m
+[32m+[m[32m              <span className="text-[var(--muted)]">· Los pedidos se agrupan para cocina</span>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m            <label className="flex cursor-pointer items-center gap-2 shrink-0">[m
+[32m+[m[32m              <span className="text-xs font-bold text-[var(--muted)]">Enviar juntos</span>[m
+[32m+[m[32m              <button[m
+[32m+[m[32m                role="switch"[m
+[32m+[m[32m                aria-checked={sendTogether}[m
+[32m+[m[32m                aria-label="Enviar pedidos juntos"[m
+[32m+[m[32m                className={`relative h-7 w-12 rounded-full transition-colors ${[m
+[32m+[m[32m                  sendTogether ? "bg-[var(--green)]" : "bg-[var(--line)]"[m
+[32m+[m[32m                }`}[m
+[32m+[m[32m                onClick={() => setSendTogether((v) => !v)}[m
+[32m+[m[32m              >[m
+[32m+[m[32m                <span[m
+[32m+[m[32m                  className={`absolute top-0.5 h-6 w-6 rounded-full bg-white shadow transition-transform ${[m
+[32m+[m[32m                    sendTogether ? "translate-x-5.5" : "translate-x-0.5"[m
+[32m+[m[32m                  }`}[m
+[32m+[m[32m                  style={{[m
+[32m+[m[32m                    transform: sendTogether ? "translateX(22px)" : "translateX(2px)"[m
+[32m+[m[32m                  }}[m
+[32m+[m[32m                />[m
+[32m+[m[32m              </button>[m
+[32m+[m[32m            </label>[m
+[32m+[m[32m          </div>[m
+[32m+[m[32m        )}[m
+[32m+[m
+         <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">[m
+           <div className="grid grid-cols-2">[m
+             {[[m
+[36m@@ -444,7 +584,7 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+                   <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>[m
+                 </div>[m
+               </div>[m
+[31m-              <label className="paper flex items-center gap-3 rounded-2xl px-4 py-3">[m
+[32m+[m[32m              <label className="paper search-glow flex items-center gap-3 rounded-2xl px-4 py-3 transition-shadow">[m
+                 <Search size={19} aria-hidden="true" />[m
+                 <span className="sr-only">Buscar platillos</span>[m
+                 <input[m
+[36m@@ -463,9 +603,9 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+                 {categories.map((item) => ([m
+                   <button[m
+                     key={item}[m
+[31m-                    className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold ${[m
+[32m+[m[32m                    className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold category-pill ${[m
+                       category === item[m
+[31m-                        ? "bg-[var(--brown)] text-white"[m
+[32m+[m[32m                        ? "bg-[var(--brown)] text-white shadow-sm"[m
+                         : "border border-[var(--line)] bg-[var(--paper)]"[m
+                     }`}[m
+                     onClick={() => setCategory(item)}[m
+[36m@@ -499,12 +639,20 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+                 ))}[m
+               </div>[m
+             ) : ([m
+[31m-              <div className="paper rounded-3xl px-6 py-14 text-center">[m
+[31m-                <Search className="mx-auto text-[var(--brown)]" size={34} />[m
+[31m-                <h3 className="mt-4 font-display text-2xl font-bold">No encontramos ese platillo</h3>[m
+[31m-                <p className="mt-2 text-sm text-[var(--muted)]">[m
+[32m+[m[32m              <div className="animate-fade-in paper rounded-3xl px-6 py-14 text-center">[m
+[32m+[m[32m                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#f4dfb4]/60">[m
+[32m+[m[32m                  <Search className="text-[var(--brown)]" size={28} />[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <h3 className="mt-5 font-display text-2xl font-bold">No encontramos ese platillo</h3>[m
+[32m+[m[32m                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">[m
+                   Intenta con otro nombre o cambia de categoría.[m
+                 </p>[m
+[32m+[m[32m                <button[m
+[32m+[m[32m                  className="focus-ring mt-4 rounded-full bg-[var(--brown)] px-5 py-2.5 text-sm font-bold text-white"[m
+[32m+[m[32m                  onClick={() => { setQuery(""); setCategory("Favoritos"); }}[m
+[32m+[m[32m                >[m
+[32m+[m[32m                  Ver todo el menú[m
+[32m+[m[32m                </button>[m
+               </div>[m
+             )}[m
+           </>[m
+[36m@@ -513,8 +661,10 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+ [m
+       {justAdded && ([m
+         <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">[m
+[31m-          <div className="animate-pop flex items-center gap-2 rounded-full bg-[var(--green)] px-5 py-3 text-sm font-bold text-white shadow-2xl">[m
+[31m-            <Check size={18} strokeWidth={3} />[m
+[32m+[m[32m          <div className="toast-enter flex items-center gap-2.5 rounded-full bg-[var(--charcoal)] px-5 py-3.5 text-sm font-bold text-white shadow-2xl ring-1 ring-white/10">[m
+[32m+[m[32m            <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--gold)]">[m
+[32m+[m[32m              <Check size={14} strokeWidth={3} className="text-[var(--charcoal)]" />[m
+[32m+[m[32m            </span>[m
+             Producto agregado al pedido[m
+           </div>[m
+         </div>[m
+[36m@@ -523,38 +673,101 @@[m [mexport function MenuClient({ tableCode }: { tableCode: string }) {[m
+       {itemCount > 0 && ([m
+         <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:p-5">[m
+           <button[m
+[31m-            className="focus-ring mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"[m
+[32m+[m[32m            className="focus-ring btn-press mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"[m
+             onClick={() => setCartOpen(true)}[m
+           >[m
+             <span className="flex items-center gap-3">[m
+[31m-              <span className="grid h-8 w-8 place-items-center rounded-full bg-white/20">[m
+[32m+[m[32m              <span className={`grid h-8 w-8 place-items-center rounded-full bg-white/20 ${justAdded ? "animate-bounce-in" : ""}`}>[m
+                 {itemCount}[m
+               </span>[m
+[31m-              Ver mi pedido[m
+[32m+[m[32m              {sendTogether ? "Agregar al grupo" : "Ver mi pedido"}[m
+             </span>[m
+             <span>{money(subtotal)}</span>[m
+           </button>[m
+         </div>[m
+       )}[m
+ [m
+[32m+[m[32m      {/* Pending orders queue + Send all button */}[m
+[32m+[m[32m      {pendingOrders.length > 0 && ([m
+[32m+[m[32m        <div className="fixed inset-x-0 bottom-24 z-30 mx-auto max-w-xl space-y-2 px-3 sm:bottom-28">[m
+[32m+[m[32m          {pendingOrders.map((items, index) => {[m
+[32m+[m[32m            const orderTotal = calculateCartTotal(items);[m
+[32m+[m[32m            return ([m
+[32m+[m[32m              <div key={index} className="animate-fade-in glass-card flex items-center justify-between rounded-xl px-4 py-2.5 text-sm">[m
+[32m+[m[32m                <div className="flex items-center gap-2 min-w-0">[m
+[32m+[m[32m                  <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold">{index + 1}</span>[m
+[32m+[m[32m                  <span className="truncate font-bold">{items.length} productos</span>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m                <div className="flex items-center gap-2">[m
+[32m+[m[32m                  <strong className="text-sm">{money(orderTotal)}</strong>[m
+[32m+[m[32m                  <button[m
+[32m+[m[32m                    className="focus-ring grid h-6 w-6 place-items-center rounded-full bg-[#f1d0ca] text-[#7a2c22]"[m
+[32m+[m[32m                    aria-label="Quitar pedido"[m
+[32m+[m[32m                    onClick={() => setPendingOrders((current) => current.filter((_, i) => i !== index))}[m
+[32m+[m[32m                  >[m
+[32m+[m[32m                    <X size={12} />[m
+[32m+[m[32m                  </button>[m
+[32m+[m[32m                </div>[m
+[32m+[m[32m              </div>[m
+[32m+[m[32m            );[m
+[32m+[m[32m          })}[m
+[32m+[m[32m          <button[m
+[32m+[m[32m            className="focus-ring btn-press flex w-full items-center justify-center gap-2 rounded-2xl bg-[var(--green)] px-5 py-3.5 font-bold text-white shadow-xl transition hover:opacity-90 disabled:opacity-50"[m
+[32m+[m[32m            disabled={sending}[m
+[32m+[m[32m            onClick={sendAllTogether}[m
+[32m+[m[32m          >[m
+[32m+[m[32m            <ShoppingBag size={18} />[m
+[32m+[m[32m            {sending ? "Enviando…" : `Enviar todos (${pendingOrders.length}) a cocina`}[m
+[32m+[m[32m          </button>[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      )}[m
+[32m+[m
+       {selected && ([m
+         <ProductDialog[m
+           product={selected}[m
+           onClose={() => setSelected(null)}[m
+           onAdd={addItem}[m
+           dailyMenu={dailyMenu}[m
+[32m+[m[32m          drinkFlavors={drinkFlavors}[m
+         />[m
+       )}[m
+[32m+[m[32m      {/* Botón flotante Llamar mesero */}[m
+[32m+[m[32m      <div className="fixed bottom-20 right-4 z-40 sm:bottom-24">[m
+[32m+[m[32m        <button[m
+[32m+[m[32m          className={`focus-ring flex items-center gap-2.5 rounded-full px-5 py-4 font-bold text-white shadow-2xl transition-all ${[m
+[32m+[m[32m            waiterCalled[m
+[32m+[m[32m              ? "bg-[var(--green)] cursor-default"[m
+[32m+[m[32m              : "bg-[var(--terracotta)] hover:bg-[#b03a2a] hover:scale-105 active:scale-95"[m
+[32m+[m[32m          }`}[m
+[32m+[m[32m          onClick={callWaiter}[m
+[32m+[m[32m          disabled={waiterCalled}[m
+[32m+[m[32m        >[m
+[32m+[m[32m          {waiterCalled ? ([m
+[32m+[m[32m            <>[m
+[32m+[m[32m              <Check size={20} strokeWidth={3} />[m
+[32m+[m[32m              <span className="text-sm">Mesero avisado</span>[m
+[32m+[m[32m            </>[m
+[32m+[m[32m          ) : ([m
+[32m+[m[32m            <>[m
+[32m+[m[32m              <Hand size={20} />[m
+[32m+[m[32m              <span className="text-sm">Llamar mesero</span>[m
+[32m+[m[32m            </>[m
+[32m+[m[32m          )}[m
+[32m+[m[32m        </button>[m
+[32m+[m[32m      </div>[m
+[32m+[m
+       {cartOpen && ([m
+[31m-        <CartDrawer[m
+[31m-          cart={cart}[m
+[31m-          notes={generalNotes}[m
+[31m-          sending={sending}[m
+[31m-          onNotes={setGeneralNotes}[m
+[31m-          onClose={() => setCartOpen(false)}[m
+[31m-          onChange={setCart}[m
+[31m-          onSubmit={submitOrder}[m
+[31m-        />[m
+[32m+[m[32m        <div className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">[m
+[32m+[m[32m          <CartDrawer[m
+[32m+[m[32m            cart={cart}[m
+[32m+[m[32m            notes={generalNotes}[m
+[32m+[m[32m            sending={sending}[m
+[32m+[m[32m            onNotes={setGeneralNotes}[m
+[32m+[m[32m            onClose={() => setCartOpen(false)}[m
+[32m+[m[32m            onChange={setCart}[m
+[32m+[m[32m            onSubmit={submitOrder}[m
+[32m+[m[32m          />[m
+[32m+[m[32m        </div>[m
+       )}[m
+     </main>[m
+   );[m
+[36m@@ -598,7 +811,7 @@[m [mfunction ProductCard({[m
+         disabled={product.soldOut || !available}[m
+       >[m
+         <div className="relative">[m
+[31m-          <ProductImage src={product.image} alt={product.name} className="aspect-[4/3] w-full" />[m
+[32m+[m[32m          <ProductImage src={product.image} alt={product.name} category={product.category} className="aspect-[4/3] w-full" />[m
+           <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-[#24211f]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-lg backdrop-blur-md">[m
+             {product.category}[m
+           </span>[m
+[36m@@ -696,7 +909,8 @@[m [mfunction ProductDialog({[m
+   product,[m
+   onClose,[m
+   onAdd,[m
+[31m-  dailyMenu[m
+[32m+[m[32m  dailyMenu,[m
+[32m+[m[32m  drinkFlavors[m
+ }: {[m
+   product: Product;[m
+   onClose: () => void;[m
+[36m@@ -709,12 +923,64 @@[m [mfunction ProductDialog({[m
+     priceModifier?: number[m
+   ) => void;[m
+   dailyMenu: DailyMenuConfig | null;[m
+[32m+[m[32m  drinkFlavors: Array<{drinkType: string; name: string; priceModifier: number}>;[m
+ }) {[m
+   const [quantity, setQuantity] = useState(1);[m
+   const [notes, setNotes] = useState("");[m
+   const [selectedExtras, setSelectedExtras] = useState<string[]>([]);[m
+[32m+[m[32m  const [breakfastExtras, setBreakfastExtras] = useState<Array<{name: string; price: number; active: boolean}>>([]);[m
+[32m+[m[32m  const isBreakfast = product.category === "Desayunos";[m
+   const isComidaALaCarta = product.category === "Comidas a la carta";[m
+[32m+[m
+[32m+[m[32m  // Load global breakfast extras for Desayunos products[m
+[32m+[m[32m  useEffect(() => {[m
+[32m+[m[32m    if (!isBreakfast) return;[m
+[32m+[m[32m    fetch("/api/breakfast-extras", { cache: "no-store" })[m
+[32m+[m[32m      .then((r) => r.json().catch(() => []))[m
+[32m+[m[32m      .then((data) => {[m
+[32m+[m[32m        if (Array.isArray(data)) setBreakfastExtras(data.filter((e: Record<string, unknown>) => e.active !== false));[m
+[32m+[m[32m      })[m
+[32m+[m[32m      .catch(() => setBreakfastExtras([]));[m
+[32m+[m[32m  }, [isBreakfast]);[m
+[32m+[m
+[32m+[m[32m  // Merge product extras + global breakfast extras[m
+[32m+[m[32m  const allExtras = useMemo(() => {[m
+[32m+[m[32m    if (isBreakfast && breakfastExtras.length > 0) {[m
+[32m+[m[32m      // Global breakfast extras take priority[m
+[32m+[m[32m      const globalNames = new Set(breakfastExtras.map((e) => e.name));[m
+[32m+[m[32m      const productExtras = (product.extrasConfig || []).filter((e) => e.active !== false && !globalNames.has(e.name));[m
+[32m+[m[32m      return [...breakfastExtras.map((e) => ({ name: e.name, price: e.price, active: true })), ...productExtras];[m
+[32m+[m[32m    }[m
+[32m+[m[32m    return (product.extrasConfig || []).filter((e) => e.active !== false);[m
+[32m+[m[32m  }, [isBreakfast, breakfastExtras, product.extrasConfig]);[m
+[32m+[m[32m  // Map product IDs to drink flavor types[m
+[32m+[m[32m  const drinkTypeMap: Record<string, string> = {[m
+[32m+[m[32m    cafe: "cafe",[m
+[32m+[m[32m    malteada: "malteada",[m
+[32m+[m[32m    licuado: "licuado",[m
+[32m+[m[32m    "agua-fruta": "agua-fruta"[m
+[32m+[m[32m  };[m
+[32m+[m[32m  const drinkType = drinkTypeMap[product.id];[m
+[32m+[m[32m  const dynamicFlavors = useMemo(() => {[m
+[32m+[m[32m    if (!drinkType || !drinkFlavors.length) return null;[m
+[32m+[m[32m    const flavors = drinkFlavors.filter((f) => f.drinkType === drinkType);[m
+[32m+[m[32m    if (!flavors.length) return null;[m
+[32m+[m[32m    return flavors;[m
+[32m+[m[32m  }, [drinkType, drinkFlavors]);[m
+[32m+[m
+   const groups = useMemo(() => {[m
+[32m+[m[32m    // If this is a drink with dynamic flavors, use those instead of hardcoded options[m
+[32m+[m[32m    if (dynamicFlavors) {[m
+[32m+[m[32m      const flavorChoices = dynamicFlavors.map((f) => f.name);[m
+[32m+[m[32m      const flavorPrices = dynamicFlavors.map((f) => f.priceModifier);[m
+[32m+[m[32m      return [{[m
+[32m+[m[32m        id: "sabor",[m
+[32m+[m[32m        label: "Elige tu sabor",[m
+[32m+[m[32m        choices: flavorChoices,[m
+[32m+[m[32m        choicePrices: flavorPrices.some((p) => p > 0) ? flavorPrices : undefined,[m
+[32m+[m[32m        required: true[m
+[32m+[m[32m      }];[m
+[32m+[m[32m    }[m
+     const baseGroups = product.optionGroups || ([m
+       product.options?.length[m
+         ? [{ id: "opcion", label: optionPrompt(product), choices: product.options, required: true }][m
+[36m@@ -723,7 +989,7 @@[m [mfunction ProductDialog({[m
+     return isComidaALaCarta[m
+       ? resolveDailyCourseGroups(baseGroups, dailyMenu?.courses)[m
+       : baseGroups;[m
+[31m-  }, [isComidaALaCarta, product, dailyMenu?.courses]);[m
+[32m+[m[32m  }, [dynamicFlavors, isComidaALaCarta, product, dailyMenu?.courses]);[m
+   const [selections, setSelections] = useState<Record<string, string>>(() =>[m
+     Object.fromEntries(groups.map((group) => [group.id, group.choices[0] || ""]))[m
+   );[m
+[36m@@ -748,12 +1014,14 @@[m [mfunction ProductDialog({[m
+     (group) => group.choices.length > 0 && Boolean(selections[group.id])[m
+   );[m
+   const priceModifier = useMemo(() => {[m
+[31m-    const pricedGroup = product.optionGroups?.find((g) => g.choicePrices && g.choicePrices.length > 0);[m
+[32m+[m[32m    // Check both product.optionGroups and dynamic groups (drink flavors)[m
+[32m+[m[32m    const allGroups = groups;[m
+[32m+[m[32m    const pricedGroup = allGroups.find((g) => g.choicePrices && g.choicePrices.length > 0);[m
+     if (!pricedGroup) return 0;[m
+     const selectedIdx = pricedGroup.choices.indexOf(selections[pricedGroup.id]);[m
+     if (selectedIdx < 0) return 0;[m
+     return pricedGroup.choicePrices?.[selectedIdx] ?? 0;[m
+[31m-  }, [product.optionGroups, selections]);[m
+[32m+[m[32m  }, [groups, selections]);[m
+   const selectionSummary = groups[m
+     .map((group) => {[m
+       const shortLabel =[m
+[36m@@ -785,12 +1053,12 @@[m [mfunction ProductDialog({[m
+     .join(" · ")[m
+     .slice(0, 80);[m
+   return ([m
+[31m-    <div className="fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">[m
+[32m+[m[32m    <div className="animate-fade-in fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">[m
+       <section[m
+         role="dialog"[m
+         aria-modal="true"[m
+         aria-labelledby="product-title"[m
+[31m-        className="animate-pop max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"[m
+[32m+[m[32m        className="animate-scale-in max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"[m
+       >[m
+         <div className="relative grid min-w-0 lg:grid-cols-[0.9fr_1.1fr]">[m
+           <button[m
+[36m@@ -803,6 +1071,7 @@[m [mfunction ProductDialog({[m
+           <ProductImage[m
+             src={product.image}[m
+             alt={product.name}[m
+[32m+[m[32m            category={product.category}[m
+             className="h-56 w-full sm:h-72 lg:h-full lg:min-h-[34rem]"[m
+           />[m
+           <div className="min-w-0 p-5 sm:p-7 lg:flex lg:min-h-[34rem] lg:flex-col lg:justify-center lg:p-10">[m
+[36m@@ -871,16 +1140,16 @@[m [mfunction ProductDialog({[m
+                 onChange={(event) => setNotes(event.target.value)}[m
+               />[m
+             </label>[m
+[31m-            {product.extrasConfig && product.extrasConfig.length > 0 && ([m
+[32m+[m[32m            {allExtras.length > 0 && ([m
+               <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">[m
+[31m-                <legend className="font-display text-xl font-bold">Extras con costo</legend>[m
+[32m+[m[32m                <legend className="font-display text-xl font-bold">[m
+[32m+[m[32m                  {isBreakfast ? "Extras de desayuno" : "Extras con costo"}[m
+[32m+[m[32m                </legend>[m
+                 <p className="mt-1 text-xs text-[var(--muted)]">[m
+                   Puedes sumar extras y el precio se actualizará al momento.[m
+                 </p>[m
+                 <div className="mt-3 grid gap-2">[m
+[31m-                  {product.extrasConfig[m
+[31m-                    .filter((extra) => extra.active !== false)[m
+[31m-                    .map((extra) => {[m
+[32m+[m[32m                  {allExtras.map((extra) => {[m
+                       const selected = selectedExtras.includes(extra.name);[m
+                       return ([m
+                         <label[m
+[36m@@ -944,8 +1213,8 @@[m [mfunction ProductDialog({[m
+                 className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"[m
+                 disabled={isComidaALaCarta && !hasCompleteSelection}[m
+                 onClick={() => {[m
+[31m-                  const chosenExtras = (product.extrasConfig || [])[m
+[31m-                    .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))[m
+[32m+[m[32m                  const chosenExtras = allExtras[m
+[32m+[m[32m                    .filter((extra) => selectedExtras.includes(extra.name))[m
+                     .map((extra) => ({ name: extra.name, price: extra.price }));[m
+                   onAdd([m
+                     product,[m
+[36m@@ -962,8 +1231,8 @@[m [mfunction ProductDialog({[m
+                 <span>[m
+                   {money([m
+                     (product.price + priceModifier +[m
+[31m-                      (product.extrasConfig || [])[m
+[31m-                        .filter((extra) => extra.active !== false && selectedExtras.includes(extra.name))[m
+[32m+[m[32m                      allExtras[m
+[32m+[m[32m                        .filter((extra) => selectedExtras.includes(extra.name))[m
+                         .reduce((sum, extra) => sum + extra.price, 0)) *[m
+                     quantity[m
+                   )}[m
+[36m@@ -996,13 +1265,12 @@[m [mfunction CartDrawer({[m
+ }) {[m
+   const subtotal = calculateCartTotal(cart);[m
+   return ([m
+[31m-    <div className="fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">[m
+[31m-      <section[m
+[31m-        role="dialog"[m
+[31m-        aria-modal="true"[m
+[31m-        aria-labelledby="cart-title"[m
+[31m-        className="animate-pop flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"[m
+[31m-      >[m
+[32m+[m[32m    <section[m
+[32m+[m[32m      role="dialog"[m
+[32m+[m[32m      aria-modal="true"[m
+[32m+[m[32m      aria-labelledby="cart-title"[m
+[32m+[m[32m      className="animate-slide-in-right flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"[m
+[32m+[m[32m    >[m
+         <div className="flex items-center gap-3 border-b border-[var(--line)] px-5 py-4">[m
+           <button[m
+             className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-[#eee8dc]"[m
+[36m@@ -1027,7 +1295,7 @@[m [mfunction CartDrawer({[m
+                 <div className="flex gap-3">[m
+                   <ProductImage[m
+                     src={item.image}[m
+[31m-                    alt=""[m
+[32m+[m[32m                    alt={item.name}[m
+                     className="h-20 w-20 shrink-0 rounded-xl"[m
+                   />[m
+                   <div className="min-w-0 flex-1">[m
+[36m@@ -1116,7 +1384,6 @@[m [mfunction CartDrawer({[m
+           </button>[m
+         </div>[m
+       </section>[m
+[31m-    </div>[m
+   );[m
+ }[m
+ [m
+[36m@@ -1161,12 +1428,41 @@[m [mfunction OrderTracking({[m
+             <StatusPill status={order.status} />[m
+             <span className="text-sm">Folio {order.folio}</span>[m
+           </div>[m
+[32m+[m[32m          {tableCode === "LLEVAR" && ([m
+[32m+[m[32m            <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur">[m
+[32m+[m[32m              <p className="text-xs text-white/70">[m
+[32m+[m[32m                📱 Guarda esta página o compártela para seguir tu pedido.[m
+[32m+[m[32m              </p>[m
+[32m+[m[32m              <div className="mt-2 flex gap-2">[m
+[32m+[m[32m                <button[m
+[32m+[m[32m                  className="focus-ring rounded-lg bg-white/20 px-3 py-1.5 text-xs font-bold text-white hover:bg-white/30"[m
+[32m+[m[32m                  onClick={() => {[m
+[32m+[m[32m                    const url = `${window.location.origin}/seguimiento/${order.folio}`;[m
+[32m+[m[32m                    void navigator.clipboard.writeText(url);[m
+[32m+[m[32m                    window.alert("Link copiado. Pégalo en WhatsApp o donde quieras.");[m
+[32m+[m[32m                  }}[m
+[32m+[m[32m                >[m
+[32m+[m[32m                  📋 Copiar link[m
+[32m+[m[32m                </button>[m
+[32m+[m[32m                <a[m
+[32m+[m[32m                  href={`https://wa.me/?text=${encodeURIComponent(`🍽️ Mi pedido en Imperio · ${order.folio}\n${typeof window !== "undefined" ? window.location.origin : ""}/seguimiento/${order.folio}`)}`}[m
+[32m+[m[32m                  target="_blank"[m
+[32m+[m[32m                  rel="noopener noreferrer"[m
+[32m+[m[32m                  className="focus-ring rounded-lg bg-[#25D366] px-3 py-1.5 text-xs font-bold text-white hover:opacity-90"[m
+[32m+[m[32m                >[m
+[32m+[m[32m                  📱 WhatsApp[m
+[32m+[m[32m                </a>[m
+[32m+[m[32m              </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          )}[m
+         </div>[m
+         <div className="p-6">[m
+           <div className="flex items-center justify-between rounded-2xl bg-[#eee8dc] p-4">[m
+             <span>[m
+[31m-              <span className="block text-xs uppercase text-[var(--muted)]">Mesa</span>[m
+[31m-              <strong className="text-2xl">{tableCode}</strong>[m
+[32m+[m[32m              <span className="block text-xs uppercase text-[var(--muted)]">[m
+[32m+[m[32m                {tableCode === "LLEVAR" ? "Para llevar" : "Mesa"}[m
+[32m+[m[32m              </span>[m
+[32m+[m[32m              <strong className="text-2xl">{tableCode === "LLEVAR" ? "🥡" : tableCode}</strong>[m
+             </span>[m
+             <span className="text-right">[m
+               <span className="block text-xs uppercase text-[var(--muted)]">Total</span>[m
+[36m@@ -1180,10 +1476,10 @@[m [mfunction OrderTracking({[m
+           ) : ([m
+             <ol className="mt-7 space-y-0">[m
+               {steps.map((step, index) => ([m
+[31m-                <li className="flex gap-4" key={step}>[m
+[32m+[m[32m                <li className={`flex gap-4 ${index === current ? "step-active" : ""}`} key={step}>[m
+                   <div className="flex flex-col items-center">[m
+                     <span[m
+[31m-                      className={`grid h-8 w-8 place-items-center rounded-full ${[m
+[32m+[m[32m                      className={`step-circle grid h-8 w-8 place-items-center rounded-full ${[m
+                         index <= current[m
+                           ? "bg-[var(--green)] text-white"[m
+                           : "border-2 border-[var(--line)] bg-white"[m
+[36m@@ -1268,22 +1564,40 @@[m [mfunction LunchMenu({[m
+ }) {[m
+   if (loading) {[m
+     return ([m
+[31m-      <div className="paper mt-6 rounded-[2rem] p-10 text-center text-[var(--muted)]">[m
+[31m-        Cargando la comida corrida de hoy…[m
+[31m-      </div>[m
+[32m+[m[32m      <section className="paper mt-6 overflow-hidden rounded-[2rem]">[m
+[32m+[m[32m        <div className="bg-[var(--brown)]/10 px-6 py-7">[m
+[32m+[m[32m          <div className="skeleton mb-4 h-6 w-36" />[m
+[32m+[m[32m          <div className="skeleton mb-2 h-10 w-80" />[m
+[32m+[m[32m          <div className="skeleton h-5 w-44" />[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m        <div className="space-y-4 p-6">[m
+[32m+[m[32m          {[1, 2, 3].map((i) => ([m
+[32m+[m[32m            <div key={i} className="space-y-3 border-b border-[var(--line)] py-4 last:border-0">[m
+[32m+[m[32m              <div className="skeleton h-6 w-32" />[m
+[32m+[m[32m              <div className="grid gap-2 sm:grid-cols-2">[m
+[32m+[m[32m                <div className="skeleton h-12 rounded-xl" />[m
+[32m+[m[32m                <div className="skeleton h-12 rounded-xl" />[m
+[32m+[m[32m              </div>[m
+[32m+[m[32m            </div>[m
+[32m+[m[32m          ))}[m
+[32m+[m[32m          <div className="skeleton mt-4 h-14 w-full rounded-xl" />[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m      </section>[m
+     );[m
+   }[m
+ [m
+   if (!menu || !menu.availableToday) {[m
+     return ([m
+[31m-      <section className="paper mt-6 rounded-[2rem] p-7 text-center">[m
+[31m-        <Clock3 className="mx-auto text-[var(--terracotta)]" size={34} />[m
+[31m-        <h2 className="mt-4 font-display text-3xl font-bold">Hoy no hay comida corrida publicada</h2>[m
+[31m-        <p className="mt-2 text-sm text-[var(--muted)]">[m
+[32m+[m[32m      <section className="animate-fade-in paper mt-6 rounded-[2rem] p-7 text-center">[m
+[32m+[m[32m        <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#f4dfb4]/60">[m
+[32m+[m[32m          <Clock3 className="text-[var(--terracotta)]" size={30} />[m
+[32m+[m[32m        </div>[m
+[32m+[m[32m        <h2 className="mt-5 font-display text-3xl font-bold">Hoy no hay comida corrida</h2>[m
+[32m+[m[32m        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">[m
+           Puedes ordenar cualquiera de los productos del menú fijo.[m
+         </p>[m
+         <button[m
+[31m-          className="focus-ring mt-5 rounded-2xl bg-[var(--green)] px-6 py-3 font-bold text-white"[m
+[32m+[m[32m          className="focus-ring btn-press mt-5 rounded-2xl bg-[var(--green)] px-6 py-3 font-bold text-white shadow-md transition hover:opacity-90"[m
+           onClick={onShowFixed}[m
+         >[m
+           Ver menú fijo[m

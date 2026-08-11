@@ -2,7 +2,6 @@
 
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
-  BellRing,
   Check,
   ChevronLeft,
   Clock3,
@@ -81,6 +80,11 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [pendingOrders, setPendingOrders] = useState<CartItem[][]>([]);
   const [drinkFlavors, setDrinkFlavors] = useState<Array<{drinkType: string; name: string; priceModifier: number}>>([]);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
+  const latestOrderRef = useRef<Order | null>(null);
+
+  useEffect(() => {
+    latestOrderRef.current = order;
+  }, [order]);
 
   useEffect(() => {
     const updateClock = () => setServiceMinutes(mexicoCityMinutes());
@@ -118,6 +122,21 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         setSessionExisted(true);
         // Auto-enable sendTogether when joining an existing session
         setSendTogether(true);
+        const activeOrders = (data.orders || []).filter(
+          (item) => !["delivered", "cancelled"].includes(item.status)
+        );
+        if (activeOrders.length) {
+          const mostRecent = activeOrders.reduce((a, b) =>
+            +new Date(a.updatedAt) >= +new Date(b.updatedAt) ? a : b
+          );
+          setOrder((current) => {
+            if (!current) return mostRecent;
+            if (current.id !== mostRecent.id) return mostRecent;
+            return +new Date(mostRecent.updatedAt) >= +new Date(current.updatedAt)
+              ? mostRecent
+              : current;
+          });
+        }
       } else {
         setSessionExisted(false);
         const createResponse = await fetch("/api/sessions", {
@@ -166,6 +185,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         const nextOrder = incoming;
         setOrder((current) => {
           if (!current || current.id !== nextOrder.id) return current;
+          if (nextOrder.status !== current.status) return nextOrder;
           return +new Date(nextOrder.updatedAt) >= +new Date(current.updatedAt)
             ? nextOrder
             : current;
@@ -189,6 +209,16 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         void loadCatalog();
         void loadDailyMenu();
         void loadSession();
+        const current = latestOrderRef.current;
+        if (current?.id) {
+          const token = current.accessToken || "";
+          void fetch(`/api/orders/${current.id}?token=${encodeURIComponent(token)}`)
+            .then((r) => (r.ok ? r.json() : null))
+            .then((data) => {
+              if (data && data.id === current.id) setOrder(data);
+            })
+            .catch(() => undefined);
+        }
       }
     });
     return () => channelRef.current?.close();
@@ -219,7 +249,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         );
         if (response.ok) {
           const updated = await response.json();
-          if (updated) setOrder(updated);
+          if (updated && updated.id === orderId) setOrder(updated);
         }
       } catch {
         // ignore polling errors
@@ -228,6 +258,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     const timer = window.setInterval(pollOrder, 4000);
     void pollOrder();
     return () => window.clearInterval(timer);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id, order?.accessToken]);
 
   const visible = useMemo(() => {
@@ -357,7 +388,6 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   }
 
   async function sendOrderToApi(items: CartItem[], notes: string) {
-    const total = calculateCartTotal(items);
     const idempotencyKey = crypto.randomUUID();
     const controller = new AbortController();
     const timeout = window.setTimeout(() => controller.abort(), 15000);
@@ -910,7 +940,7 @@ function ProductDialog({
     fetch("/api/breakfast-extras", { cache: "no-store" })
       .then((r) => r.json().catch(() => []))
       .then((data) => {
-        if (Array.isArray(data)) setBreakfastExtras(data.filter((e: any) => e.active !== false));
+        if (Array.isArray(data)) setBreakfastExtras(data.filter((e: Record<string, unknown>) => e.active !== false));
       })
       .catch(() => setBreakfastExtras([]));
   }, [isBreakfast]);

@@ -209,15 +209,26 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       }, 1500);
       return () => window.clearInterval(demoTimer);
     }
-    if (!order.accessToken) return;
-    const timer = window.setInterval(async () => {
-      const response = await fetch(
-        `/api/orders/${order.id}?token=${encodeURIComponent(order.accessToken!)}`
-      );
-      if (response.ok) setOrder(await response.json());
-    }, 6000);
+    if (!order.accessToken || !order.id) return;
+    const orderId = order.id;
+    const token = order.accessToken;
+    const pollOrder = async () => {
+      try {
+        const response = await fetch(
+          `/api/orders/${orderId}?token=${encodeURIComponent(token)}`
+        );
+        if (response.ok) {
+          const updated = await response.json();
+          if (updated) setOrder(updated);
+        }
+      } catch {
+        // ignore polling errors
+      }
+    };
+    const timer = window.setInterval(pollOrder, 4000);
+    void pollOrder();
     return () => window.clearInterval(timer);
-  }, [order]);
+  }, [order?.id, order?.accessToken]);
 
   const visible = useMemo(() => {
     const normalized = query.trim().toLocaleLowerCase("es");

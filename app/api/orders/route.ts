@@ -56,13 +56,11 @@ export async function POST(request: NextRequest) {
     console.error("place_order failed", {
       code: error.code,
       message: error.message,
-      details: error.details,
-      hint: error.hint,
       tableCode: parsed.data.tableCode
       // No loggeamos items ni notes: pueden contener datos del cliente
     });
     return NextResponse.json(
-      { error: "No fue posible registrar el pedido", debug: error.message, code: error.code, hint: error.hint },
+      { error: "No fue posible registrar el pedido" },
       { status: 503 }
     );
   }

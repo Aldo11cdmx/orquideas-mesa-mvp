@@ -1,29 +1,67 @@
 "use client";
 
 import { useEffect, useMemo, useState } from "react";
-import { Clock3 } from "lucide-react";
+import { Clock3, Plus } from "lucide-react";
 import type { TrialStatus } from "@/lib/types";
 
-export function TrialBanner({ compact = false }: { compact?: boolean }) {
+export function TrialBanner({ compact = false, pin }: { compact?: boolean; pin?: string }) {
   const [trial, setTrial] = useState<TrialStatus | null>(null);
   const [now, setNow] = useState(() => Date.now());
+  const [extending, setExtending] = useState(false);
+  const [feedback, setFeedback] = useState<string | null>(null);
+
+  const refresh = useMemo(
+    () => () => {
+      void fetch(`/api/trial?ts=${Date.now()}`, { cache: "no-store" })
+        .then(async (response) => (response.ok ? ((await response.json()) as TrialStatus) : null))
+        .then((payload) => {
+          if (payload) setTrial(payload);
+        });
+    },
+    []
+  );
 
   useEffect(() => {
-    let active = true;
-    void fetch("/api/trial")
-      .then(async (response) => {
-        if (!response.ok) return null;
-        return (await response.json()) as TrialStatus;
-      })
-      .then((payload) => {
-        if (active && payload) setTrial(payload);
-      });
+    refresh();
     const timer = window.setInterval(() => setNow(Date.now()), 60000);
     return () => {
-      active = false;
       window.clearInterval(timer);
     };
-  }, []);
+  }, [refresh]);
+
+  async function extendTrial() {
+    if (extending) return;
+    setExtending(true);
+    setFeedback(null);
+    try {
+      const adminPin = pin ?? sessionStorage.getItem("orquideas-admin-pin") ?? "";
+      const response = await fetch("/api/admin/trial", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin: adminPin, hours: 24 })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        throw new Error(payload?.error || "No se pudo extender la prueba");
+      }
+      const endsAt = payload?.trialEndsAt;
+      const formatted = endsAt
+        ? new Date(endsAt as string).toLocaleString("es-MX", {
+            timeZone: "America/Mexico_City",
+            day: "2-digit",
+            month: "2-digit",
+            hour: "2-digit",
+            minute: "2-digit"
+          })
+        : null;
+      setFeedback(formatted ? `✓ Prueba extendida hasta el ${formatted}` : "✓ Prueba extendida");
+      refresh();
+    } catch (error) {
+      setFeedback(error instanceof Error ? error.message : "No se pudo extender la prueba");
+    } finally {
+      setExtending(false);
+    }
+  }
 
   const remaining = useMemo(() => {
     if (!trial?.endsAt) return null;
@@ -59,9 +97,29 @@ export function TrialBanner({ compact = false }: { compact?: boolean }) {
           Prueba de 14 días
         </span>
         {label}
+        {feedback && (
+          <span
+            className={`mt-0.5 block text-[11px] font-semibold ${
+              feedback.startsWith("✓") ? "text-[#2e7d32]" : "text-[#b3261e]"
+            }`}
+          >
+            {feedback}
+          </span>
+        )}
       </span>
+      <button
+        type="button"
+        className="focus-ring flex shrink-0 items-center gap-1 rounded-full bg-white/80 px-3 py-1.5 text-xs font-bold shadow-sm transition hover:bg-white disabled:cursor-not-allowed disabled:opacity-50"
+        onClick={() => void extendTrial()}
+        disabled={extending}
+      >
+        <Plus size={14} />
+        {extending ? "Extendiendo…" : "24 hrs"}
+      </button>
       {!remaining.active && !compact && (
-        <span className="rounded-full bg-white/70 px-3 py-1 text-xs">El sistema sigue activo</span>
+        <span className="hidden rounded-full bg-white/70 px-3 py-1 text-xs sm:inline">
+          El sistema sigue activo
+        </span>
       )}
     </div>
   );

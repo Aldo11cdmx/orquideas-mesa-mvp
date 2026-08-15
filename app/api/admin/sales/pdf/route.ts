@@ -5,6 +5,7 @@ import { createServerClient } from "@/lib/supabase/server";
 import pdfMake from "pdfmake/build/pdfmake";
 import pdfFonts from "pdfmake/build/vfs_fonts";
 import type { SalesReport } from "@/lib/types";
+import type { TDocumentDefinitions } from "pdfmake/interfaces";
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
 (pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
@@ -33,7 +34,7 @@ type AdjustmentsPayload = {
 };
 
 function summaryTable(report: SalesReport) {
-  const rows: Array<Array<string | number>> = [
+  const rows: Array<Array<string>> = [
     ["Concepto", "Monto", "Detalle"],
     ["Consumo registrado (entregados)", money(report.summary.grossSales), `${report.summary.orderCount} pedidos`],
     ["Efectivo", money(report.summary.cashSales), `${report.summary.cashOrders} pedidos`],
@@ -49,7 +50,7 @@ function summaryTable(report: SalesReport) {
 }
 
 function adjustmentsTable(adjustments: AdjustmentsPayload) {
-  const body: Array<Array<string | number>> = [["Fecha", "Tipo", "Concepto", "Monto"]];
+  const body: Array<Array<string>> = [["Fecha", "Tipo", "Concepto", "Monto"]];
   for (const item of adjustments.items) {
     body.push([
       new Date(item.createdAt).toLocaleString("es-MX", {
@@ -147,7 +148,7 @@ export async function GET(request: NextRequest) {
           year: "numeric"
         })}`;
 
-  const docDefinition = {
+  const docDefinition: TDocumentDefinitions = {
     content: [
       { text: "Imperio", style: "brand" },
       { text: "Corte de caja", style: "title" },

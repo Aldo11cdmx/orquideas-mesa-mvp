@@ -1,14 +1,11 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
-// pdfmake se resuelve en runtime Node (ver serverExternalPackages en next.config.ts)
-import pdfMake from "pdfmake/build/pdfmake";
-import pdfFonts from "pdfmake/build/vfs_fonts";
+// PdfPrinter = API Node de pdfmake (sin VFS): usa fuentes estandar del PDF.
+// Se resuelve en runtime Node (ver serverExternalPackages en next.config.ts)
+import PdfPrinter from "pdfmake/build/pdfmake";
 import type { SalesReport } from "@/lib/types";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-(pdfMake as any).vfs = (pdfFonts as any).pdfMake.vfs;
 
 const querySchema = z.object({
   pin: z.string().min(1).max(20),
@@ -18,6 +15,37 @@ const querySchema = z.object({
 });
 
 const maximumRange = 370 * 24 * 60 * 60 * 1000;
+
+// Fuentes estandar de PDF (Helvetica) - no requieren VFS ni archivos externos.
+const fonts = {
+  Roboto: {
+    normal: "Helvetica",
+    bold: "Helvetica-Bold",
+    italics: "Helvetica-Oblique",
+    bolditalics: "Helvetica-BoldOblique"
+  }
+};
+
+type PdfFontFamily = {
+  normal: string;
+  bold: string;
+  italics: string;
+  bolditalics: string;
+};
+
+type PdfStream = {
+  on(event: "data", listener: (chunk: Uint8Array) => void): void;
+  on(event: "end", listener: () => void): void;
+  on(event: "error", listener: (error: Error) => void): void;
+  end(): void;
+};
+
+// @types/pdfmake tipa el build de navegador; PdfPrinter es la clase Node.
+const Printer = PdfPrinter as unknown as new (
+  fonts: Record<string, PdfFontFamily>
+) => {
+  createPdfKitDocument(doc: TDocumentDefinitions): PdfStream;
+};
 
 const money = (value: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(value);
@@ -196,18 +224,22 @@ export async function GET(request: NextRequest) {
     defaultStyle: { fontSize: 10, lineHeight: 1.35 }
   };
 
-  const pdfDoc = pdfMake.createPdf(docDefinition);
+  const printer = new Printer(fonts);
+  const pdfDoc = printer.createPdfKitDocument(docDefinition);
+
+  const chunks: Uint8Array[] = [];
+  pdfDoc.on("data", (chunk: Uint8Array) => chunks.push(chunk));
   const buffer = await new Promise<Buffer>((resolve, reject) => {
-    pdfDoc.getBuffer((result: Uint8Array) => resolve(Buffer.from(result)));
-    // getBuffer no reporta errores; timeout defensivo por si algo se cuelga
-    setTimeout(() => reject(new Error("pdf timeout")), 20000);
+    pdfDoc.on("end", () => resolve(Buffer.concat(chunks)));
+    pdfDoc.on("error", (error: Error) => reject(error));
+    pdfDoc.end();
   });
 
   const filename = `corte-${parsed.data.period}-${new Date().toISOString().slice(0, 10)}.pdf`;
   return new NextResponse(new Uint8Array(buffer), {
     headers: {
       "Content-Type": "application/pdf",
-      "Content-Disposition": `attachment; filename="${filename}"`,
+      "Content-Disposition": `inline; filename="${filename}"`,
       "Cache-Control": "no-store"
     }
   });

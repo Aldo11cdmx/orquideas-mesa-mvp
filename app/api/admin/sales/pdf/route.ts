@@ -1,9 +1,9 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 import { createServerClient } from "@/lib/supabase/server";
-// PdfPrinter = API Node de pdfmake (sin VFS): usa fuentes estandar del PDF.
+// Entry principal de pdfmake (API Node, sin VFS): fuentes estandar del PDF.
 // Se resuelve en runtime Node (ver serverExternalPackages en next.config.ts)
-import PdfPrinter from "pdfmake/build/pdfmake";
+import pdfmake from "pdfmake";
 import type { SalesReport } from "@/lib/types";
 import type { TDocumentDefinitions } from "pdfmake/interfaces";
 
@@ -26,13 +26,6 @@ const fonts = {
   }
 };
 
-type PdfFontFamily = {
-  normal: string;
-  bold: string;
-  italics: string;
-  bolditalics: string;
-};
-
 type PdfStream = {
   on(event: "data", listener: (chunk: Uint8Array) => void): void;
   on(event: "end", listener: () => void): void;
@@ -40,12 +33,10 @@ type PdfStream = {
   end(): void;
 };
 
-// @types/pdfmake tipa el build de navegador; PdfPrinter es la clase Node.
-const Printer = PdfPrinter as unknown as new (
-  fonts: Record<string, PdfFontFamily>
-) => {
-  createPdfKitDocument(doc: TDocumentDefinitions): PdfStream;
-};
+// Resolucion compatible CommonJS/ESM: el entry de pdfmake exporta la clase
+// PdfPrinter directo (Node) o envuelta en .default (bundlers ESM).
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const Printer = (pdfmake as any).default || pdfmake;
 
 const money = (value: number) =>
   new Intl.NumberFormat("es-MX", { style: "currency", currency: "MXN" }).format(value);
@@ -225,7 +216,7 @@ export async function GET(request: NextRequest) {
   };
 
   const printer = new Printer(fonts);
-  const pdfDoc = printer.createPdfKitDocument(docDefinition);
+  const pdfDoc = printer.createPdfKitDocument(docDefinition) as PdfStream;
 
   const chunks: Uint8Array[] = [];
   pdfDoc.on("data", (chunk: Uint8Array) => chunks.push(chunk));

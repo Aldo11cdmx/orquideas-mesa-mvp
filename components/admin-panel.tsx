@@ -9,6 +9,7 @@ import {
   CalendarDays,
   CircleDollarSign,
   CreditCard,
+  FileDown,
   LayoutGrid,
   PackageCheck,
   Pencil,
@@ -1269,6 +1270,14 @@ function TableEditor({
   );
 }
 
+type CashAdjustment = {
+  id: string;
+  type: "income" | "expense";
+  amount: number;
+  concept: string;
+  createdAt: string;
+};
+
 type SalesPeriod = "day" | "week" | "month";
 
 function salesRange(period: SalesPeriod) {
@@ -1295,6 +1304,13 @@ function SalesAdmin({ pin }: { pin: string }) {
   const [report, setReport] = useState<SalesReport | null>(null);
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
+  const [adjustments, setAdjustments] = useState<CashAdjustment[]>([]);
+  const [adjustmentTotals, setAdjustmentTotals] = useState({ income: 0, expense: 0 });
+  const [adjustmentOpen, setAdjustmentOpen] = useState(false);
+  const [adjType, setAdjType] = useState<"income" | "expense">("income");
+  const [adjAmount, setAdjAmount] = useState("");
+  const [adjConcept, setAdjConcept] = useState("");
+  const [savingAdjustment, setSavingAdjustment] = useState(false);
 
   async function load(nextPeriod = period) {
     setLoading(true);
@@ -1309,7 +1325,73 @@ function SalesAdmin({ pin }: { pin: string }) {
       return;
     }
     setReport(payload as SalesReport);
+    const adjustmentResponse = await fetch(`/api/admin/cash-adjustments?${params}`, {
+      cache: "no-store"
+    });
+    const adjustmentPayload = await adjustmentResponse.json().catch(() => null);
+    if (adjustmentResponse.ok && adjustmentPayload) {
+      setAdjustments(adjustmentPayload.items ?? []);
+      setAdjustmentTotals(adjustmentPayload.totals ?? { income: 0, expense: 0 });
+    }
     setLoading(false);
+  }
+
+  async function submitAdjustment() {
+    const amount = Number(adjAmount);
+    if (!adjAmount || isNaN(amount) || amount <= 0) {
+      setNotice("Escribe un monto válido para el ajuste.");
+      return;
+    }
+    if (!adjConcept.trim()) {
+      setNotice("Escribe el concepto del ajuste.");
+      return;
+    }
+    setSavingAdjustment(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/cash-adjustments", {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin, type: adjType, amount, concept: adjConcept.trim() })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setNotice(payload?.error || "No se pudo registrar el ajuste");
+        return;
+      }
+      setAdjAmount("");
+      setAdjConcept("");
+      setAdjustmentOpen(false);
+      await load();
+    } finally {
+      setSavingAdjustment(false);
+    }
+  }
+
+  async function removeAdjustment(id: string) {
+    if (!window.confirm("¿Eliminar este movimiento de caja?")) return;
+    const response = await fetch("/api/admin/cash-adjustments", {
+      method: "DELETE",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, id })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      setNotice(payload?.error || "No se pudo eliminar el ajuste");
+      return;
+    }
+    await load();
+  }
+
+  function exportPdf() {
+    const range = salesRange(period);
+    const params = new URLSearchParams({
+      pin,
+      from: range.from,
+      to: range.to,
+      period: period === "day" ? "day" : "week"
+    });
+    window.open(`/api/admin/sales/pdf?${params.toString()}`, "_blank");
   }
 
   useEffect(() => {
@@ -1328,6 +1410,8 @@ function SalesAdmin({ pin }: { pin: string }) {
     ...(report?.topProducts.map((product) => product.quantity) || [1]),
     1
   );
+  const cashExpected =
+    (report?.summary.cashSales ?? 0) + adjustmentTotals.income - adjustmentTotals.expense;
 
   return (
     <div>
@@ -1345,6 +1429,12 @@ function SalesAdmin({ pin }: { pin: string }) {
           onClick={() => void load()}
         >
           <RefreshCw className={loading ? "animate-spin" : ""} size={17} /> Actualizar
+        </button>
+        <button
+          className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-[var(--brown)] px-4 font-bold text-white shadow-sm transition hover:bg-[var(--brown-dark)]"
+          onClick={exportPdf}
+        >
+          <FileDown size={17} /> Exportar PDF
         </button>
       </div>
 
@@ -1435,6 +1525,148 @@ function SalesAdmin({ pin }: { pin: string }) {
               </article>
             ))}
           </div>
+
+          <section className="paper mt-5 rounded-3xl p-5 sm:p-6">
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <div>
+                <p className="eyebrow text-[var(--terracotta)]">Caja</p>
+                <h2 className="font-display text-2xl font-bold">Ajustes manuales</h2>
+              </div>
+              <button
+                className="focus-ring flex min-h-10 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 text-sm font-bold"
+                onClick={() => setAdjustmentOpen((value) => !value)}
+              >
+                <Plus size={16} />
+                {adjustmentOpen ? "Cerrar" : "Registrar ajuste"}
+              </button>
+            </div>
+
+            {adjustmentOpen && (
+              <div className="mt-4 grid gap-3 rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-4 sm:grid-cols-[auto_minmax(0,9rem)_1fr_auto] sm:items-center">
+                <div className="inline-flex rounded-xl border border-[var(--line)] bg-white p-1">
+                  {(["income", "expense"] as const).map((type) => (
+                    <button
+                      key={type}
+                      className={`focus-ring rounded-lg px-3 py-2 text-xs font-bold transition ${
+                        adjType === type
+                          ? type === "income"
+                            ? "bg-[var(--green)] text-white"
+                            : "bg-[#b3261e] text-white"
+                          : "text-[var(--muted)]"
+                      }`}
+                      onClick={() => setAdjType(type)}
+                    >
+                      {type === "income" ? "Entrada" : "Salida"}
+                    </button>
+                  ))}
+                </div>
+                <input
+                  className="focus-ring min-w-0 rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none"
+                  type="number"
+                  inputMode="decimal"
+                  min="0.01"
+                  step="0.01"
+                  placeholder="Monto ($)"
+                  value={adjAmount}
+                  onChange={(event) => setAdjAmount(event.target.value)}
+                />
+                <input
+                  className="focus-ring min-w-0 rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 text-sm outline-none"
+                  type="text"
+                  maxLength={200}
+                  placeholder="Concepto (ej. compra de hielo)"
+                  value={adjConcept}
+                  onChange={(event) => setAdjConcept(event.target.value)}
+                />
+                <button
+                  className="focus-ring flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brown)] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  disabled={savingAdjustment}
+                  onClick={() => void submitAdjustment()}
+                >
+                  <Save size={15} />
+                  {savingAdjustment ? "Guardando…" : "Guardar"}
+                </button>
+              </div>
+            )}
+
+            {adjustments.length ? (
+              <ul className="mt-4 divide-y divide-[var(--line)]">
+                {adjustments.map((adjustment) => (
+                  <li className="flex items-center gap-3 py-2.5" key={adjustment.id}>
+                    <span
+                      className={`shrink-0 rounded-full px-2.5 py-1 text-[10px] font-bold uppercase ${
+                        adjustment.type === "income"
+                          ? "bg-[#e4ece6] text-[var(--green)]"
+                          : "bg-[#f1d0ca] text-[#7a2c22]"
+                      }`}
+                    >
+                      {adjustment.type === "income" ? "Entrada" : "Salida"}
+                    </span>
+                    <span className="min-w-0 flex-1 truncate text-sm font-medium">
+                      {adjustment.concept}
+                    </span>
+                    <time className="shrink-0 text-xs text-[var(--muted)]">
+                      {new Date(adjustment.createdAt).toLocaleString("es-MX", {
+                        day: "2-digit",
+                        month: "short",
+                        hour: "2-digit",
+                        minute: "2-digit"
+                      })}
+                    </time>
+                    <strong
+                      className={`shrink-0 text-sm ${
+                        adjustment.type === "income" ? "text-[var(--green)]" : "text-[#b3261e]"
+                      }`}
+                    >
+                      {adjustment.type === "income" ? "+" : "−"}
+                      {money(adjustment.amount)}
+                    </strong>
+                    <button
+                      className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--muted)] transition hover:bg-[#f1d0ca] hover:text-[#7a2c22]"
+                      aria-label="Eliminar ajuste"
+                      onClick={() => void removeAdjustment(adjustment.id)}
+                    >
+                      <Trash2 size={14} />
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            ) : (
+              <EmptySales message="Sin ajustes manuales en este periodo." />
+            )}
+
+            <div className="mt-4 grid gap-3 sm:grid-cols-2">
+              <div className="rounded-2xl bg-[#e4ece6] p-4">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                  Efectivo esperado en caja
+                </p>
+                <strong className="mt-1 block font-display text-3xl text-[var(--green)]">
+                  {money(cashExpected)}
+                </strong>
+                <span className="mt-1 block text-xs text-[var(--muted)]">
+                  Efectivo vendido + entradas − salidas
+                </span>
+              </div>
+              <div className="grid grid-cols-2 gap-3">
+                <div className="rounded-2xl border border-[var(--line)] p-4">
+                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Entradas
+                  </span>
+                  <strong className="mt-1 block text-lg text-[var(--green)]">
+                    +{money(adjustmentTotals.income)}
+                  </strong>
+                </div>
+                <div className="rounded-2xl border border-[var(--line)] p-4">
+                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                    Salidas
+                  </span>
+                  <strong className="mt-1 block text-lg text-[#b3261e]">
+                    −{money(adjustmentTotals.expense)}
+                  </strong>
+                </div>
+              </div>
+            </div>
+          </section>
 
           <div className="mt-5 grid gap-5 xl:grid-cols-[1.15fr_0.85fr]">
             <section className="paper rounded-3xl p-5 sm:p-6">

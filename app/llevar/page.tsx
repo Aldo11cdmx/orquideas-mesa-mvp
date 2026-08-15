@@ -60,5 +60,5 @@ export default function LlevarPage() {
     );
   }
 
-  return <MenuClient tableCode="LLEVAR" />;
+  return <MenuClient tableCode="LLEVAR" customerName={customerName.trim()} customerPhone={customerPhone.trim()} />;
 }

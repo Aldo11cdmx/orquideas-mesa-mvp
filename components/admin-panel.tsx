@@ -5,6 +5,7 @@ import {
   BarChart3,
   Coffee,
   CupSoda,
+  BadgePercent,
   Banknote,
   CalendarDays,
   CircleDollarSign,
@@ -27,6 +28,7 @@ import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
 import { DrinksAdmin } from "@/components/drinks-admin";
+import { PromosAdmin } from "@/components/promos-admin";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, DailyMenuDrink, Product, RestaurantTable, SalesReport } from "@/lib/types";
@@ -185,6 +187,7 @@ export function AdminPanel() {
     ["breakfast", "Desayunos", Coffee],
     ["drinks", "Bebidas", CupSoda],
     ["daily", "Comida corrida", Store],
+    ["promos", "Promos", BadgePercent],
     ["tables", "Mesas", Settings2],
     ["sales", "Corte de caja", BarChart3]
   ] as const;
@@ -238,6 +241,7 @@ export function AdminPanel() {
           {tab === "breakfast" && <BreakfastAdmin pin={pin} />}
           {tab === "drinks" && <DrinksAdmin pin={pin} />}
           {tab === "daily" && <DailyAdmin pin={pin} />}
+          {tab === "promos" && <PromosAdmin pin={pin} />}
           {tab === "tables" && <TablesAdmin pin={pin} />}
             {tab === "sales" && <SalesAdmin pin={pin} />}
           </div>

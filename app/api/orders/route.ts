@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createAdminClient } from "@/lib/supabase/server";
 
 let orderCache: { data: unknown; expiresAt: number } | null = null;
 let pendingOrderQuery: Promise<unknown> | null = null;
@@ -10,7 +10,8 @@ const orderSchema = z.object({
   tableCode: z.string().trim().regex(/^[A-Z]\d{1,2}$|^LLEVAR$/),
   idempotencyKey: z.string().uuid(),
   notes: note.default(""),
-  sessionId: z.string().uuid().optional(),
+  customerName: z.string().trim().max(80).optional(),
+  sessionId: z.string().uuid().nullable().optional(),
   items: z
     .array(
       z.object({
@@ -68,6 +69,18 @@ export async function POST(request: NextRequest) {
   // Avoid serving the pre-order snapshot while realtime/polling reconcile the
   // waiter board after a new order is accepted.
   orderCache = null;
+  // Pedido para llevar: guarda el nombre del cliente para llamarlo en mostrador.
+  // No se toca place_order; es un UPDATE puntual vía service_role.
+  if (parsed.data.customerName && (data as { id?: string })?.id) {
+    const admin = createAdminClient();
+    const { error: updateError } = await admin
+      .from("orders")
+      .update({ customer_name: parsed.data.customerName })
+      .eq("id", (data as { id: string }).id);
+    if (updateError) {
+      console.error("customer_name update failed", updateError.code, updateError.message);
+    }
+  }
   return NextResponse.json(data, { status: 201 });
 }
 

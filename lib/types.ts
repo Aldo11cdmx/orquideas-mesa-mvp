@@ -90,6 +90,17 @@ export type Order = {
   paymentMethod?: PaymentMethod;
   accessToken?: string;
   source?: "supabase" | "demo";
+  customerName?: string;
+};
+
+export type Promotion = {
+  id: string;
+  title: string;
+  discountType: "percent" | "fixed";
+  discountValue: number;
+  productId: string | null;
+  productSlug: string | null;
+  isActive: boolean;
 };
 
 export type DailyMenuConfig = {

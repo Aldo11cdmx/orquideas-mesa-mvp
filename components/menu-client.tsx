@@ -27,7 +27,7 @@ import {
 } from "@/lib/menu";
 import { connectOrderChannel, readDemoOrders } from "@/lib/order-store";
 import { calculateCartTotal, cartItemTotal } from "@/lib/order-utils";
-import type { CartItem, DailyMenuConfig, Order, Product, TableSession } from "@/lib/types";
+import type { CartItem, DailyMenuConfig, Order, Product, Promotion, TableSession } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
 
@@ -57,7 +57,15 @@ function normalizeProduct(raw: Record<string, unknown>): Product {
   return normalized;
 }
 
-export function MenuClient({ tableCode }: { tableCode: string }) {
+export function MenuClient({
+  tableCode,
+  customerName,
+  customerPhone
+}: {
+  tableCode: string;
+  customerName?: string;
+  customerPhone?: string;
+}) {
   const [mode, setMode] = useState<MenuMode>("fixed");
   const [query, setQuery] = useState("");
   const [category, setCategory] = useState("Desayunos");
@@ -79,12 +87,21 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
   const [sendTogether, setSendTogether] = useState(false);
   const [pendingOrders, setPendingOrders] = useState<CartItem[][]>([]);
   const [drinkFlavors, setDrinkFlavors] = useState<Array<{drinkType: string; name: string; priceModifier: number}>>([]);
+  const [promotions, setPromotions] = useState<Promotion[]>([]);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const latestOrderRef = useRef<Order | null>(null);
 
   useEffect(() => {
     latestOrderRef.current = order;
   }, [order]);
+
+  const promotionBySlug = useMemo(() => {
+    const map = new Map<string, Promotion>();
+    for (const promo of promotions) {
+      if (promo.productSlug) map.set(promo.productSlug, promo);
+    }
+    return map;
+  }, [promotions]);
 
   useEffect(() => {
     const updateClock = () => setServiceMinutes(mexicoCityMinutes());
@@ -110,8 +127,22 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     if (next.length) setCatalog(next);
   }, []);
 
+  const loadPromotions = useCallback(async () => {
+    const response = await fetch("/api/promotions", { cache: "no-store" });
+    if (!response.ok) return;
+    const rows = (await response.json()) as Promotion[];
+    if (Array.isArray(rows)) setPromotions(rows);
+  }, []);
+
   const loadSession = useCallback(async () => {
     if (!tableCode) return;
+    // Para llevar: no hay mesa física ni sesión; no crear sesiones falsas.
+    if (tableCode === "LLEVAR") {
+      setSession(null);
+      setSessionExisted(false);
+      setSessionLoading(false);
+      return;
+    }
     const response = await fetch(`/api/sessions?tableCode=${encodeURIComponent(tableCode)}`, {
       cache: "no-store"
     });
@@ -161,6 +192,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         if (active) setDailyMenuLoading(false);
       });
       void loadCatalog();
+      void loadPromotions();
       void loadSession();
       void fetch("/api/drink-flavors", { cache: "no-store" })
         .then((r) => r.json().catch(() => []))
@@ -170,6 +202,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
     const timer = window.setInterval(() => {
       void loadDailyMenu();
       void loadCatalog();
+      void loadPromotions();
       void loadSession();
     }, 15000);
     return () => {
@@ -177,7 +210,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
       window.clearTimeout(initialTimer);
       window.clearInterval(timer);
     };
-  }, [loadCatalog, loadDailyMenu, loadSession]);
+  }, [loadCatalog, loadDailyMenu, loadPromotions, loadSession]);
 
   useEffect(() => {
     channelRef.current = connectOrderChannel(({ type, order: incoming, product, dailyMenu: menu }) => {
@@ -408,7 +441,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           })),
           notes,
           idempotencyKey,
-          sessionId: session?.id ?? null
+          sessionId: session?.id ?? null,
+          customerName: tableCode === "LLEVAR" ? (customerName?.trim() || undefined) : undefined
         })
       });
       const payload = await response.json().catch(() => null);
@@ -450,6 +484,8 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
         order={order}
         tableCode={tableCode}
         session={session}
+        customerName={customerName}
+        customerPhone={customerPhone}
         onOrderAgain={() => {
           setOrder(null);
           setMode("fixed");
@@ -470,8 +506,14 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
           <div className="flex items-center justify-between">
             <Brand compact inverse />
             <div className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-sm backdrop-blur">
-              <span className="mr-2 inline-block h-2 w-2 rounded-full bg-[#9acb8a] shadow-[0_0_0_4px_rgba(154,203,138,0.12)]" />
-              Servicio en mesa
+              <span
+                className={`mr-2 inline-block h-2 w-2 rounded-full ${
+                  tableCode === "LLEVAR"
+                    ? "bg-[#fbbf24] shadow-[0_0_0_4px_rgba(251,191,36,0.14)]"
+                    : "bg-[#9acb8a] shadow-[0_0_0_4px_rgba(154,203,138,0.12)]"
+                }`}
+              />
+              {tableCode === "LLEVAR" ? "Para llevar 🥡" : "Servicio en mesa"}
             </div>
           </div>
           <div className="mt-9 flex items-end justify-between gap-4">
@@ -483,14 +525,20 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                 ¿Qué se te antoja hoy?
               </h1>
               <p className="mt-3 text-sm text-white/65">
-                Ordena desde la mesa {tableCode} y sigue tu pedido en tiempo real.
+                {tableCode === "LLEVAR"
+                  ? customerName
+                    ? `¡Hola, ${customerName}! Te llamamos en mostrador cuando esté listo.`
+                    : "Arma tu pedido y te llamamos en mostrador cuando esté listo."
+                  : `Ordena desde la mesa ${tableCode} y sigue tu pedido en tiempo real.`}
               </p>
             </div>
             <div className="hidden min-w-24 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
               <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
-                Mesa
+                {tableCode === "LLEVAR" ? "Llevar" : "Mesa"}
               </span>
-              <strong className="mt-1 block font-display text-3xl">{tableCode}</strong>
+              <strong className="mt-1 block font-display text-3xl">
+                {tableCode === "LLEVAR" ? "🥡" : tableCode}
+              </strong>
             </div>
             {session && session.status === "active" && (
               <div className="hidden min-w-32 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
@@ -634,6 +682,7 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
                    <ProductCard
                      key={product.id}
                      product={product}
+                     promotion={promotionBySlug.get(product.id)}
                      currentMinutes={serviceMinutes}
                      onOpen={setSelected}
                      dailyMenu={dailyMenu}
@@ -777,11 +826,13 @@ export function MenuClient({ tableCode }: { tableCode: string }) {
 
 function ProductCard({
   product,
+  promotion,
   currentMinutes,
   onOpen,
   dailyMenu
 }: {
   product: Product;
+  promotion?: Promotion;
   currentMinutes: number | null;
   onOpen: (product: Product) => void;
   dailyMenu: DailyMenuConfig | null;
@@ -795,16 +846,13 @@ function ProductCard({
   );
   const effectiveFrom = isComidaALaCarta ? dailyMenu?.availableFrom : product.availableFrom;
   const effectiveUntil = isComidaALaCarta ? dailyMenu?.availableUntil : product.availableUntil;
-  // DEBUG TEMPORAL: log para chilaquiles-suizos
-  if (product.id === "chilaquiles-suizos") {
-    console.log("[DEBUG ProductCard] chilaquiles-suizos:", {
-      "product.id": product.id,
-      "product.name": product.name,
-      "product.image": product.image,
-      "product.image_url": (product as unknown as Record<string, unknown>).image_url,
-      "product completo": product
-    });
-  }
+  const promoPrice = promotion
+    ? promotion.discountType === "percent"
+      ? Math.max(0, Math.round(product.price * (1 - promotion.discountValue / 100)))
+      : Math.max(0, product.price - promotion.discountValue)
+    : null;
+  const recommended =
+    !product.popular && product.category === "Comidas a la carta" && !product.soldOut && available;
   return (
     <article className="paper menu-card group relative overflow-hidden rounded-[1.75rem]">
       <button
@@ -817,15 +865,27 @@ function ProductCard({
           <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-[#24211f]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-lg backdrop-blur-md">
             {product.category}
           </span>
+          {promotion && (
+            <span className="animate-pulse absolute right-3 top-3 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#7c2d00] shadow-[0_0_16px_rgba(245,158,11,0.5)]">
+              ¡PROMO!
+            </span>
+          )}
+          <div className="absolute bottom-2 left-3 flex flex-wrap gap-1.5">
+            {product.popular && (
+              <span className="rounded-full bg-[#f4dfb4]/95 px-2.5 py-1 text-[10px] font-bold uppercase text-[#694500] shadow-md">
+                🔥 Popular
+              </span>
+            )}
+            {recommended && (
+              <span className="rounded-full bg-[#d9ebe1]/95 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--green)] shadow-md">
+                ⭐ Recomendado
+              </span>
+            )}
+          </div>
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
         </div>
         <div className="p-5">
           <div className="mb-2 flex min-h-6 flex-wrap gap-2">
-            {product.popular && (
-              <span className="rounded-full bg-[#f4dfb4] px-2 py-1 text-[10px] font-bold uppercase text-[#694500]">
-                Popular
-              </span>
-            )}
             {product.isNew && (
               <span className="rounded-full bg-[#d9ebe1] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
                 Nuevo
@@ -870,10 +930,10 @@ function ProductCard({
           )}
           <div className="mt-5 flex items-center justify-between border-t border-[var(--line)]/65 pt-4">
             <p className="text-lg font-extrabold text-[var(--brown-dark)]">
-              {money(product.price)}
-              {product.compareAt && (
+              {promoPrice !== null ? money(promoPrice) : money(product.price)}
+              {(promoPrice !== null || product.compareAt) && (
                 <span className="ml-2 text-xs font-normal text-[#929a96] line-through">
-                  {money(product.compareAt)}
+                  {money(promoPrice !== null ? product.price : (product.compareAt ?? 0))}
                 </span>
               )}
             </p>
@@ -886,7 +946,7 @@ function ProductCard({
                 {effectiveFrom}–{effectiveUntil}
               </span>
             ) : (
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--brown)] text-white shadow-lg transition group-hover:scale-105 group-hover:bg-[var(--brown-dark)]">
+              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--brown)] text-white shadow-lg transition group-hover:scale-105 group-hover:bg-[var(--brown-dark)] active:scale-90">
                 <Plus size={20} />
               </span>
             )}
@@ -1393,11 +1453,15 @@ function OrderTracking({
   order,
   tableCode,
   session,
+  customerName,
+  customerPhone,
   onOrderAgain
 }: {
   order: Order;
   tableCode: string;
   session: TableSession | null;
+  customerName?: string;
+  customerPhone?: string;
   onOrderAgain: () => void;
 }) {
   const steps = ["accepted", "preparing", "ready", "delivered"] as const;
@@ -1430,6 +1494,12 @@ function OrderTracking({
             <StatusPill status={order.status} />
             <span className="text-sm">Folio {order.folio}</span>
           </div>
+          {tableCode === "LLEVAR" && (customerName || order.customerName) && (
+            <p className="mt-4 font-display text-2xl font-bold text-[#ffd166]">
+              👤 {customerName || order.customerName}
+              {customerPhone ? ` · 📞 ${customerPhone}` : ""}
+            </p>
+          )}
           {tableCode === "LLEVAR" && (
             <div className="mt-4 rounded-xl bg-white/10 p-3 backdrop-blur">
               <p className="text-xs text-white/70">

@@ -956,10 +956,21 @@ function KitchenCard({
     >
       <div className="premium-header flex items-start justify-between p-4 text-white">
         <div>
-          <p className="text-xs uppercase tracking-wider text-[#d9c17f]">
-            {order.tableCode === "LLEVAR" ? "Llevar 🥡" : `Mesa ${order.tableCode}`}
-          </p>
-          <strong className="font-display text-4xl">{order.folio}</strong>
+          {order.tableCode === "LLEVAR" ? (
+            <>
+              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-[#7c2d00] shadow-[0_0_18px_rgba(245,158,11,0.55)]">
+                🥡 Para llevar
+              </span>
+              {order.customerName && (
+                <p className="mt-2 font-display text-2xl font-bold leading-none text-[#ffd166]">
+                  👤 {order.customerName}
+                </p>
+              )}
+            </>
+          ) : (
+            <p className="text-xs uppercase tracking-wider text-[#d9c17f]">Mesa {order.tableCode}</p>
+          )}
+          <strong className="mt-1 block font-display text-4xl">{order.folio}</strong>
         </div>
         <div className="text-right">
           <StatusPill status={order.status} />

@@ -3,7 +3,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Check,
-  ChevronLeft,
   Clock3,
   Hand,
   Minus,
@@ -11,8 +10,10 @@ import {
   Search,
   ShoppingBag,
   Sparkles,
+  Trash2,
   X
 } from "lucide-react";
+import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
@@ -498,7 +499,7 @@ export function MenuClient({
   }
 
   return (
-    <main className="min-h-screen pb-28">
+    <main className="min-h-screen pb-32">
       <header className="premium-header relative overflow-hidden text-white">
         <div className="absolute -right-20 -top-36 h-80 w-80 rounded-full border-[64px] border-white/[0.035]" />
         <div className="absolute bottom-0 left-1/3 h-px w-1/2 bg-gradient-to-r from-transparent via-[var(--gold)]/40 to-transparent" />
@@ -722,18 +723,22 @@ export function MenuClient({
       )}
 
       {itemCount > 0 && (
-        <div className="fixed inset-x-0 bottom-0 z-30 p-3 sm:p-5">
+        <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4">
           <button
-            className="focus-ring btn-press mx-auto flex w-full max-w-xl items-center justify-between rounded-2xl bg-[var(--brown)] px-5 py-4 font-bold text-white shadow-2xl transition hover:bg-[var(--brown-dark)]"
+            className="focus-ring flex w-full max-w-md items-center justify-between gap-3 rounded-full border border-white/20 bg-white/80 p-2 pl-5 text-left shadow-2xl backdrop-blur-xl transition-all hover:bg-white/90 active:scale-95"
             onClick={() => setCartOpen(true)}
           >
-            <span className="flex items-center gap-3">
-              <span className={`grid h-8 w-8 place-items-center rounded-full bg-white/20 ${justAdded ? "animate-bounce-in" : ""}`}>
+            <span className="flex min-w-0 items-center gap-3">
+              <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--brown)] font-bold text-white ${justAdded ? "animate-bounce-in" : ""}`}>
                 {itemCount}
               </span>
-              {sendTogether ? "Agregar al grupo" : "Ver mi pedido"}
+              <span className="truncate text-sm font-bold text-[var(--ink)]">
+                {sendTogether ? "Agregar al grupo" : "Ver mi pedido"}
+              </span>
             </span>
-            <span>{money(subtotal)}</span>
+            <span className="shrink-0 rounded-full bg-[var(--charcoal)] px-4 py-2.5 font-extrabold text-white">
+              {money(subtotal)}
+            </span>
           </button>
         </div>
       )}
@@ -807,8 +812,8 @@ export function MenuClient({
         </button>
       </div>
 
-      {cartOpen && (
-        <div className="animate-fade-in fixed inset-0 z-50 flex justify-end bg-[#171411]/70 backdrop-blur-[3px]">
+      <Drawer open={cartOpen} onOpenChange={setCartOpen} showSwipeHandle>
+        <DrawerContent className="rounded-t-[2.5rem] border-[var(--line)] bg-[var(--paper)] text-[var(--ink)]">
           <CartDrawer
             cart={cart}
             notes={generalNotes}
@@ -818,8 +823,8 @@ export function MenuClient({
             onChange={setCart}
             onSubmit={submitOrder}
           />
-        </div>
-      )}
+        </DrawerContent>
+      </Drawer>
     </main>
   );
 }
@@ -1326,126 +1331,140 @@ function CartDrawer({
   onSubmit: () => void;
 }) {
   const subtotal = calculateCartTotal(cart);
+  const clearCart = () => {
+    if (cart.length > 0 && window.confirm("¿Vaciar todo el pedido?")) {
+      onChange([]);
+      onClose();
+    }
+  };
   return (
-    <section
-      role="dialog"
-      aria-modal="true"
-      aria-labelledby="cart-title"
-      className="animate-slide-in-right flex h-full w-full max-w-lg flex-col bg-[var(--paper)] shadow-2xl"
-    >
-        <div className="flex items-center gap-3 border-b border-[var(--line)] px-5 py-4">
+    <>
+      <div className="flex items-center justify-between gap-3 border-b border-[var(--line)] px-5 pb-4 pt-3">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
+            Revisa antes de enviar
+          </p>
+          <DrawerTitle className="font-display text-2xl font-bold text-[var(--ink)]">
+            Mi pedido
+          </DrawerTitle>
+        </div>
+        <div className="flex items-center gap-2">
+          {cart.length > 0 && (
+            <button
+              className="focus-ring flex min-h-10 items-center gap-1.5 rounded-full px-3.5 text-xs font-bold text-[#8a3b30] transition hover:bg-[#f8e8e2] active:scale-95"
+              onClick={clearCart}
+            >
+              <Trash2 size={14} /> Limpiar
+            </button>
+          )}
           <button
-            className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-[#eee8dc]"
+            className="focus-ring grid h-10 w-10 place-items-center rounded-full bg-[#eee8dc] text-[var(--ink)] transition active:scale-90"
             aria-label="Cerrar pedido"
             onClick={onClose}
           >
-            <ChevronLeft />
+            <X size={18} />
           </button>
-          <div>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
-              Revisa antes de enviar
-            </p>
-            <h2 id="cart-title" className="font-display text-2xl font-bold">
-              Mi pedido
-            </h2>
-          </div>
         </div>
-        <div className="flex-1 overflow-y-auto p-5">
-          <div className="space-y-3">
-            {cart.map((item, index) => (
-              <article key={`${item.productId}-${index}`} className="paper rounded-2xl p-4 shadow-sm">
-                <div className="flex gap-3">
-                  <ProductImage
-                    src={item.image}
-                    alt={item.name}
-                    className="h-20 w-20 shrink-0 rounded-xl"
-                  />
-                  <div className="min-w-0 flex-1">
-                    <div className="flex justify-between gap-3">
-                      <h3 className="font-bold">{item.name}</h3>
-                      <strong>{money(cartItemTotal(item))}</strong>
-                    </div>
-                    {item.option && (
-                      <p className="mt-1 text-xs font-medium text-[var(--brown)]">{item.option}</p>
-                    )}
-                    {item.extras && item.extras.length > 0 && (
-                      <div className="mt-1.5 space-y-0.5">
-                        {item.extras.map((extra, extraIndex) => (
-                          <p key={extraIndex} className="text-xs text-[var(--terracotta)]">
-                            + {extra.name} ({money(extra.price)})
-                          </p>
-                        ))}
-                      </div>
-                    )}
-                    {item.notes && (
-                      <p className="mt-1 text-xs text-[var(--muted)]">{item.notes}</p>
-                    )}
-                    <div className="mt-3 flex items-center gap-3">
-                      <button
-                        className="focus-ring grid h-8 w-8 place-items-center rounded-full bg-white"
-                        aria-label={`Restar ${item.name}`}
-                        onClick={() => {
-                          const next = [...cart];
-                          if (item.quantity === 1) next.splice(index, 1);
-                          else next[index] = { ...item, quantity: item.quantity - 1 };
-                          onChange(next);
-                        }}
-                      >
-                        <Minus size={15} />
-                      </button>
-                      <strong>{item.quantity}</strong>
-                      <button
-                        className="focus-ring grid h-8 w-8 place-items-center rounded-full bg-white"
-                        aria-label={`Sumar ${item.name}`}
-                        onClick={() => {
-                          const next = [...cart];
-                          next[index] = {
-                            ...item,
-                            quantity: Math.min(10, item.quantity + 1)
-                          };
-                          onChange(next);
-                        }}
-                      >
-                        <Plus size={15} />
-                      </button>
-                    </div>
-                  </div>
+      </div>
+      <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
+        <ul className="divide-y divide-[var(--line)]/70">
+          {cart.map((item, index) => (
+            <li key={`${item.productId}-${index}`} className="flex gap-3 py-4 first:pt-1 last:pb-1">
+              <ProductImage
+                src={item.image}
+                alt={item.name}
+                className="h-20 w-20 shrink-0 rounded-2xl"
+              />
+              <div className="min-w-0 flex-1">
+                <div className="flex justify-between gap-3">
+                  <h3 className="font-bold leading-tight">{item.name}</h3>
+                  <strong className="shrink-0">{money(cartItemTotal(item))}</strong>
                 </div>
-              </article>
-            ))}
-          </div>
-          <label className="mt-5 block text-sm font-bold">
-            Observaciones generales
-            <textarea
-              className="mt-2 min-h-24 w-full resize-none rounded-2xl border border-[var(--line)] bg-white p-3 font-normal outline-none focus:border-[var(--green)]"
-              maxLength={250}
-              placeholder="Algo que debamos saber…"
-              value={notes}
-              onChange={(event) => onNotes(event.target.value)}
-            />
-          </label>
+                {item.option && (
+                  <p className="mt-1 text-xs font-medium text-[var(--brown)]">{item.option}</p>
+                )}
+                {item.extras && item.extras.length > 0 && (
+                  <div className="mt-1 space-y-0.5">
+                    {item.extras.map((extra, extraIndex) => (
+                      <p key={extraIndex} className="text-xs text-[var(--terracotta)]">
+                        + {extra.name} ({money(extra.price)})
+                      </p>
+                    ))}
+                  </div>
+                )}
+                <input
+                  className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--green)]"
+                  placeholder="Nota para este platillo…"
+                  maxLength={250}
+                  value={item.notes || ""}
+                  onChange={(event) => {
+                    const next = [...cart];
+                    next[index] = { ...item, notes: event.target.value };
+                    onChange(next);
+                  }}
+                />
+                <div className="mt-3 flex items-center gap-3">
+                  <button
+                    className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-white text-[var(--ink)] transition active:scale-90"
+                    aria-label={`Restar ${item.name}`}
+                    onClick={() => {
+                      const next = [...cart];
+                      if (item.quantity === 1) next.splice(index, 1);
+                      else next[index] = { ...item, quantity: item.quantity - 1 };
+                      onChange(next);
+                    }}
+                  >
+                    <Minus size={16} />
+                  </button>
+                  <strong className="min-w-6 text-center">{item.quantity}</strong>
+                  <button
+                    className="focus-ring grid h-9 w-9 place-items-center rounded-full border border-[var(--line)] bg-white text-[var(--ink)] transition active:scale-90"
+                    aria-label={`Sumar ${item.name}`}
+                    onClick={() => {
+                      const next = [...cart];
+                      next[index] = { ...item, quantity: Math.min(10, item.quantity + 1) };
+                      onChange(next);
+                    }}
+                  >
+                    <Plus size={16} />
+                  </button>
+                </div>
+              </div>
+            </li>
+          ))}
+        </ul>
+        <label className="mt-4 block text-sm font-bold">
+          Observaciones generales
+          <textarea
+            className="mt-2 min-h-20 w-full resize-none rounded-2xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)]"
+            maxLength={250}
+            placeholder="Algo que debamos saber…"
+            value={notes}
+            onChange={(event) => onNotes(event.target.value)}
+          />
+        </label>
+      </div>
+      <div className="border-t border-[var(--line)] p-4 pb-6">
+        <div className="mb-4 flex items-center justify-between text-lg">
+          <span className="text-[var(--muted)]">Total estimado</span>
+          <strong className="text-xl">{money(subtotal)}</strong>
         </div>
-        <div className="border-t border-[var(--line)] bg-[var(--paper)] p-5 shadow-[0_-16px_36px_rgba(48,44,41,0.08)]">
-          <div className="mb-4 flex items-center justify-between text-lg">
-            <span>Total estimado</span>
-            <strong className="text-xl">{money(subtotal)}</strong>
-          </div>
-          <button
-            className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--green)] px-5 font-bold text-white transition hover:opacity-90 disabled:cursor-not-allowed disabled:opacity-60"
-            disabled={sending || cart.length === 0}
-            onClick={onSubmit}
-          >
-            {sending ? (
-              "Enviando…"
-            ) : (
-              <>
-                <ShoppingBag size={20} />
-                Enviar pedido
-              </>
-            )}
-          </button>
-        </div>
-      </section>
+        <button
+          className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          disabled={sending || cart.length === 0}
+          onClick={onSubmit}
+        >
+          {sending ? (
+            "Enviando…"
+          ) : (
+            <>
+              <ShoppingBag size={20} />
+              Enviar pedido
+            </>
+          )}
+        </button>
+      </div>
+    </>
   );
 }
 

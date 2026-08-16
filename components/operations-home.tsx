@@ -10,7 +10,6 @@ import {
   Smartphone,
 } from "lucide-react";
 import { Brand } from "@/components/brand";
-import { TrialBanner } from "@/components/trial-banner";
 
 export function OperationsHome() {
   return (
@@ -63,8 +62,6 @@ export function OperationsHome() {
 
       {/* ── Trial + quick actions ── */}
       <div className="mx-auto max-w-5xl px-5 py-10">
-        <TrialBanner />
-
         <div className="mt-6 grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
           <QuickCard
             href="/mesa/A1"

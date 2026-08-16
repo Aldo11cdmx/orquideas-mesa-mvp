@@ -27,7 +27,6 @@ import {
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
-import { TrialBanner } from "@/components/trial-banner";
 import { DrinksAdmin } from "@/components/drinks-admin";
 import { PromosAdmin } from "@/components/promos-admin";
 import { Badge } from "@/components/ui/badge";
@@ -234,7 +233,6 @@ export function AdminPanel() {
             </TabsList>
           </div>
           <section className="mt-5">
-            <TrialBanner compact />
             <div className="mt-5">
               <TabsContent value="menu">
                 <MenuAdmin

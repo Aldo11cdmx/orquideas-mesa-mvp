@@ -14,6 +14,7 @@ import {
   X
 } from "lucide-react";
 import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Brand } from "@/components/brand";
@@ -84,6 +85,7 @@ export function MenuClient({
   const [catalog, setCatalog] = useState<Product[]>(seedProducts);
   const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
   const [justAdded, setJustAdded] = useState(false);
+  const toastTimerRef = useRef<number | null>(null);
   const [session, setSession] = useState<TableSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionExisted, setSessionExisted] = useState(false);
@@ -297,18 +299,29 @@ export function MenuClient({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [order?.id, order?.accessToken]);
 
+  const [debouncedQuery, setDebouncedQuery] = useState("");
+
+  useEffect(() => {
+    const timer = window.setTimeout(() => setDebouncedQuery(query), 200);
+    return () => window.clearTimeout(timer);
+  }, [query]);
+
+  useEffect(() => {
+    const pill = document.querySelector<HTMLElement>(`[data-category-pill="${category}"]`);
+    pill?.scrollIntoView({ behavior: "smooth", inline: "center", block: "nearest" });
+  }, [category]);
+
   const visible = useMemo(() => {
-    const normalized = query.trim().toLocaleLowerCase("es");
+    const normalized = debouncedQuery.trim().toLocaleLowerCase("es");
     return catalog.filter((product) => {
       const matchesQuery =
         !normalized ||
         `${product.name} ${product.description}`.toLocaleLowerCase("es").includes(normalized);
       const matchesCategory =
-        normalized ||
-        (category === "Favoritos" ? product.popular : product.category === category);
+        category === "Favoritos" ? product.popular : product.category === category;
       return matchesQuery && matchesCategory;
     });
-  }, [catalog, category, query]);
+  }, [catalog, category, debouncedQuery]);
 
   const itemCount = cart.reduce((sum, item) => sum + item.quantity, 0);
   const subtotal = calculateCartTotal(cart);
@@ -337,7 +350,8 @@ export function MenuClient({
     ]);
     setSelected(null);
     setJustAdded(true);
-    window.setTimeout(() => setJustAdded(false), 1800);
+    if (toastTimerRef.current) window.clearTimeout(toastTimerRef.current);
+    toastTimerRef.current = window.setTimeout(() => setJustAdded(false), 1500);
   }
 
   function addDailyMenu(
@@ -637,29 +651,34 @@ export function MenuClient({
                   <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>
                 </div>
               </div>
-              <label className="paper search-glow flex items-center gap-3 rounded-2xl px-4 py-3 transition-shadow">
+              <label className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 bg-white/80 px-4 py-3 backdrop-blur-md transition-shadow focus-within:shadow-md dark:border-neutral-800 dark:bg-neutral-900/80">
                 <Search size={19} aria-hidden="true" />
                 <span className="sr-only">Buscar platillos</span>
                 <input
-                  className="min-w-0 flex-1 bg-transparent outline-none placeholder:text-[#8b938f]"
+                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#8b938f] dark:text-neutral-100"
                   placeholder="Busca chilaquiles, molletes, café…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
                 />
                 {query && (
-                  <button aria-label="Limpiar búsqueda" onClick={() => setQuery("")}>
-                    <X size={18} />
+                  <button
+                    aria-label="Limpiar búsqueda"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-200/70 text-neutral-600 transition active:scale-90 dark:bg-neutral-700 dark:text-neutral-300"
+                    onClick={() => setQuery("")}
+                  >
+                    <X size={15} />
                   </button>
                 )}
               </label>
-              <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-1">
+              <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-2">
                 {categories.map((item) => (
                   <button
                     key={item}
-                    className={`focus-ring shrink-0 rounded-full px-4 py-2 text-sm font-bold category-pill ${
+                    data-category-pill={item}
+                    className={`focus-ring shrink-0 rounded-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
                       category === item
-                        ? "bg-[var(--brown)] text-white shadow-sm"
-                        : "border border-[var(--line)] bg-[var(--paper)]"
+                        ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
+                        : "bg-neutral-100/80 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400"
                     }`}
                     onClick={() => setCategory(item)}
                   >
@@ -693,19 +712,21 @@ export function MenuClient({
                 ))}
               </div>
             ) : (
-              <div className="animate-fade-in paper rounded-3xl px-6 py-14 text-center">
-                <div className="mx-auto grid h-16 w-16 place-items-center rounded-2xl bg-[#f4dfb4]/60">
-                  <Search className="text-[var(--brown)]" size={28} />
+              <div className="animate-fade-in paper mt-4 rounded-3xl px-6 py-14 text-center">
+                <div className="mx-auto grid h-16 w-16 place-items-center rounded-full bg-neutral-100 dark:bg-neutral-800">
+                  <Search className="text-neutral-400" size={26} />
                 </div>
-                <h3 className="mt-5 font-display text-2xl font-bold">No encontramos ese platillo</h3>
+                <h3 className="mt-5 font-display text-2xl font-bold">
+                  No encontramos platillos que coincidan
+                </h3>
                 <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
                   Intenta con otro nombre o cambia de categoría.
                 </p>
                 <button
-                  className="focus-ring mt-4 rounded-full bg-[var(--brown)] px-5 py-2.5 text-sm font-bold text-white"
+                  className="focus-ring mt-5 rounded-full bg-neutral-900 px-6 py-2.5 text-sm font-semibold text-white transition active:scale-95 dark:bg-white dark:text-neutral-900"
                   onClick={() => { setQuery(""); setCategory("Favoritos"); }}
                 >
-                  Ver todo el menú
+                  Limpiar filtros y ver destacados
                 </button>
               </div>
             )}
@@ -714,12 +735,12 @@ export function MenuClient({
       </div>
 
       {justAdded && (
-        <div className="fixed inset-x-0 top-4 z-50 flex justify-center px-4">
-          <div className="toast-enter flex items-center gap-2.5 rounded-full bg-[var(--charcoal)] px-5 py-3.5 text-sm font-bold text-white shadow-2xl ring-1 ring-white/10">
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div className="toast-slide-in flex items-center gap-2.5 rounded-full bg-neutral-900/90 px-5 py-3.5 text-sm font-bold text-white shadow-2xl ring-1 ring-white/15 backdrop-blur-md dark:bg-white/90 dark:text-neutral-900">
             <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--gold)]">
               <Check size={14} strokeWidth={3} className="text-[var(--charcoal)]" />
             </span>
-            Producto agregado al pedido
+            Platillo agregado
           </div>
         </div>
       )}
@@ -861,14 +882,14 @@ function ProductCard({
   const recommended =
     !product.popular && product.category === "Comidas a la carta" && !product.soldOut && available;
   return (
-    <article className="paper menu-card group relative overflow-hidden rounded-[1.75rem]">
+    <Card className="menu-card group relative overflow-hidden rounded-3xl border-neutral-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.02)] dark:border-neutral-800 dark:bg-neutral-900">
       <button
         className="focus-ring block w-full text-left disabled:opacity-65"
         onClick={() => onOpen(product)}
         disabled={product.soldOut || !available}
       >
         <div className="relative">
-          <ProductImage src={product.image} alt={product.name} category={product.category} className="aspect-[4/3] w-full" />
+          <ProductImage src={product.image} alt={product.name} category={product.category} className="aspect-[4/3] w-full transition-transform duration-500 ease-out group-hover:scale-105" />
           <span className="absolute left-3 top-3 rounded-full border border-white/40 bg-[#24211f]/70 px-3 py-1.5 text-[10px] font-bold uppercase tracking-[0.12em] text-white shadow-lg backdrop-blur-md">
             {product.category}
           </span>
@@ -953,14 +974,14 @@ function ProductCard({
                 {effectiveFrom}–{effectiveUntil}
               </span>
             ) : (
-              <span className="grid h-11 w-11 place-items-center rounded-2xl bg-[var(--brown)] text-white shadow-lg transition group-hover:scale-105 group-hover:bg-[var(--brown-dark)] active:scale-90">
-                <Plus size={20} />
+              <span className="grid h-9 w-9 place-items-center rounded-full bg-neutral-900 text-white shadow-md transition group-hover:scale-110 active:scale-90 dark:bg-white dark:text-neutral-900">
+                <Plus size={18} />
               </span>
             )}
           </div>
         </div>
       </button>
-    </article>
+    </Card>
   );
 }
 

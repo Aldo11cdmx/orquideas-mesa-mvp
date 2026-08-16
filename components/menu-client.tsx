@@ -541,7 +541,7 @@ export function MenuClient({
               <h1 className="mt-2 max-w-2xl font-display text-4xl font-bold leading-[0.98] sm:text-5xl">
                 ¿Qué se te antoja hoy?
               </h1>
-              <p className="mt-3 text-sm text-white/65">
+              <p className="mt-3 text-sm text-white/85">
                 {tableCode === "LLEVAR"
                   ? customerName
                     ? `¡Hola, ${customerName}! Te llamamos en mostrador cuando esté listo.`
@@ -550,7 +550,7 @@ export function MenuClient({
               </p>
             </div>
             <div className="hidden min-w-24 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/75">
                 {tableCode === "LLEVAR" ? "Llevar" : "Mesa"}
               </span>
               <strong className="mt-1 block font-display text-3xl">
@@ -559,7 +559,7 @@ export function MenuClient({
             </div>
             {session && session.status === "active" && (
               <div className="hidden min-w-32 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/75">
                   Sesión
                 </span>
                 <strong className="mt-1 block font-display text-3xl">{sessionExisted ? "compartida" : "activa"}</strong>
@@ -567,7 +567,7 @@ export function MenuClient({
             )}
             {!session && !sessionLoading && (
               <div className="hidden min-w-32 rounded-3xl border border-white/15 bg-white/10 px-5 py-4 text-center text-white shadow-xl backdrop-blur sm:block">
-                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/55">
+                <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-white/75">
                   Sin sesión
                 </span>
                 <strong className="mt-1 block font-display text-3xl">—</strong>
@@ -583,10 +583,10 @@ export function MenuClient({
             <div className="flex items-center gap-2.5 text-sm">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold text-[#5c3d2e]">👥</span>
               <span className="font-bold text-[var(--ink)]">Mesa compartida</span>
-              <span className="text-[var(--muted)]">· Los pedidos se agrupan para cocina</span>
+              <span className="text-neutral-700 dark:text-neutral-300">· Los pedidos se agrupan para cocina</span>
             </div>
             <label className="flex cursor-pointer items-center gap-2 shrink-0">
-              <span className="text-xs font-bold text-[var(--muted)]">Enviar juntos</span>
+              <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">Enviar juntos</span>
               <button
                 role="switch"
                 aria-checked={sendTogether}
@@ -610,7 +610,7 @@ export function MenuClient({
         )}
 
         <section className="relative z-10 -mt-4" aria-label="Tipo de menú">
-          <div className="mx-auto my-4 w-full max-w-md rounded-full bg-neutral-200/70 p-1.5 dark:bg-neutral-800">
+          <div className="mx-auto my-4 w-full max-w-md rounded-full bg-neutral-200/80 p-1.5 dark:bg-neutral-800/80">
             <div className="grid grid-cols-2 gap-1">
               {[
                 ["fixed", "Paquetes y carta"],
@@ -620,13 +620,13 @@ export function MenuClient({
                   key={value}
                   className={`focus-ring rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
                     mode === value
-                      ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-white"
-                      : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                      ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
+                      : "text-neutral-700 hover:text-neutral-900 dark:text-neutral-300 dark:hover:text-white"
                   }`}
                   onClick={() => setMode(value as MenuMode)}
                 >
                   {label}{" "}
-                  <span className="font-normal opacity-60">
+                  <span className="font-normal opacity-80">
                     · {value === "fixed" ? "9 a 5" : "1 a 5"}
                   </span>
                 </button>
@@ -647,18 +647,18 @@ export function MenuClient({
           <>
             <div className="sticky top-0 z-20 -mx-4 mt-5 border-b border-[var(--line)]/50 bg-[var(--cream)]/90 px-4 pb-4 pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
               <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
-                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white/70 px-3 py-1 text-[11px] font-medium text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300">
+                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white px-3 py-1 text-[11px] font-medium text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
                   🥣 Paquetes de desayuno · fruta y café · 9:00 a.m.–1:00 p.m.
                 </Badge>
-                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white/70 px-3 py-1 text-[11px] font-medium text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300">
+                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white px-3 py-1 text-[11px] font-medium text-neutral-800 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100">
                   🍽️ Comidas a la carta · 1:00–5:00 p.m.
                 </Badge>
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 bg-white/80 px-4 py-3 backdrop-blur-md transition-shadow focus-within:shadow-md dark:border-neutral-800 dark:bg-neutral-900/80">
-                <Search size={19} aria-hidden="true" />
+                <Search size={19} aria-hidden="true" className="shrink-0 text-neutral-700 dark:text-neutral-300" />
                 <span className="sr-only">Buscar platillos</span>
                 <input
-                  className="min-w-0 flex-1 bg-transparent text-sm outline-none placeholder:text-[#8b938f] dark:text-neutral-100"
+                  className="min-w-0 flex-1 bg-transparent text-sm text-neutral-900 outline-none placeholder:text-neutral-500 dark:text-neutral-100 dark:placeholder:text-neutral-400"
                   placeholder="Busca chilaquiles, molletes, café…"
                   value={query}
                   onChange={(event) => setQuery(event.target.value)}
@@ -666,7 +666,7 @@ export function MenuClient({
                 {query && (
                   <button
                     aria-label="Limpiar búsqueda"
-                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-200/70 text-neutral-600 transition active:scale-90 dark:bg-neutral-700 dark:text-neutral-300"
+                    className="grid h-7 w-7 shrink-0 place-items-center rounded-full bg-neutral-200/70 text-neutral-700 transition active:scale-90 dark:bg-neutral-700 dark:text-neutral-300"
                     onClick={() => setQuery("")}
                   >
                     <X size={15} />
@@ -681,7 +681,7 @@ export function MenuClient({
                     className={`focus-ring shrink-0 rounded-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
                       category === item
                         ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
-                        : "bg-neutral-100/80 text-neutral-600 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-400"
+                        : "bg-neutral-100/80 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:text-white"
                     }`}
                     onClick={() => setCategory(item)}
                   >
@@ -698,7 +698,7 @@ export function MenuClient({
               </p>
                 <h2 className="font-display text-3xl font-bold">{category}</h2>
               </div>
-              <span className="text-sm text-[var(--muted)]">{visible.length} opciones</span>
+              <span className="text-sm text-neutral-600 dark:text-neutral-400">{visible.length} opciones</span>
             </div>
 
             {visible.length ? (

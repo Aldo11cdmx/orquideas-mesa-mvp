@@ -21,11 +21,26 @@ export default function TrackingPage() {
     if (!folio) return;
     const load = async () => {
       try {
-        const res = await fetch(`/api/orders?folio=${encodeURIComponent(folio)}`);
-        if (!res.ok) throw new Error();
-        const data = (await res.json()) as Order[];
-        if (data.length > 0) setOrder(data[0]);
-        else setError("No encontramos ese pedido. Revisa el número de folio.");
+        const res = await fetch(`/api/orders/track?folio=${encodeURIComponent(folio)}`);
+        const payload = (await res.json().catch(() => null)) as
+          | { error?: string }
+          | Order
+          | Order[]
+          | null;
+        if (!res.ok) {
+          const message =
+            payload && typeof payload === "object" && "error" in payload && payload.error
+              ? payload.error
+              : "No pudimos consultar tu pedido. Intenta de nuevo.";
+          setError(message);
+          return;
+        }
+        const found = Array.isArray(payload) ? payload[0] : payload;
+        if (found && typeof found === "object" && "id" in found) {
+          setOrder(found as Order);
+        } else {
+          setError("No encontramos ese pedido. Revisa el número de folio.");
+        }
       } catch {
         setError("No pudimos consultar tu pedido. Intenta de nuevo.");
       } finally {

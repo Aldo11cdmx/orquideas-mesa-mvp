@@ -954,12 +954,12 @@ function ProductCard({
                 Nuevo
               </Badge>
             )}
-            {product.packageIncludes?.length && (
+            {Boolean(product.packageIncludes?.length) && (
               <Badge className="h-auto bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
                 Paquete completo
               </Badge>
             )}
-            {(product.optionGroups?.length || product.options?.length) && (
+            {Boolean(product.optionGroups?.length || product.options?.length) && (
               <Badge className="h-auto bg-[#efe3d7] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
                 Personalizable
               </Badge>
@@ -976,10 +976,10 @@ function ProductCard({
             )}
           </div>
           <h3 className="font-display text-[1.35rem] font-bold leading-[1.05]">{product.name}</h3>
-          <p className="mt-2 line-clamp-2 min-h-10 text-sm leading-5 text-[var(--muted)]">
+          <p className="mt-2 line-clamp-2 min-h-10 text-xs font-medium leading-5 text-neutral-600 dark:text-neutral-300">
             {product.description}
           </p>
-          {product.packageIncludes?.length && (
+          {product.packageIncludes && product.packageIncludes.length > 0 && (
             <div className="mt-3 flex flex-wrap gap-1.5">
               {product.packageIncludes.map((item) => (
                 <span
@@ -1001,7 +1001,7 @@ function ProductCard({
               )}
             </p>
             {product.soldOut ? (
-              <span className="rounded-full bg-[#e0ddd6] px-3 py-2 text-xs font-bold text-[#777]">
+              <span className="rounded-full bg-[#e0ddd6] px-3 py-2 text-xs font-bold text-[#555]">
                 Agotado
               </span>
             ) : !available ? (
@@ -1216,8 +1216,8 @@ function ProductDialog({
         </div>
 
         <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
-          <p className="leading-6 text-[var(--muted)]">{product.description}</p>
-          {product.packageIncludes?.length && (
+          <p className="leading-6 text-neutral-600 dark:text-neutral-300">{product.description}</p>
+          {product.packageIncludes && product.packageIncludes.length > 0 && (
             <div className="mt-5 rounded-2xl border border-[#c9d7ca] bg-[#edf3ec] p-4">
               <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--green)]">
                 Tu paquete ya incluye

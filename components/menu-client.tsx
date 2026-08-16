@@ -579,7 +579,7 @@ export function MenuClient({
 
       <div className="mx-auto max-w-6xl px-4 sm:px-6">
         {sessionExisted && session && (
-          <div className="animate-fade-in glass-card -mt-3 relative z-10 mb-4 flex items-center justify-between gap-3 rounded-2xl px-5 py-3.5">
+          <div className="animate-fade-in -mt-3 relative z-10 mb-3 flex items-center justify-between gap-3 rounded-2xl border border-neutral-200/40 bg-white/60 p-3 backdrop-blur-md dark:border-neutral-800 dark:bg-neutral-900/60">
             <div className="flex items-center gap-2.5 text-sm">
               <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--gold-light)] text-xs font-bold text-[#5c3d2e]">👥</span>
               <span className="font-bold text-[var(--ink)]">Mesa compartida</span>
@@ -609,24 +609,29 @@ export function MenuClient({
           </div>
         )}
 
-        <section className="paper -mt-4 relative z-10 rounded-2xl p-1.5" aria-label="Tipo de menú">
-          <div className="grid grid-cols-2">
-            {[
-              ["fixed", "Paquetes y carta · 9 a 5"],
-              ["lunch", "Comida corrida · 1 a 5"]
-            ].map(([value, label]) => (
-              <button
-                key={value}
-                className={`focus-ring rounded-xl px-3 py-3 text-sm font-bold transition ${
-                  mode === value
-                    ? "bg-[var(--paper)] text-[var(--brown)] shadow-sm"
-                    : "text-[var(--muted)]"
-                }`}
-                onClick={() => setMode(value as MenuMode)}
-              >
-                {label}
-              </button>
-            ))}
+        <section className="relative z-10 -mt-4" aria-label="Tipo de menú">
+          <div className="mx-auto my-4 w-full max-w-md rounded-full bg-neutral-200/70 p-1.5 dark:bg-neutral-800">
+            <div className="grid grid-cols-2 gap-1">
+              {[
+                ["fixed", "Paquetes y carta"],
+                ["lunch", "Comida corrida"]
+              ].map(([value, label]) => (
+                <button
+                  key={value}
+                  className={`focus-ring rounded-full px-4 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 ${
+                    mode === value
+                      ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-white"
+                      : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
+                  }`}
+                  onClick={() => setMode(value as MenuMode)}
+                >
+                  {label}{" "}
+                  <span className="font-normal opacity-60">
+                    · {value === "fixed" ? "9 a 5" : "1 a 5"}
+                  </span>
+                </button>
+              ))}
+            </div>
           </div>
         </section>
 
@@ -641,15 +646,13 @@ export function MenuClient({
         ) : (
           <>
             <div className="sticky top-0 z-20 -mx-4 mt-5 border-b border-[var(--line)]/50 bg-[var(--cream)]/90 px-4 pb-4 pt-3 backdrop-blur-xl sm:-mx-6 sm:px-6">
-              <div className="mb-3 grid gap-2 sm:grid-cols-2">
-                <div className="rounded-2xl bg-[var(--charcoal)] px-4 py-3 text-sm text-white">
-                  <strong className="block">Paquetes de desayuno</strong>
-                  <span className="text-white/70">Con fruta y café · 9:00 a.m.–1:00 p.m.</span>
-                </div>
-                <div className="rounded-2xl bg-[var(--brown)] px-4 py-3 text-sm text-white">
-                  <strong className="block">Comidas a la carta</strong>
-                  <span className="text-white/70">Todos los días · 1:00–5:00 p.m.</span>
-                </div>
+              <div className="mb-3 flex flex-wrap items-center justify-center gap-2">
+                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white/70 px-3 py-1 text-[11px] font-medium text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300">
+                  🥣 Paquetes de desayuno · fruta y café · 9:00 a.m.–1:00 p.m.
+                </Badge>
+                <Badge variant="outline" className="h-auto rounded-full border-[var(--line)] bg-white/70 px-3 py-1 text-[11px] font-medium text-[var(--muted)] dark:border-neutral-700 dark:bg-neutral-800/60 dark:text-neutral-300">
+                  🍽️ Comidas a la carta · 1:00–5:00 p.m.
+                </Badge>
               </div>
               <label className="flex items-center gap-3 rounded-2xl border border-neutral-200/60 bg-white/80 px-4 py-3 backdrop-blur-md transition-shadow focus-within:shadow-md dark:border-neutral-800 dark:bg-neutral-900/80">
                 <Search size={19} aria-hidden="true" />

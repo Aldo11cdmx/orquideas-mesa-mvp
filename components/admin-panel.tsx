@@ -29,6 +29,9 @@ import { ProductImage } from "@/components/product-image";
 import { TrialBanner } from "@/components/trial-banner";
 import { DrinksAdmin } from "@/components/drinks-admin";
 import { PromosAdmin } from "@/components/promos-admin";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, DailyMenuDrink, Product, RestaurantTable, SalesReport } from "@/lib/types";
@@ -202,50 +205,64 @@ export function AdminPanel() {
           </span>
         </div>
       </header>
-      <div className="mx-auto grid max-w-7xl gap-5 p-4 md:grid-cols-[210px_1fr] md:p-6">
-        <nav className="paper flex gap-2 overflow-x-auto rounded-3xl p-2 md:sticky md:top-24 md:block md:h-fit">
-          {nav.map(([id, label, Icon]) => (
-            <button
-              key={id}
-              className={`focus-ring flex shrink-0 items-center gap-3 rounded-xl px-4 py-3 text-left text-sm font-bold md:mb-1 md:w-full ${
-                tab === id ? "bg-[var(--green)] text-white" : ""
-              }`}
-              onClick={() => setTab(id)}
-            >
-              <Icon size={18} /> {label}
-            </button>
-          ))}
-        </nav>
-        <section>
-          <TrialBanner compact />
-          <div className="mt-5">
-          {tab === "menu" && (
-            <MenuAdmin
-              products={products}
-              onEdit={setEditing}
-              onChange={persist}
-              onDelete={(product) => void deleteProduct(product)}
-              onCreate={() =>
-                setEditing({
-                  id: `new-${Date.now()}`,
-                  slug: `new-${Date.now()}`,
-                  name: "",
-                  description: "",
-                  price: 0,
-                  category: "Desayunos",
-                  image: "/menu/imperio/chilaquiles-sencillos.jpg"
-                })
-              }
-            />
-          )}
-          {tab === "breakfast" && <BreakfastAdmin pin={pin} />}
-          {tab === "drinks" && <DrinksAdmin pin={pin} />}
-          {tab === "daily" && <DailyAdmin pin={pin} />}
-          {tab === "promos" && <PromosAdmin pin={pin} />}
-          {tab === "tables" && <TablesAdmin pin={pin} />}
-            {tab === "sales" && <SalesAdmin pin={pin} />}
+      <div className="mx-auto max-w-7xl p-4 md:p-6">
+        <Tabs value={tab} onValueChange={setTab} className="gap-0">
+          <div className="sticky top-[73px] z-20 -mx-4 bg-[var(--paper)]/90 px-4 py-2 backdrop-blur-xl md:-mx-6 md:px-6">
+            <TabsList className="flex w-full gap-1 overflow-x-auto rounded-2xl bg-neutral-100 p-1 dark:bg-neutral-900">
+              {nav.map(([id, label, Icon]) => (
+                <TabsTrigger
+                  key={id}
+                  value={id}
+                  className="flex shrink-0 items-center gap-2 rounded-xl px-4 py-2.5 text-sm font-bold text-neutral-500 transition-all data-active:bg-white data-active:text-neutral-900 data-active:shadow-sm dark:text-neutral-400 dark:data-active:bg-neutral-800 dark:data-active:text-white"
+                >
+                  <Icon size={17} /> {label}
+                </TabsTrigger>
+              ))}
+            </TabsList>
           </div>
-        </section>
+          <section className="mt-5">
+            <TrialBanner compact />
+            <div className="mt-5">
+              <TabsContent value="menu">
+                <MenuAdmin
+                  products={products}
+                  onEdit={setEditing}
+                  onChange={persist}
+                  onDelete={(product) => void deleteProduct(product)}
+                  onCreate={() =>
+                    setEditing({
+                      id: `new-${Date.now()}`,
+                      slug: `new-${Date.now()}`,
+                      name: "",
+                      description: "",
+                      price: 0,
+                      category: "Desayunos",
+                      image: "/menu/imperio/chilaquiles-sencillos.jpg"
+                    })
+                  }
+                />
+              </TabsContent>
+              <TabsContent value="breakfast">
+                <BreakfastAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="drinks">
+                <DrinksAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="daily">
+                <DailyAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="promos">
+                <PromosAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="tables">
+                <TablesAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="sales">
+                <SalesAdmin pin={pin} />
+              </TabsContent>
+            </div>
+          </section>
+        </Tabs>
       </div>
       {editing && (
         <EditProduct
@@ -1484,49 +1501,60 @@ function SalesAdmin({ pin }: { pin: string }) {
                   report.summary.unassignedOrders > 0
                     ? `${report.summary.unassignedOrders} pedidos anteriores sin método`
                     : "Solo pedidos entregados",
-                icon: CircleDollarSign
+                icon: CircleDollarSign,
+                badge: { text: "Corte", className: "bg-[#efe9df] text-[#6d4530]" }
               },
               {
                 label: "Efectivo",
                 value: money(report.summary.cashSales),
                 detail: `${report.summary.cashOrders} pedidos`,
-                icon: Banknote
+                icon: Banknote,
+                badge: { text: "Cobrado", className: "bg-[#e4ece6] text-[var(--green)]" }
               },
               {
                 label: "Tarjeta",
                 value: money(report.summary.cardSales),
                 detail: `${report.summary.cardOrders} pedidos`,
-                icon: CreditCard
+                icon: CreditCard,
+                badge: { text: "Cobrado", className: "bg-[#e4e9f0] text-[#3a5a8c]" }
               },
               {
                 label: "Pedidos entregados",
                 value: report.summary.orderCount,
                 detail: `${report.summary.itemsSold} productos servidos`,
-                icon: PackageCheck
+                icon: PackageCheck,
+                badge: { text: "Completado", className: "bg-[#efe9df] text-[#6d4530]" }
               },
               {
                 label: "Ticket promedio",
                 value: money(report.summary.averageTicket),
                 detail: "Promedio por mesa/pedido",
-                icon: TrendingUp
+                icon: TrendingUp,
+                badge: { text: "Promedio", className: "bg-[#efe9df] text-[#6d4530]" }
               },
               {
                 label: "Pedidos en proceso",
                 value: report.summary.pendingOrders,
                 detail: money(report.summary.pendingAmount),
-                icon: CalendarDays
+                icon: CalendarDays,
+                badge: { text: "En curso", className: "bg-[#f4dfb4] text-[#694500]" }
               }
-            ].map(({ label, value, detail, icon: Icon }) => (
-              <article className="paper rounded-3xl p-5" key={label}>
-                <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e4ece6] text-[var(--green)]">
-                  <Icon size={20} />
+            ].map(({ label, value, detail, icon: Icon, badge }) => (
+              <Card className="rounded-3xl p-5" key={label}>
+                <div className="flex items-center justify-between gap-2">
+                  <div className="grid h-10 w-10 place-items-center rounded-xl bg-[#e4ece6] text-[var(--green)]">
+                    <Icon size={20} />
+                  </div>
+                  <Badge className={`h-auto rounded-full px-2.5 py-1 text-[10px] font-bold uppercase tracking-wider ${badge.className}`}>
+                    {badge.text}
+                  </Badge>
                 </div>
                 <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
                   {label}
                 </p>
                 <strong className="mt-1 block font-display text-3xl">{value}</strong>
                 <span className="mt-1 block text-xs text-[var(--muted)]">{detail}</span>
-              </article>
+              </Card>
             ))}
           </div>
 

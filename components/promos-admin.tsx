@@ -2,6 +2,7 @@
 
 import { useCallback, useEffect, useState } from "react";
 import { BadgePercent, Plus, RefreshCw, Trash2 } from "lucide-react";
+import { Switch } from "@/components/ui/switch";
 import type { Product, Promotion } from "@/lib/types";
 
 function money(value: number) {
@@ -13,37 +14,6 @@ function promoPrice(product: { price: number }, promotion: Promotion) {
     return Math.max(0, Math.round(product.price * (1 - promotion.discountValue / 100)));
   }
   return Math.max(0, product.price - promotion.discountValue);
-}
-
-function Toggle({
-  checked,
-  onChange,
-  label
-}: {
-  checked: boolean;
-  onChange: () => void;
-  label: string;
-}) {
-  return (
-    <button
-      type="button"
-      role="switch"
-      aria-checked={checked}
-      aria-label={label}
-      className={`focus-ring relative h-8 w-14 shrink-0 rounded-full transition-colors ${
-        checked ? "bg-[var(--green)]" : "bg-[#d3cfc6]"
-      }`}
-      onClick={onChange}
-    >
-      <span
-        className={`absolute top-1 grid h-6 w-6 place-items-center rounded-full bg-white text-[10px] font-black shadow transition-all ${
-          checked ? "left-7" : "left-1"
-        }`}
-      >
-        {checked ? "✓" : ""}
-      </span>
-    </button>
-  );
 }
 
 export function PromosAdmin({ pin }: { pin: string }) {
@@ -303,10 +273,10 @@ export function PromosAdmin({ pin }: { pin: string }) {
                     </p>
                   </div>
                   <div className="flex items-center gap-3">
-                    <Toggle
+                    <Switch
                       checked={promotion.isActive}
-                      label={`Activar ${promotion.title}`}
-                      onChange={() => void toggle(promotion)}
+                      onCheckedChange={() => void toggle(promotion)}
+                      aria-label={`Activar ${promotion.title}`}
                     />
                     <button
                       className="focus-ring grid h-10 w-10 place-items-center rounded-xl bg-[#f8e8e2] text-[#8a3b30]"

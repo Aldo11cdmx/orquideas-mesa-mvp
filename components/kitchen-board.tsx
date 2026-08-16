@@ -22,6 +22,8 @@ import {
 } from "lucide-react";
 import { Brand } from "@/components/brand";
 import { StatusPill } from "@/components/status-pill";
+import { Badge } from "@/components/ui/badge";
+import { Card } from "@/components/ui/card";
 import { money } from "@/lib/menu";
 import {
   connectOrderChannel,
@@ -949,8 +951,8 @@ function KitchenCard({
         };
   const action = next[order.status];
   return (
-    <article
-      className={`paper order-card card-enter card-hover animate-pop overflow-hidden rounded-2xl ${
+    <Card
+      className={`order-card card-enter card-hover animate-pop overflow-hidden rounded-3xl border-[var(--line)] ${
         order.status === "sent" ? "ring-2 ring-[var(--gold)]" : ""
       } ${urgency === "critical" ? "order-card-critical" : urgency === "warning" ? "order-card-warning" : ""}`}
     >
@@ -958,11 +960,11 @@ function KitchenCard({
         <div>
           {order.tableCode === "LLEVAR" ? (
             <>
-              <span className="inline-flex items-center gap-1 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-[#7c2d00] shadow-[0_0_18px_rgba(245,158,11,0.55)]">
+              <Badge className="h-auto border-none bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1 text-xs font-extrabold uppercase tracking-wider text-[#7c2d00] shadow-[0_0_18px_rgba(245,158,11,0.55)]">
                 🥡 Para llevar
-              </span>
+              </Badge>
               {order.customerName && (
-                <p className="mt-2 font-display text-2xl font-bold leading-none text-[#ffd166]">
+                <p className="mt-2 font-display text-lg font-bold leading-none text-[#ffd166]">
                   👤 {order.customerName}
                 </p>
               )}
@@ -1066,13 +1068,13 @@ function KitchenCard({
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
-                className="focus-ring min-h-14 rounded-xl bg-[var(--green)] px-3 text-base font-bold text-white"
+                className="focus-ring min-h-14 rounded-xl bg-[var(--green)] px-3 text-base font-bold text-white transition active:scale-95"
                 onClick={() => onStatus(order, "delivered", "cash")}
               >
                 Efectivo
               </button>
               <button
-                className="focus-ring min-h-14 rounded-xl bg-[var(--brown)] px-3 text-base font-bold text-white"
+                className="focus-ring min-h-14 rounded-xl bg-[var(--brown)] px-3 text-base font-bold text-white transition active:scale-95"
                 onClick={() => onStatus(order, "delivered", "card")}
               >
                 Tarjeta
@@ -1081,7 +1083,7 @@ function KitchenCard({
           </div>
         ) : action ? (
           <button
-            className="focus-ring mt-4 min-h-14 w-full rounded-xl bg-[var(--brown)] px-4 text-base font-bold text-white shadow-md hover:bg-[var(--brown-dark)]"
+            className="focus-ring mt-4 min-h-14 w-full rounded-xl bg-[var(--brown)] px-4 text-base font-bold text-white shadow-md transition hover:bg-[var(--brown-dark)] active:scale-95"
             onClick={() => onStatus(order, action.status)}
           >
             {action.label}
@@ -1089,7 +1091,7 @@ function KitchenCard({
         ) : null}
         {role === "waiter" && ["sent", "accepted", "preparing", "ready"].includes(order.status) && (
           <button
-            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30]"
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30] transition active:scale-95"
             onClick={() => onStatus(order, "cancelled")}
           >
             <XCircle size={15} /> Cancelar pedido completo
@@ -1104,7 +1106,7 @@ function KitchenCard({
           </button>
         )}
       </div>
-    </article>
+    </Card>
   );
 }
 

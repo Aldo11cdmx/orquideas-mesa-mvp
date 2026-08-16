@@ -725,20 +725,20 @@ export function MenuClient({
       )}
 
       {itemCount > 0 && (
-        <div className="fixed inset-x-0 bottom-5 z-40 flex justify-center px-4">
+        <div className="fixed bottom-6 left-1/2 z-40 w-[calc(100%-2rem)] max-w-md -translate-x-1/2">
           <button
-            className="focus-ring flex w-full max-w-md items-center justify-between gap-3 rounded-full border border-white/20 bg-white/80 p-2 pl-5 text-left shadow-2xl backdrop-blur-xl transition-all hover:bg-white/90 active:scale-95"
+            className="focus-ring flex w-full items-center justify-between gap-3 rounded-full border border-white/20 bg-white/80 p-2 pl-5 text-left shadow-2xl backdrop-blur-xl transition-all hover:bg-white/90 active:scale-95 dark:border-white/10 dark:bg-neutral-900/80 dark:hover:bg-neutral-900/90"
             onClick={() => setCartOpen(true)}
           >
             <span className="flex min-w-0 items-center gap-3">
               <span className={`grid h-9 w-9 shrink-0 place-items-center rounded-full bg-[var(--brown)] font-bold text-white ${justAdded ? "animate-bounce-in" : ""}`}>
                 {itemCount}
               </span>
-              <span className="truncate text-sm font-bold text-[var(--ink)]">
+              <span className="truncate text-sm font-bold text-[var(--ink)] dark:text-neutral-100">
                 {sendTogether ? "Agregar al grupo" : "Ver mi pedido"}
               </span>
             </span>
-            <span className="shrink-0 rounded-full bg-[var(--charcoal)] px-4 py-2.5 font-extrabold text-white">
+            <span className="shrink-0 rounded-full bg-[var(--charcoal)] px-4 py-2.5 font-extrabold text-white dark:bg-white dark:text-neutral-900">
               {money(subtotal)}
             </span>
           </button>
@@ -815,7 +815,7 @@ export function MenuClient({
       </div>
 
       <Drawer open={cartOpen} onOpenChange={setCartOpen} showSwipeHandle>
-        <DrawerContent className="rounded-t-[2.5rem] border-[var(--line)] bg-[var(--paper)] text-[var(--ink)]">
+        <DrawerContent className="rounded-t-[2.5rem] border-[var(--line)] bg-[var(--paper)] text-[var(--ink)] dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-100">
           <CartDrawer
             cart={cart}
             notes={generalNotes}
@@ -1133,7 +1133,7 @@ function ProductDialog({
       <DialogContent
         showCloseButton={false}
         overlayClassName="bg-[#171411]/60 backdrop-blur-[3px]"
-        className="top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[2rem] rounded-b-none bg-[var(--paper)] p-0 text-[var(--ink)] sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
+        className="top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[2rem] rounded-b-none bg-[var(--paper)] p-0 text-[var(--ink)] sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl dark:bg-neutral-900 dark:text-neutral-100"
       >
         <DialogTitle className="sr-only">{product.name}</DialogTitle>
         <div className="relative shrink-0">
@@ -1200,8 +1200,8 @@ function ProductDialog({
                         unavailable
                           ? "cursor-not-allowed opacity-40"
                           : selected
-                            ? "bg-neutral-900 text-white shadow-md"
-                            : "border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brown)] hover:bg-[var(--cream)] active:scale-95"
+                            ? "bg-neutral-900 text-white shadow-md dark:bg-white dark:text-neutral-900"
+                            : "border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brown)] hover:bg-[var(--cream)] active:scale-95 dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:border-neutral-500"
                       }`}
                       onClick={() =>
                         setSelections((current) => ({ ...current, [group.id]: item }))
@@ -1217,7 +1217,7 @@ function ProductDialog({
           <label className="mt-5 block text-sm font-bold">
             Observaciones
             <textarea
-              className="mt-2 min-h-20 w-full resize-none rounded-xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)]"
+              className="mt-2 min-h-20 w-full resize-none rounded-xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               maxLength={180}
               placeholder="Ej. Sin cebolla, salsa aparte…"
               value={notes}
@@ -1297,7 +1297,7 @@ function ProductDialog({
               </button>
             </div>
             <button
-              className="focus-ring flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-transform hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+              className="focus-ring flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-transform hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45 dark:bg-white dark:text-neutral-900"
               disabled={isComidaALaCarta && !hasCompleteSelection}
               onClick={() => {
                 const chosenExtras = allExtras
@@ -1379,7 +1379,7 @@ function CartDrawer({
         </div>
       </div>
       <div className="flex-1 overflow-y-auto overscroll-contain px-5 py-4">
-        <ul className="divide-y divide-[var(--line)]/70">
+        <ul className="divide-y divide-[var(--line)]/70 dark:divide-neutral-800">
           {cart.map((item, index) => (
             <li key={`${item.productId}-${index}`} className="flex gap-3 py-4 first:pt-1 last:pb-1">
               <ProductImage
@@ -1405,7 +1405,7 @@ function CartDrawer({
                   </div>
                 )}
                 <input
-                  className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--green)]"
+                  className="mt-2 w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2 text-sm outline-none transition focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
                   placeholder="Nota para este platillo…"
                   maxLength={250}
                   value={item.notes || ""}
@@ -1448,7 +1448,7 @@ function CartDrawer({
         <label className="mt-4 block text-sm font-bold">
           Observaciones generales
           <textarea
-            className="mt-2 min-h-20 w-full resize-none rounded-2xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)]"
+            className="mt-2 min-h-20 w-full resize-none rounded-2xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
             maxLength={250}
             placeholder="Algo que debamos saber…"
             value={notes}
@@ -1462,7 +1462,7 @@ function CartDrawer({
           <strong className="text-xl">{money(subtotal)}</strong>
         </div>
         <button
-          className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50"
+          className="focus-ring flex min-h-14 w-full items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-all hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-50 dark:bg-white dark:text-neutral-900"
           disabled={sending || cart.length === 0}
           onClick={onSubmit}
         >

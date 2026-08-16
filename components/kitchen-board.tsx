@@ -551,7 +551,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
               onChange={(event) => setPin(event.target.value)}
             />
           </label>
-          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--brown)] font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]">
+          <button className="focus-ring mt-4 h-14 w-full rounded-full bg-neutral-900 text-sm font-semibold text-white shadow-sm transition-all duration-200 active:scale-[0.98] dark:bg-white dark:text-neutral-900">
             Abrir tablero
           </button>
         </form>
@@ -560,8 +560,8 @@ function StaffBoard({ role }: { role: StaffRole }) {
   }
 
   return (
-    <main className="min-h-screen">
-      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl">
+    <main className="min-h-screen dark:bg-neutral-950">
+      <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl dark:border-neutral-800 dark:bg-neutral-900/80">
         <div className="mx-auto flex max-w-[1500px] flex-wrap items-center justify-between gap-4">
           <div className="flex items-center gap-5">
             <Brand compact />
@@ -596,15 +596,17 @@ function StaffBoard({ role }: { role: StaffRole }) {
             </span>
             {(!online || realtimeStatus !== "SUBSCRIBED") && (
               <button
-                className="focus-ring flex min-h-9 items-center gap-1 rounded-full bg-white px-3 text-xs font-bold shadow-sm"
+                className="focus-ring inline-flex min-h-9 items-center gap-1 rounded-full border border-neutral-200 bg-white px-3 text-xs font-semibold text-neutral-800 shadow-sm dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
                 onClick={() => void loadOrders(pin)}
               >
                 <RefreshCw size={14} /> Actualizar
               </button>
             )}
             <button
-              className={`focus-ring flex min-h-10 items-center gap-2 rounded-full px-3 text-xs font-bold ${
-                sound ? "bg-[var(--green)] text-white" : "border border-[var(--line)] bg-white"
+              className={`focus-ring inline-flex min-h-10 items-center gap-2 rounded-full px-4 py-2 text-xs font-semibold shadow-sm transition-all active:scale-95 ${
+                sound
+                  ? "bg-[var(--green)] text-white"
+                  : "border border-neutral-200 bg-white text-neutral-800 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
               }`}
               onClick={() => void toggleAlerts()}
             >
@@ -712,28 +714,46 @@ function StaffBoard({ role }: { role: StaffRole }) {
           </div>
         )}
         <section className="mb-4 grid gap-3 sm:grid-cols-2 xl:grid-cols-4" aria-label="Resumen operativo">
-          <button className="paper rounded-2xl p-4 text-left transition hover:shadow-md" onClick={() => setStatusFilter("active")}>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Pendientes</p>
-            <strong className="mt-1 block font-display text-3xl">{activeCount}</strong>
+          <button
+            className="rounded-2xl border border-neutral-200/80 bg-white p-4 text-left shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900/90"
+            onClick={() => setStatusFilter("active")}
+          >
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Pendientes</p>
+            <strong className="mt-1 block font-display text-3xl font-extrabold text-neutral-900 dark:text-white">{activeCount}</strong>
           </button>
-          <button className={`rounded-2xl p-4 text-left transition hover:shadow-md ${urgentCount ? "bg-[#7a2c22] text-white shadow-lg" : "paper"}`} onClick={() => setStatusFilter("active")}>
-            <p className={`text-xs font-bold uppercase tracking-wider ${urgentCount ? "text-white/70" : "text-[var(--muted)]"}`}>Con demora</p>
-            <strong className="mt-1 flex items-center gap-2 font-display text-3xl">{urgentCount > 0 && <Flame size={24} />} {urgentCount}</strong>
+          <button
+            className={`rounded-2xl border p-4 text-left shadow-sm transition hover:shadow-md ${
+              urgentCount
+                ? "border-amber-300 bg-amber-50 dark:border-amber-700 dark:bg-amber-950/30"
+                : "border-neutral-200/80 bg-white dark:border-neutral-800 dark:bg-neutral-900/90"
+            }`}
+            onClick={() => setStatusFilter("active")}
+          >
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Con demora</p>
+            <strong className="mt-1 flex items-center gap-2 font-display text-3xl font-extrabold text-neutral-900 dark:text-white">
+              {urgentCount > 0 && <Flame size={24} className="text-amber-600 dark:text-amber-400" />} {urgentCount}
+            </strong>
           </button>
-          <button className="paper rounded-2xl p-4 text-left transition hover:shadow-md" onClick={() => setStatusFilter("ready")}>
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Listos</p>
-            <strong className="mt-1 block font-display text-3xl">{readyCount}</strong>
+          <button
+            className="rounded-2xl border border-neutral-200/80 bg-white p-4 text-left shadow-sm transition hover:shadow-md dark:border-neutral-800 dark:bg-neutral-900/90"
+            onClick={() => setStatusFilter("ready")}
+          >
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Listos</p>
+            <strong className="mt-1 block font-display text-3xl font-extrabold text-neutral-900 dark:text-white">{readyCount}</strong>
           </button>
-          <div className={`rounded-2xl p-4 ${peakMode ? "bg-[var(--charcoal)] text-white shadow-lg" : "paper"}`}>
-            <p className={`text-xs font-bold uppercase tracking-wider ${peakMode ? "text-[#d9c17f]" : "text-[var(--muted)]"}`}>Operación</p>
-            <strong className="mt-1 block text-lg">{peakMode ? "Hora pico" : "Flujo normal"}</strong>
-            <span className={`text-xs ${peakMode ? "text-white/65" : "text-[var(--muted)]"}`}>
+          <div className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/90">
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-500 dark:text-neutral-400">Operación</p>
+            <strong className="mt-1 block text-lg font-extrabold text-neutral-900 dark:text-white">
+              {peakMode ? "Hora pico 🔥" : "Flujo normal"}
+            </strong>
+            <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">
               {syncing ? "Sincronizando…" : lastSync ? `Actualizado ${new Date(lastSync).toLocaleTimeString("es-MX", { hour: "2-digit", minute: "2-digit" })}` : "Cargando"}
             </span>
           </div>
         </section>
-        <div className="mb-4 rounded-2xl border border-[var(--line)] bg-white px-4 py-3 text-sm">
-          <strong>Pedidos confirmados:</strong> los pedidos llegan directamente desde la confirmación del cliente.
+        <div className="mb-4 rounded-2xl border border-neutral-200/80 bg-white px-4 py-3 text-sm dark:border-neutral-800 dark:bg-neutral-900/60">
+          <strong className="text-neutral-900 dark:text-white">Pedidos confirmados:</strong>
+          <span className="text-neutral-600 dark:text-neutral-400"> los pedidos llegan directamente desde la confirmación del cliente.</span>
         </div>
         <div className="mb-5 flex flex-wrap items-center gap-3">
           {/* Table filter chips */}
@@ -744,7 +764,11 @@ function StaffBoard({ role }: { role: StaffRole }) {
               return (
                 <>
                   <button
-                    className={`focus-ring min-h-10 rounded-xl px-3 text-xs font-bold ${!tableFilter ? "bg-[var(--brown)] text-white" : "border border-[var(--line)] bg-white"}`}
+                    className={`focus-ring rounded-full px-4 py-2 text-xs transition-all duration-200 active:scale-95 ${
+                      !tableFilter
+                        ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
+                        : "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
+                    }`}
                     onClick={() => setTableFilter("")}
                   >
                     Todas
@@ -752,7 +776,11 @@ function StaffBoard({ role }: { role: StaffRole }) {
                   {tables.map((t) => (
                     <button
                       key={t}
-                      className={`focus-ring min-h-10 rounded-xl px-3 text-xs font-bold transition ${tableFilter === t ? "bg-[var(--brown)] text-white shadow" : "border border-[var(--line)] bg-white"}`}
+                      className={`focus-ring rounded-full px-4 py-2 text-xs transition-all duration-200 active:scale-95 ${
+                        tableFilter === t
+                          ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
+                          : "border border-neutral-200 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
+                      }`}
                       onClick={() => setTableFilter(tableFilter === t ? "" : t)}
                     >
                       {t === "LLEVAR" ? "🥡 Llevar" : t}
@@ -762,12 +790,12 @@ function StaffBoard({ role }: { role: StaffRole }) {
               );
             })()}
             {!tableFilter && orders.filter(o => !["delivered", "cancelled"].includes(o.status)).length === 0 && (
-              <span className="text-xs text-[var(--muted)]">Las mesas activas aparecerán aquí</span>
+              <span className="text-xs font-medium text-neutral-600 dark:text-neutral-400">Las mesas activas aparecerán aquí</span>
             )}
           </div>
           <select
             aria-label="Filtrar por estado"
-            className="min-h-11 rounded-xl border-0 bg-white px-3 font-bold outline-none"
+            className="min-h-10 rounded-full border border-neutral-200 bg-white px-4 text-xs font-semibold text-neutral-800 shadow-sm outline-none dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
             value={statusFilter}
             onChange={(event) => setStatusFilter(event.target.value)}
           >
@@ -778,36 +806,40 @@ function StaffBoard({ role }: { role: StaffRole }) {
             <option value="ready">Listos</option>
           </select>
           <button
-            className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-white px-4 font-bold disabled:opacity-60"
+            className="focus-ring inline-flex min-h-10 items-center gap-2 rounded-full border border-neutral-200 bg-white px-4 text-xs font-semibold text-neutral-800 shadow-sm transition-all active:scale-95 disabled:opacity-60 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
             disabled={syncing}
             onClick={() => void loadOrders(pin)}
           >
-            <RefreshCw className={syncing ? "animate-spin" : ""} size={17} />
+            <RefreshCw className={syncing ? "animate-spin" : ""} size={15} />
             {syncing ? "Sincronizando" : "Actualizar"}
           </button>
           {role === "waiter" && (
             <button
-              className={`focus-ring flex min-h-11 items-center gap-2 rounded-xl px-4 text-sm font-bold ${groupByTable ? "bg-[var(--brown)] text-white" : "border border-[var(--line)] bg-white"}`}
+              className={`focus-ring inline-flex min-h-10 items-center gap-2 rounded-full px-4 text-xs font-semibold shadow-sm transition-all active:scale-95 ${
+                groupByTable
+                  ? "bg-neutral-900 text-white dark:bg-white dark:text-neutral-900"
+                  : "border border-neutral-200 bg-white text-neutral-800 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200"
+              }`}
               onClick={() => setGroupByTable((v) => !v)}
             >
               {groupByTable ? "Por estado" : "Por mesa"}
             </button>
           )}
-          <span className="ml-auto text-sm text-[var(--muted)]">
+          <span className="ml-auto text-xs font-semibold text-neutral-600 dark:text-neutral-400">
             {filtered.length} pedidos visibles
           </span>
         </div>
 
         <div className="grid gap-4 md:grid-cols-3">
           {filtered.length === 0 && !syncing ? (
-            <div className="md:col-span-3 animate-fade-in rounded-[1.75rem] border border-dashed border-[#b9b2a5] py-16 text-center">
-              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-white/60">
-                {role === "kitchen" ? <ChefHat size={34} className="text-[var(--brown)]" /> : <HandPlatter size={34} className="text-[var(--brown)]" />}
+            <div className="md:col-span-3 animate-fade-in rounded-[1.75rem] border border-dashed border-neutral-200 py-16 text-center dark:border-neutral-700">
+              <div className="mx-auto mb-5 grid h-16 w-16 place-items-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                {role === "kitchen" ? <ChefHat size={34} className="text-neutral-700 dark:text-neutral-300" /> : <HandPlatter size={34} className="text-neutral-700 dark:text-neutral-300" />}
               </div>
-              <p className="font-display text-2xl font-bold">
+              <p className="font-display text-lg font-bold text-neutral-900 dark:text-white">
                 {role === "kitchen" ? "Cocina despejada ✨" : "Todo en orden ✨"}
               </p>
-              <p className="mt-2 text-sm text-[var(--muted)]">
+              <p className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                 {role === "kitchen"
                   ? "No hay pedidos pendientes. Cuando llegue uno, aparecerá aquí al instante."
                   : "No hay pedidos por entregar. Recibirás alertas cuando cocina termine algo."}
@@ -823,13 +855,13 @@ function StaffBoard({ role }: { role: StaffRole }) {
                   <h2 className="flex items-center gap-2 font-display text-xl font-bold">
                     <ColumnIcon size={20} /> {column.title}
                   </h2>
-                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-white px-2 text-sm font-bold">
+                  <span className="grid h-7 min-w-7 place-items-center rounded-full bg-neutral-100 px-2 text-sm font-bold text-neutral-900 dark:bg-neutral-800 dark:text-neutral-100">
                     {columnOrders.length}
                   </span>
                 </div>
                 {role === "kitchen" && column.id === "new" && columnOrders.length > 0 && (
                   <button
-                    className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[var(--brown)] px-3 text-xs font-bold text-white transition hover:opacity-90"
+                    className="focus-ring mt-2 inline-flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-neutral-900 px-3 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-neutral-800 active:scale-95 dark:bg-white dark:text-neutral-900"
                     onClick={async () => {
                       if (!window.confirm(`¿Iniciar preparación de los ${columnOrders.length} pedidos nuevos?`)) return;
                       for (const o of columnOrders) {
@@ -868,12 +900,12 @@ function StaffBoard({ role }: { role: StaffRole }) {
                      />
                    ))}
                   {columnOrders.length === 0 && (
-                    <div className="animate-fade-in rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center text-sm text-[var(--muted)]">
-                      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/50">
-                        <Utensils size={26} />
+                    <div className="animate-fade-in rounded-2xl border border-dashed border-neutral-200 py-12 text-center dark:border-neutral-700">
+                      <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-neutral-100 dark:bg-neutral-800">
+                        <Utensils size={26} className="text-neutral-700 dark:text-neutral-300" />
                       </div>
-                      <p className="font-bold">Sin pedidos</p>
-                      <p className="mt-1 text-xs">
+                      <p className="font-bold text-neutral-900 dark:text-white">Sin pedidos</p>
+                      <p className="mt-1 text-xs font-medium text-neutral-600 dark:text-neutral-400">
                         {column.id === "new"
                           ? "Aún no han llegado pedidos nuevos"
                           : column.id === "ready"
@@ -952,7 +984,7 @@ function KitchenCard({
   const action = next[order.status];
   return (
     <Card
-      className={`order-card card-enter card-hover animate-pop overflow-hidden rounded-3xl border-[var(--line)] ${
+      className={`order-card card-enter card-hover animate-pop overflow-hidden rounded-3xl border dark:border-neutral-800 ${
         order.status === "sent" ? "ring-2 ring-[var(--gold)]" : ""
       } ${urgency === "critical" ? "order-card-critical" : urgency === "warning" ? "order-card-warning" : ""}`}
     >
@@ -987,26 +1019,26 @@ function KitchenCard({
           <span
             className={`flex items-center gap-2 font-bold ${
               urgency === "critical"
-                ? "text-lg text-[#9b261c]"
+                ? "text-lg text-red-700 dark:text-red-400"
                 : urgency === "warning"
-                  ? "text-base text-[var(--terracotta)]"
-                  : "text-sm text-[var(--muted)]"
+                  ? "text-base text-[#c2410c] dark:text-orange-400"
+                  : "text-sm text-neutral-700 dark:text-neutral-300"
             }`}
           >
             <Clock3 size={urgency === "critical" ? 22 : urgency === "warning" ? 20 : 16} />
             {minutes < 1 ? "ahora" : `${minutes} min`}
           </span>
           {urgency !== "normal" && (
-            <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-[#9b261c] text-white animate-pulse" : "bg-[#f4dfb4] text-[#694500]"}`}>
+            <span className={`rounded-full px-2.5 py-1 text-xs font-extrabold uppercase tracking-wider ${urgency === "critical" ? "bg-red-700 text-white animate-pulse" : "bg-amber-100 text-amber-900 dark:bg-amber-950/60 dark:text-amber-300"}`}>
               {urgency === "critical" ? "⚠️ Urgente" : "Revisar"}
             </span>
           )}
           {urgency === "normal" && minutes >= 25 && (
-            <span className="rounded-full bg-[#f4dfb4] px-2.5 py-1 text-xs font-bold text-[#694500]">
+            <span className="rounded-full bg-amber-100 px-2.5 py-1 text-xs font-bold text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
               ⏳ {minutes} min
             </span>
           )}
-          <span className="ml-auto text-xs font-bold text-[var(--muted)]">
+          <span className="ml-auto text-xs font-bold text-neutral-700 dark:text-neutral-300">
             {order.items.reduce((s, i) => s + i.quantity, 0)} items
           </span>
         </div>
@@ -1017,11 +1049,11 @@ function KitchenCard({
               key={item.itemId || `${item.productId}-${index}`}
             >
               <div className="flex items-start gap-2 font-bold">
-                <span className="text-[var(--terracotta)]">{item.quantity}×</span>
-                <span className="min-w-0 flex-1">{item.name}</span>
+                <span className="text-[#c2410c] dark:text-orange-400">{item.quantity}×</span>
+                <span className="min-w-0 flex-1 text-neutral-900 dark:text-neutral-100">{item.name}</span>
                 {role === "waiter" && ["sent", "accepted"].includes(order.status) && (
                   <button
-                    className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
+                    className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                     aria-label={`Eliminar ${item.name}`}
                     title="Eliminar producto"
                     onClick={() => onRemoveItem(order, item.itemId || item.productId)}
@@ -1031,21 +1063,21 @@ function KitchenCard({
                 )}
               </div>
               {item.option && (
-                <p className="ml-6 mt-1 rounded-lg bg-[#edf3ec] px-2 py-1.5 text-xs font-bold text-[var(--green)]">
+                <p className="ml-6 mt-1 rounded-lg bg-emerald-50 px-2 py-1.5 text-xs font-bold text-emerald-800 dark:bg-emerald-950/50 dark:text-emerald-300">
                   Elecciones: {item.option}
                 </p>
               )}
               {item.extras && item.extras.length > 0 && (
                 <div className="ml-6 mt-1 space-y-0.5">
                   {item.extras.map((extra, extraIndex) => (
-                    <p key={extraIndex} className="text-xs text-[var(--terracotta)]">
+                    <p key={extraIndex} className="text-xs font-medium text-[#c2410c] dark:text-orange-400">
                       + {extra.name} {extra.price !== undefined ? money(extra.price) : ""}
                     </p>
                   ))}
                 </div>
               )}
               {item.notes && (
-                <p className="ml-6 mt-1 rounded-lg bg-[#f4dfb4] p-2 text-xs font-bold text-[#694500]">
+                <p className="ml-6 mt-1 rounded-lg bg-amber-100 p-2 text-xs font-bold text-amber-900 dark:bg-amber-950/60 dark:text-amber-300">
                   {item.notes}
                 </p>
               )}
@@ -1053,28 +1085,28 @@ function KitchenCard({
           ))}
         </ul>
         {order.notes && (
-          <div className="mt-3 rounded-xl border-2 border-[var(--terracotta)]/30 bg-[#f8e8e2] p-3 text-sm">
+          <div className="mt-3 rounded-xl border border-red-200 bg-red-50 p-3 text-sm text-neutral-900 dark:border-red-900/50 dark:bg-red-950/30 dark:text-neutral-100">
             <strong>Observación general:</strong> {order.notes}
           </div>
         )}
-        <div className="mt-4 flex justify-between border-t border-[var(--line)] pt-3">
-          <span>Total</span>
-          <strong>{money(order.total)}</strong>
+        <div className="mt-4 flex justify-between border-t border-[var(--line)] pt-3 dark:border-neutral-800">
+          <span className="text-neutral-700 dark:text-neutral-300">Total</span>
+          <strong className="text-neutral-900 dark:text-white">{money(order.total)}</strong>
         </div>
         {role === "waiter" && order.status === "ready" ? (
-          <div className="mt-4 rounded-2xl border border-[var(--line)] bg-[var(--cream)] p-3">
-            <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+          <div className="mt-4 rounded-2xl border border-neutral-200 bg-neutral-50 p-3 dark:border-neutral-700 dark:bg-neutral-800/60">
+            <p className="text-xs font-bold uppercase tracking-wider text-neutral-600 dark:text-neutral-400">
               Pregunta al cliente cómo pagará
             </p>
             <div className="mt-2 grid grid-cols-2 gap-2">
               <button
-                className="focus-ring min-h-14 rounded-xl bg-[var(--green)] px-3 text-base font-bold text-white transition active:scale-95"
+                className="focus-ring min-h-14 rounded-2xl bg-[var(--green)] px-3 text-base font-bold text-white transition active:scale-95"
                 onClick={() => onStatus(order, "delivered", "cash")}
               >
                 Efectivo
               </button>
               <button
-                className="focus-ring min-h-14 rounded-xl bg-[var(--brown)] px-3 text-base font-bold text-white transition active:scale-95"
+                className="focus-ring min-h-14 rounded-2xl bg-neutral-900 px-3 text-base font-bold text-white transition active:scale-95 dark:bg-white dark:text-neutral-900"
                 onClick={() => onStatus(order, "delivered", "card")}
               >
                 Tarjeta
@@ -1083,7 +1115,7 @@ function KitchenCard({
           </div>
         ) : action ? (
           <button
-            className="focus-ring mt-4 min-h-14 w-full rounded-xl bg-[var(--brown)] px-4 text-base font-bold text-white shadow-md transition hover:bg-[var(--brown-dark)] active:scale-95"
+            className="focus-ring mt-4 min-h-14 w-full rounded-2xl bg-neutral-900 px-4 text-base font-bold text-white shadow-md transition hover:bg-neutral-800 active:scale-95 dark:bg-white dark:text-neutral-900"
             onClick={() => onStatus(order, action.status)}
           >
             {action.label}
@@ -1091,7 +1123,7 @@ function KitchenCard({
         ) : null}
         {role === "waiter" && ["sent", "accepted", "preparing", "ready"].includes(order.status) && (
           <button
-            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl text-xs font-bold text-[#8a3b30] transition active:scale-95"
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full text-xs font-bold text-red-700 transition active:scale-95 dark:text-red-400"
             onClick={() => onStatus(order, "cancelled")}
           >
             <XCircle size={15} /> Cancelar pedido completo
@@ -1099,7 +1131,7 @@ function KitchenCard({
         )}
         {role === "waiter" && order.sessionId && (
           <button
-            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-xl bg-[#f4dfb4] px-4 text-xs font-bold text-[#694500] hover:bg-[#e8c87a]"
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-neutral-100 px-4 text-xs font-bold text-neutral-800 transition hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
             onClick={onViewSession}
           >
             <Search size={15} /> Ver cuenta de mesa
@@ -1311,9 +1343,9 @@ function TableGroupedView({
 
   if (grouped.length === 0) {
     return (
-      <div className="animate-fade-in rounded-2xl border border-dashed border-[#b9b2a5] py-12 text-center">
-        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-white/50"><HandPlatter size={26} /></div>
-        <p className="font-bold">Sin pedidos activos</p>
+      <div className="animate-fade-in rounded-2xl border border-dashed border-neutral-200 py-12 text-center dark:border-neutral-700">
+        <div className="mx-auto mb-4 grid h-14 w-14 place-items-center rounded-2xl bg-neutral-100 dark:bg-neutral-800"><HandPlatter size={26} className="text-neutral-700 dark:text-neutral-300" /></div>
+        <p className="font-bold text-neutral-900 dark:text-white">Sin pedidos activos</p>
       </div>
     );
   }
@@ -1334,7 +1366,7 @@ function TableGroupedView({
               </div>
               <div className="text-right">
                 <strong className="text-lg">{money(total)}</strong>
-                <p className="text-xs text-white/60">{tableOrders.length} pedidos · {readyCount} listos</p>
+                <p className="text-xs font-medium text-white/80">{tableOrders.length} pedidos · {readyCount} listos</p>
               </div>
             </div>
             <div className="divide-y divide-[var(--line)]/40 p-3">
@@ -1345,16 +1377,16 @@ function TableGroupedView({
                   <div key={order.id} className="flex items-center gap-3 py-2.5">
                     <div className="min-w-0 flex-1">
                       <div className="flex items-center gap-2">
-                        <span className="text-xs font-bold text-[var(--muted)]">{order.folio}</span>
+                        <span className="text-xs font-bold text-neutral-700 dark:text-neutral-300">{order.folio}</span>
                         <StatusPill status={order.status} />
                       </div>
-                      <p className="mt-1 text-xs text-[var(--muted)]">
+                      <p className="mt-1 text-xs text-neutral-600 dark:text-neutral-400">
                         {order.items.map((i) => `${i.quantity}× ${i.name}`).join(", ").slice(0, 80)}
                       </p>
                     </div>
                     <div className="shrink-0 text-right">
                       <strong className="text-sm">{money(order.total)}</strong>
-                      <p className={`text-xs font-bold ${urgency !== "normal" ? "text-[var(--terracotta)]" : "text-[var(--muted)]"}`}>
+                      <p className={`text-xs font-bold ${urgency !== "normal" ? "text-[#c2410c] dark:text-orange-400" : "text-neutral-600 dark:text-neutral-400"}`}>
                         {minutes} min
                       </p>
                     </div>
@@ -1364,7 +1396,7 @@ function TableGroupedView({
             </div>
             {tableOrders.some((o) => o.sessionId) && (
               <button
-                className="focus-ring flex min-h-10 w-full items-center justify-center gap-1 bg-[#f4dfb4]/60 text-xs font-bold text-[#694500]"
+                className="focus-ring flex min-h-10 w-full items-center justify-center gap-1 rounded-b-2xl bg-neutral-100 text-xs font-bold text-neutral-800 transition hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
                 onClick={() => {
                   const sessionOrder = tableOrders.find((o) => o.sessionId);
                   if (sessionOrder?.sessionId) onViewSession(sessionOrder.sessionId, tableCode);

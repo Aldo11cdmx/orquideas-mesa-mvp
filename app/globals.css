@@ -207,15 +207,28 @@ button:disabled {
 }
 
 .order-card-warning {
-  border-color: rgb(138 82 54 / 40%);
+  border-color: rgb(245 158 11 / 0.55);
+}
+
+.order-card-warning .premium-header {
+  background: #42331b;
 }
 
 .order-card-critical {
-  border-color: rgb(155 38 28 / 50%);
+  border-color: rgb(220 38 38 / 0.6);
 }
 
 .order-card-critical .premium-header {
   background: #5a1f1a;
+}
+
+.dark .staff-column {
+  background: rgb(23 23 23 / 0.45);
+  border-color: rgb(38 38 38 / 0.8);
+}
+
+.dark .order-card {
+  box-shadow: none;
 }
 
 /* ── Header ──

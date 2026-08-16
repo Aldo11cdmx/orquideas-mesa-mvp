@@ -1161,7 +1161,11 @@ function SessionAccountModal({
   closing: boolean;
   pin: string;
 }) {
-  const allTotal = allOrders.reduce((sum, order) => sum + order.total, 0);
+  // Excluir pedidos cancelados del total: no se consumieron y no deben
+  // contar ni en el acumulado ni en el split (el pedido cancelado sigue
+  // en el historial con status "cancelled").
+  const activeOrders = allOrders.filter((o) => o.status !== "cancelled");
+  const allTotal = activeOrders.reduce((sum, order) => sum + order.total, 0);
   const pendingOrdersCount = orders.length;
   const canClose = pendingOrdersCount === 0;
   const [splitCount, setSplitCount] = useState(2);
@@ -1218,7 +1222,11 @@ function SessionAccountModal({
                       </p>
                     </div>
                     <div className="text-right">
-                      <strong className="text-lg">{money(order.total)}</strong>
+                      <strong
+                        className={`text-lg ${order.status === "cancelled" ? "text-[var(--muted)] line-through" : ""}`}
+                      >
+                        {money(order.total)}
+                      </strong>
                       <StatusPill status={order.status} />
                     </div>
                   </div>

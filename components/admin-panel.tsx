@@ -170,7 +170,7 @@ export function AdminPanel() {
 
   if (!ready) {
     return (
-      <main className="grid min-h-screen place-items-center px-5">
+      <main className="grid min-h-screen place-items-center px-5 dark:bg-neutral-950 admin-surface">
         <form className="paper w-full max-w-sm rounded-[2rem] p-8 shadow-2xl" onSubmit={login}>
           <Brand />
           <div className="mt-8 grid h-14 w-14 place-items-center rounded-2xl bg-[var(--charcoal)] text-[var(--gold)] shadow-lg">
@@ -209,7 +209,7 @@ export function AdminPanel() {
   ] as const;
 
   return (
-    <main className="min-h-screen">
+    <main className="min-h-screen dark:bg-neutral-950 admin-surface">
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Brand compact />
@@ -817,7 +817,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                     }
                   />
                   <button
-                    className="rounded-xl bg-[#eee8dc] px-3 text-xs font-bold"
+                    className="rounded-full bg-neutral-900 px-4 py-2 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 dark:bg-white dark:text-neutral-900"
                     type="button"
                     onClick={() => setDraft({ ...draft, serviceDate: mexicoToday() })}
                   >
@@ -890,7 +890,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                           />
                           <button
                             aria-label={`Quitar opción ${index + 1} de ${course}`}
-                            className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
+                            className="focus-ring grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-35 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                             disabled={options.length <= 1}
                             type="button"
                             onClick={() => removeCourseOption(course, index)}
@@ -901,7 +901,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                       ))}
                     </div>
                     <button
-                      className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                      className="focus-ring mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-neutral-900 px-4 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 dark:bg-white dark:text-neutral-900"
                       disabled={options.length >= 8}
                       type="button"
                       onClick={() => addCourseOption(course)}
@@ -944,7 +944,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                     </button>
                     <button
                       aria-label={`Quitar bebida ${index + 1}`}
-                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e] disabled:opacity-35"
+                      className="focus-ring grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-35 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       disabled={(draft.courses.Bebida as DailyMenuDrink[] || []).length <= 1}
                       type="button"
                       onClick={() => removeDrink(index)}
@@ -955,7 +955,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                 ))}
               </div>
               <button
-                className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                className="focus-ring mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-neutral-900 px-4 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 dark:bg-white dark:text-neutral-900"
                 disabled={(draft.courses.Bebida as DailyMenuDrink[] || []).length >= 8}
                 type="button"
                 onClick={addDrink}
@@ -1001,7 +1001,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                 ))}
               </div>
               <button
-                className="focus-ring mt-3 flex h-10 items-center gap-2 rounded-xl bg-[#eee8dc] px-4 text-sm font-bold"
+                className="focus-ring mt-3 inline-flex h-10 items-center gap-2 rounded-full bg-neutral-900 px-4 text-xs font-semibold text-white shadow-sm transition-all active:scale-95 dark:bg-white dark:text-neutral-900"
                 type="button"
                 onClick={addExtra}
               >
@@ -1620,7 +1620,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                     ? `${report.summary.unassignedOrders} pedidos anteriores sin método`
                     : "Solo pedidos entregados",
                 icon: CircleDollarSign,
-                badge: { text: "Corte", className: "bg-[#efe9df] text-[#6d4530]" }
+                badge: { text: "Corte", className: "bg-[#efe9df] text-[#6d4530] dark:bg-neutral-800 dark:text-neutral-300" }
               },
               {
                 label: "Efectivo",
@@ -1641,21 +1641,21 @@ function SalesAdmin({ pin }: { pin: string }) {
                 value: report.summary.orderCount,
                 detail: `${report.summary.itemsSold} productos servidos`,
                 icon: PackageCheck,
-                badge: { text: "Completado", className: "bg-[#efe9df] text-[#6d4530]" }
+                badge: { text: "Completado", className: "bg-[#efe9df] text-[#6d4530] dark:bg-neutral-800 dark:text-neutral-300" }
               },
               {
                 label: "Ticket promedio",
                 value: money(report.summary.averageTicket),
                 detail: "Promedio por mesa/pedido",
                 icon: TrendingUp,
-                badge: { text: "Promedio", className: "bg-[#efe9df] text-[#6d4530]" }
+                badge: { text: "Promedio", className: "bg-[#efe9df] text-[#6d4530] dark:bg-neutral-800 dark:text-neutral-300" }
               },
               {
                 label: "Pedidos en proceso",
                 value: report.summary.pendingOrders,
                 detail: money(report.summary.pendingAmount),
                 icon: CalendarDays,
-                badge: { text: "En curso", className: "bg-[#f4dfb4] text-[#694500]" }
+                badge: { text: "En curso", className: "bg-[#f4dfb4] text-[#694500] dark:bg-neutral-800 dark:text-neutral-300" }
               }
             ].map(({ label, value, detail, icon: Icon, badge }) => (
               <Card className="rounded-3xl p-5" key={label}>
@@ -1831,11 +1831,11 @@ function SalesAdmin({ pin }: { pin: string }) {
                 <div className="mt-6 flex min-h-48 items-end gap-3 overflow-x-auto pb-1">
                   {report.dailySales.map((day) => (
                     <div className="flex min-w-16 flex-1 flex-col items-center" key={day.day}>
-                      <span className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                      <span className="mb-2 text-xs font-bold text-neutral-900 dark:text-neutral-100">
                         {money(day.total)}
                       </span>
                       <div
-                        className="w-full min-w-12 rounded-t-2xl bg-neutral-900 transition-opacity hover:opacity-90 dark:bg-white/90"
+                        className="w-full min-w-12 rounded-t-2xl bg-neutral-900 transition-opacity hover:opacity-80 dark:bg-neutral-100"
                         style={{
                           height: `${Math.max(18, (day.total / maximumDaily) * 140)}px`
                         }}
@@ -1862,7 +1862,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                   {report.topProducts.slice(0, 6).map((product, index) => (
                     <Card
                       key={product.name}
-                      className="rounded-2xl border border-neutral-100 p-3.5 dark:border-neutral-800"
+                      className="rounded-2xl border border-neutral-200/80 bg-white p-4 shadow-sm dark:border-neutral-800 dark:bg-neutral-900/80"
                     >
                       <div className="flex items-center gap-3 text-sm">
                         <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-neutral-900 text-xs font-bold text-white dark:bg-white dark:text-neutral-900">
@@ -1871,7 +1871,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                         <strong className="min-w-0 flex-1 truncate">{product.name}</strong>
                         <span className="font-bold">{product.quantity}</span>
                       </div>
-                      <div className="ml-9 mt-2 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
+                      <div className="ml-9 mt-2 h-2 overflow-hidden rounded-full bg-neutral-200 dark:bg-neutral-800">
                         <div
                           className="h-full rounded-full bg-neutral-900 transition-all dark:bg-white/90"
                           style={{ width: `${(product.quantity / maximumProduct) * 100}%` }}

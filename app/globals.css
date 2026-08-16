@@ -129,6 +129,32 @@ button:disabled {
   box-shadow: var(--shadow);
 }
 
+/* ── iOS layering · modo oscuro del panel admin ── */
+.dark .admin-surface {
+  background-color: rgb(10 10 10); /* neutral-950: lienzo */
+}
+.dark .admin-surface .paper,
+.dark .admin-surface .menu-card {
+  background-color: rgb(23 23 23 / 0.9); /* neutral-900/90 */
+  border-color: rgb(38 38 38 / 0.8); /* neutral-800/80 */
+  backdrop-filter: blur(24px);
+  -webkit-backdrop-filter: blur(24px);
+  border-radius: 1.5rem;
+  box-shadow: none;
+}
+.dark .admin-surface input:not([type="checkbox"]):not([type="radio"]),
+.dark .admin-surface select,
+.dark .admin-surface textarea {
+  background-color: rgb(38 38 38 / 0.6); /* neutral-800/60 */
+  border-color: rgb(64 64 64 / 0.6); /* neutral-700/60 */
+  color: #fff;
+  border-radius: 1rem;
+}
+.dark .admin-surface input::placeholder,
+.dark .admin-surface textarea::placeholder {
+  color: rgb(163 163 163 / 0.8);
+}
+
 /* ── Menu cards ── */
 
 .menu-photo {

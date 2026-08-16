@@ -20,6 +20,7 @@ import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
+import { ThemeToggle } from "@/components/theme-toggle";
 import { dailyCourseOrder, getCourseOptions, resolveDailyCourseGroups } from "@/lib/daily-menu";
 import {
   categories,
@@ -34,6 +35,16 @@ import { calculateCartTotal, cartItemTotal } from "@/lib/order-utils";
 import type { CartItem, DailyMenuConfig, Order, Product, Promotion, TableSession } from "@/lib/types";
 
 type MenuMode = "fixed" | "lunch";
+
+/** Íconos opcionales de categoría (solo capa visual; si no existe, la píldora va sin ícono). */
+const CATEGORY_ICONS: Record<string, string> = {
+  Favoritos: "⭐️",
+  Desayunos: "🍳",
+  "A la carta": "🍽️",
+  "Panes y más": "🥐",
+  Bebidas: "☕",
+  "Comidas a la carta": "🍛"
+};
 
 function normalizeProduct(raw: Record<string, unknown>): Product {
   const product = raw as unknown as Product;
@@ -86,6 +97,8 @@ export function MenuClient({
   const [serviceMinutes, setServiceMinutes] = useState<number | null>(null);
   const [justAdded, setJustAdded] = useState(false);
   const toastTimerRef = useRef<number | null>(null);
+  const [waiterToast, setWaiterToast] = useState(false);
+  const waiterToastTimerRef = useRef<number | null>(null);
   const [session, setSession] = useState<TableSession | null>(null);
   const [sessionLoading, setSessionLoading] = useState(true);
   const [sessionExisted, setSessionExisted] = useState(false);
@@ -486,6 +499,9 @@ export function MenuClient({
   function callWaiter() {
     if (waiterCalled) return;
     setWaiterCalled(true);
+    if (waiterToastTimerRef.current) window.clearTimeout(waiterToastTimerRef.current);
+    setWaiterToast(true);
+    waiterToastTimerRef.current = window.setTimeout(() => setWaiterToast(false), 1500);
     const call = {
       id: crypto.randomUUID(),
       tableCode,
@@ -522,17 +538,20 @@ export function MenuClient({
         <div className="relative mx-auto max-w-6xl px-4 pb-8 pt-5 sm:px-6 sm:pb-10">
           <div className="flex items-center justify-between">
             <Brand compact inverse />
-            <div className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-sm backdrop-blur">
-              <span
-                className={`mr-2 inline-block h-2 w-2 rounded-full ${
+            <div className="flex items-center gap-2">
+              <ThemeToggle />
+              <div className="rounded-full border border-white/15 bg-white/10 px-3 py-2 text-xs font-bold text-white shadow-sm backdrop-blur">
+                <span
+                  className={`mr-2 inline-block h-2 w-2 rounded-full ${
                   tableCode === "LLEVAR"
                     ? "bg-[#fbbf24] shadow-[0_0_0_4px_rgba(251,191,36,0.14)]"
                     : "bg-[#9acb8a] shadow-[0_0_0_4px_rgba(154,203,138,0.12)]"
                 }`}
               />
               {tableCode === "LLEVAR" ? "Para llevar 🥡" : "Servicio en mesa"}
+                </div>
+              </div>
             </div>
-          </div>
           <div className="mt-9 flex items-end justify-between gap-4">
             <div>
               <p className="eyebrow text-[var(--gold)]">
@@ -673,18 +692,19 @@ export function MenuClient({
                   </button>
                 )}
               </label>
-              <div className="no-scrollbar mt-3 flex gap-2 overflow-x-auto pb-2">
+              <div className="no-scrollbar -mx-1 mt-3 flex gap-2 overflow-x-auto px-1 py-1">
                 {categories.map((item) => (
                   <button
                     key={item}
                     data-category-pill={item}
-                    className={`focus-ring shrink-0 rounded-full px-5 py-2.5 text-xs font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
+                    className={`focus-ring shrink-0 rounded-full px-5 py-2.5 text-xs whitespace-nowrap transition-all duration-200 active:scale-95 ${
                       category === item
-                        ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900"
-                        : "bg-neutral-100/80 text-neutral-700 hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:text-white"
+                        ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900 dark:shadow-none"
+                        : "border border-neutral-200/80 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
                     }`}
                     onClick={() => setCategory(item)}
                   >
+                    {CATEGORY_ICONS[item] ? `${CATEGORY_ICONS[item]} ` : ""}
                     {item}
                   </button>
                 ))}
@@ -744,6 +764,17 @@ export function MenuClient({
               <Check size={14} strokeWidth={3} className="text-[var(--charcoal)]" />
             </span>
             Platillo agregado
+          </div>
+        </div>
+      )}
+
+      {waiterToast && (
+        <div className="pointer-events-none fixed inset-x-0 top-4 z-50 flex justify-center px-4">
+          <div className="toast-slide-in flex items-center gap-2.5 rounded-full bg-neutral-900/90 px-5 py-3.5 text-sm font-bold text-white shadow-2xl ring-1 ring-white/15 backdrop-blur-md dark:bg-white/90 dark:text-neutral-900">
+            <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--gold)]">
+              <Check size={14} strokeWidth={3} className="text-[var(--charcoal)]" />
+            </span>
+            Mesero notificado
           </div>
         </div>
       )}
@@ -816,23 +847,24 @@ export function MenuClient({
       {/* Botón flotante Llamar mesero */}
       <div className="fixed bottom-20 right-4 z-40 sm:bottom-24">
         <button
-          className={`focus-ring flex items-center gap-2.5 rounded-full px-5 py-4 font-bold text-white shadow-2xl transition-all ${
+          aria-label="Llamar mesero"
+          className={`focus-ring flex items-center gap-2 rounded-full px-4 py-2.5 text-xs font-semibold transition-all active:scale-95 ${
             waiterCalled
-              ? "bg-[var(--green)] cursor-default"
-              : "bg-[var(--terracotta)] hover:bg-[#b03a2a] hover:scale-105 active:scale-95"
+              ? "cursor-default bg-[var(--green)] text-white shadow-lg dark:shadow-none"
+              : "bg-neutral-900/90 text-white shadow-lg backdrop-blur-md hover:bg-neutral-800 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 dark:shadow-none"
           }`}
           onClick={callWaiter}
           disabled={waiterCalled}
         >
           {waiterCalled ? (
             <>
-              <Check size={20} strokeWidth={3} />
-              <span className="text-sm">Mesero avisado</span>
+              <Check size={16} strokeWidth={3} />
+              <span>Mesero avisado</span>
             </>
           ) : (
             <>
-              <Hand size={20} />
-              <span className="text-sm">Llamar mesero</span>
+              <Hand size={16} />
+              <span>Llamar mesero</span>
             </>
           )}
         </button>

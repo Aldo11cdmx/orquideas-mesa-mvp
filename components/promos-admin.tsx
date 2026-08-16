@@ -137,11 +137,11 @@ export function PromosAdmin({ pin }: { pin: string }) {
           </p>
         </div>
         <button
-          className="focus-ring grid h-11 w-11 place-items-center rounded-2xl bg-white text-[var(--brown)]"
+          className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700"
           aria-label="Actualizar promociones"
           onClick={() => void load()}
         >
-          <RefreshCw size={18} />
+          <RefreshCw size={16} />
         </button>
       </div>
 
@@ -217,10 +217,10 @@ export function PromosAdmin({ pin }: { pin: string }) {
             Activa desde que se crea
           </label>
           <button
-            className="focus-ring mt-1 min-h-12 rounded-xl bg-[var(--brown)] px-5 font-bold text-white transition hover:bg-[var(--brown-dark)] disabled:opacity-40 sm:col-span-2"
+            className="focus-ring mt-1 inline-flex min-h-12 items-center justify-center gap-1.5 rounded-full bg-neutral-900 px-5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-neutral-800 active:scale-95 disabled:opacity-40 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200 sm:col-span-2"
             disabled={saving || !form.title.trim() || !(Number(form.discountValue) > 0)}
           >
-            <Plus size={17} className="mr-1.5 inline" />
+            <Plus size={15} />
             {saving ? "Guardando…" : "Crear promoción"}
           </button>
         </form>
@@ -279,11 +279,11 @@ export function PromosAdmin({ pin }: { pin: string }) {
                       aria-label={`Activar ${promotion.title}`}
                     />
                     <button
-                      className="focus-ring grid h-10 w-10 place-items-center rounded-xl bg-[#f8e8e2] text-[#8a3b30]"
+                      className="focus-ring grid h-8 w-8 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       aria-label={`Eliminar ${promotion.title}`}
                       onClick={() => void remove(promotion)}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 </li>

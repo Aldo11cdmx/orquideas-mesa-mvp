@@ -15,6 +15,7 @@ import {
   PackageCheck,
   Pencil,
   Plus,
+  QrCode,
   RefreshCw,
   Save,
   Settings2,
@@ -32,9 +33,21 @@ import { PromosAdmin } from "@/components/promos-admin";
 import { Badge } from "@/components/ui/badge";
 import { Card } from "@/components/ui/card";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
+import { TableQrModal } from "@/components/table-qr-modal";
 import { connectOrderChannel } from "@/lib/order-store";
 import { categories, money, products as seedProducts } from "@/lib/menu";
 import type { DailyMenuConfig, DailyMenuDrink, Product, RestaurantTable, SalesReport } from "@/lib/types";
+
+/* Estilos compartidos estilo Apple/iOS para el panel de administración */
+const BTN_PRIMARY =
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-neutral-800 active:scale-95 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200";
+const BTN_SECONDARY =
+  "focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-xs font-semibold text-neutral-700 shadow-sm transition-all duration-200 hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800";
+const BTN_ICON =
+  "focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
+const BTN_ICON_DANGER =
+  "focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400";
 
 export function AdminPanel() {
   const [pin, setPin] = useState("");
@@ -177,7 +190,7 @@ export function AdminPanel() {
               onChange={(event) => setPin(event.target.value)}
             />
           </label>
-          <button className="focus-ring mt-4 h-14 w-full rounded-2xl bg-[var(--brown)] font-bold text-white shadow-lg hover:bg-[var(--brown-dark)]">
+          <button className="focus-ring mt-4 h-14 w-full rounded-full bg-neutral-900 py-3 text-sm font-semibold text-white shadow-sm transition-all duration-200 active:scale-[0.98] dark:bg-white dark:text-neutral-900">
             Entrar
           </button>
         </form>
@@ -303,10 +316,10 @@ function MenuAdmin({
           </p>
         </div>
         <button
-          className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-[var(--terracotta)] px-4 font-bold text-white"
+          className={BTN_PRIMARY}
           onClick={onCreate}
         >
-          <Plus size={18} /> Nuevo producto
+          <Plus size={16} /> Nuevo producto
         </button>
       </div>
       <div className="mt-5 grid gap-3 sm:grid-cols-2 xl:grid-cols-3">
@@ -323,17 +336,18 @@ function MenuAdmin({
               <p className="mt-1 truncate text-xs text-[var(--muted)]">{product.category}</p>
               <div className="mt-3 flex items-center justify-between gap-2">
                 <button
-                  className="focus-ring flex items-center gap-1 text-xs font-bold"
+                  className={BTN_ICON}
+                  aria-label={`Editar ${product.name}`}
                   onClick={() => onEdit(product)}
                 >
-                  <Pencil size={14} /> Editar
+                  <Pencil size={15} />
                 </button>
                 <button
-                  className="focus-ring flex items-center gap-1 text-xs font-bold text-[#8a3b30]"
+                  className={BTN_ICON_DANGER}
                   aria-label={`Borrar ${product.name}`}
                   onClick={() => onDelete(product)}
                 >
-                  <Trash2 size={14} /> Borrar
+                  <Trash2 size={15} />
                 </button>
                 <button
                   className={`focus-ring ${product.soldOut ? "text-[var(--terracotta)]" : "text-[#377359]"}`}
@@ -1036,6 +1050,12 @@ function TablesAdmin({ pin }: { pin: string }) {
   const [loading, setLoading] = useState(true);
   const [notice, setNotice] = useState("");
   const [editing, setEditing] = useState<RestaurantTable | null>(null);
+  const [deleting, setDeleting] = useState<RestaurantTable | null>(null);
+  const [deleteBusy, setDeleteBusy] = useState(false);
+  const [qrTable, setQrTable] = useState<RestaurantTable | null>(null);
+  const [appUrl] = useState(
+    () => (process.env.NEXT_PUBLIC_APP_URL || "http://localhost:3000").replace(/\/$/, "")
+  );
 
   const loadTables = useCallback(async () => {
     setLoading(true);
@@ -1073,19 +1093,35 @@ function TablesAdmin({ pin }: { pin: string }) {
       return null;
     }
     const updated = payload as RestaurantTable;
+    const isNew = !editing?.id;
     setTables(tables.map((t) => (t.id === updated.id ? updated : t)));
     setEditing(null);
     void loadTables();
+    if (isNew) setQrTable(updated);
     return updated;
   };
 
-  const statusLabel = (status?: string) => {
-    switch (status) {
-      case "occupied": return { text: "Ocupada", color: "text-[#e67e3a]" };
-      case "pending_payment": return { text: "Pendiente pago", color: "text-[#2563eb]" };
-      default: return { text: "Libre", color: "text-[#377359]" };
+  async function confirmDelete() {
+    if (!deleting) return;
+    setDeleteBusy(true);
+    setNotice("");
+    try {
+      const response = await fetch("/api/admin/tables", {
+        method: "DELETE",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ pin, id: deleting.id })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        setNotice(payload?.error || "No fue posible eliminar la mesa");
+        return;
+      }
+      setDeleting(null);
+      void loadTables();
+    } finally {
+      setDeleteBusy(false);
     }
-  };
+  }
 
   return (
     <div>
@@ -1098,73 +1134,95 @@ function TablesAdmin({ pin }: { pin: string }) {
           </p>
         </div>
         <button
-          className="focus-ring flex items-center gap-2 rounded-xl bg-[var(--brown)] px-4 py-3 font-bold text-white"
+          className={BTN_PRIMARY}
           onClick={() => setEditing({ id: "", code: "", name: "", capacity: 4, active: true })}
         >
-          <Plus size={18} /> Nueva mesa
+          <Plus size={16} /> Nueva mesa
         </button>
       </div>
 
       {notice && (
-        <p className="mt-3 text-sm text-[#be011f]">{notice}</p>
+        <p className="mt-3 text-sm font-bold text-[#be011f]">{notice}</p>
       )}
 
       {loading ? (
-        <div className="mt-6 space-y-3">
+        <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {Array.from({ length: 6 }).map((_, i) => (
-            <div key={i} className="paper h-28 rounded-2xl animate-pulse" />
+            <div key={i} className="h-32 animate-pulse rounded-3xl bg-neutral-100 dark:bg-neutral-800" />
           ))}
         </div>
       ) : (
         <div className="mt-6 grid gap-4 md:grid-cols-2 xl:grid-cols-3">
           {tables.map((table) => {
-            const { text: statusText, color: statusColor } = statusLabel(table.status);
+            const hasConsumption = (table.orderCount ?? 0) > 0 || (table.tableTotal ?? 0) > 0;
             return (
               <article
                 key={table.id}
-                className={`paper relative overflow-hidden rounded-2xl border p-5 ${
+                className={`paper relative overflow-hidden rounded-3xl border p-5 ${
                   table.active ? "border-[var(--line)]" : "border-red-300 bg-[#fef2f2]"
                 }`}
               >
-                <div className="flex items-start justify-between">
-                  <div>
+                <div className="flex items-start justify-between gap-2">
+                  <div className="min-w-0">
                     <h2 className="font-display text-4xl font-bold text-[var(--brown-dark)]">{table.code}</h2>
                     {table.name && (
-                      <p className="mt-1 text-sm text-[var(--muted)]">{table.name}</p>
+                      <p className="mt-1 truncate text-sm text-[var(--muted)]">{table.name}</p>
                     )}
                     {table.capacity > 0 && (
                       <p className="mt-1 text-xs text-[var(--muted)]">Capacidad: {table.capacity} personas</p>
                     )}
                   </div>
-                  <button
-                    className="focus-ring rounded-lg p-1 text-[var(--muted)] hover:text-[var(--brown)]"
-                    onClick={() => setEditing(table)}
-                  >
-                    <Pencil size={18} />
-                  </button>
+                  <div className="flex shrink-0 items-center gap-1.5">
+                    <button
+                      className={BTN_ICON}
+                      aria-label={`Ver código QR de la mesa ${table.code}`}
+                      onClick={() => setQrTable(table)}
+                    >
+                      <QrCode size={15} />
+                    </button>
+                    <button
+                      className={BTN_ICON}
+                      aria-label={`Editar mesa ${table.code}`}
+                      onClick={() => setEditing(table)}
+                    >
+                      <Pencil size={15} />
+                    </button>
+                    <button
+                      className={BTN_ICON_DANGER}
+                      aria-label={`Eliminar mesa ${table.code}`}
+                      onClick={() => setDeleting(table)}
+                    >
+                      <Trash2 size={15} />
+                    </button>
+                  </div>
                 </div>
 
-                <div className="mt-3 flex items-center gap-4 text-sm">
-                  <span className={`font-bold ${statusColor}`}>{statusText}</span>
-                  {table.orderCount && table.orderCount > 0 && (
+                <div className="mt-3 flex flex-wrap items-center gap-2">
+                  {!table.active ? (
+                    <Badge className="h-auto rounded-full border-none bg-red-100 px-3 py-0.5 text-[11px] font-medium text-red-700 dark:bg-red-950/50 dark:text-red-400">
+                      Inactiva
+                    </Badge>
+                  ) : hasConsumption ? (
                     <>
-                      <span className="text-[var(--muted)]">·</span>
-                      <span className="text-[var(--muted)]">{table.orderCount} pedido(s)</span>
-                      <span className="text-[var(--muted)]">·</span>
-                      <span className="font-bold text-[var(--green)]">{money(table.tableTotal ?? 0)}</span>
+                      <Badge className="h-auto rounded-full border-none bg-orange-50 px-3 py-0.5 text-[11px] font-medium text-orange-700 dark:bg-orange-950/50 dark:text-orange-400">
+                        Ocupada
+                      </Badge>
+                      <strong className="text-sm text-[var(--ink)]">{money(table.tableTotal ?? 0)}</strong>
+                      {(table.orderCount ?? 0) > 0 && (
+                        <span className="text-xs text-[var(--muted)]">· {table.orderCount} pedido(s)</span>
+                      )}
                     </>
+                  ) : (
+                    <Badge className="h-auto rounded-full border-none bg-emerald-50 px-3 py-0.5 text-[11px] font-medium text-emerald-700 dark:bg-emerald-950/50 dark:text-emerald-400">
+                      Libre
+                    </Badge>
                   )}
                 </div>
 
-                {!table.active && (
-                  <span className="mt-2 inline-block rounded-full bg-red-100 px-2 py-1 text-xs font-bold text-red-700">
-                    Inactiva
-                  </span>
-                )}
-
-                <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2">
-                  <span className="text-xs text-[var(--muted)]">
-                    QR apunta a /mesa/{table.code}
+                <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2.5">
+                  <span className="text-[10px] text-[var(--muted)]">QR → /mesa/{table.code}</span>
+                  <span className="text-[10px] text-[var(--muted)]">
+                    {table.active ? "Activa" : "Desactivada"}
                   </span>
                 </div>
               </article>
@@ -1179,20 +1237,60 @@ function TablesAdmin({ pin }: { pin: string }) {
       {editing && (
         <TableEditor
           table={editing}
+          tables={tables}
           onClose={() => setEditing(null)}
           onSave={saveTable}
         />
       )}
+
+      {/* Confirmación de borrado de mesa */}
+      <Dialog
+        open={Boolean(deleting)}
+        onOpenChange={(open) => {
+          if (!open && !deleteBusy) setDeleting(null);
+        }}
+      >
+        <DialogContent className="max-w-sm rounded-3xl p-6 dark:bg-neutral-900 dark:text-neutral-100">
+          <DialogTitle className="font-display text-xl font-bold">
+            ¿Eliminar la Mesa {deleting?.code}?
+          </DialogTitle>
+          <p className="mt-2 text-sm text-neutral-600 dark:text-neutral-300">
+            Esta acción no se puede deshacer.
+          </p>
+          <div className="mt-6 flex gap-3">
+            <button
+              type="button"
+              className="flex-1 rounded-full border border-neutral-200 px-4 py-2.5 text-xs font-semibold transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
+              onClick={() => setDeleting(null)}
+              disabled={deleteBusy}
+            >
+              Cancelar
+            </button>
+            <button
+              type="button"
+              className="flex-1 rounded-full bg-red-600 px-4 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 active:scale-95 disabled:opacity-50"
+              onClick={() => void confirmDelete()}
+              disabled={deleteBusy}
+            >
+              {deleteBusy ? "Eliminando…" : "Eliminar"}
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
+
+      <TableQrModal table={qrTable} appUrl={appUrl} onClose={() => setQrTable(null)} />
     </div>
   );
 }
 
 function TableEditor({
   table,
+  tables,
   onClose,
   onSave
 }: {
   table: RestaurantTable;
+  tables: RestaurantTable[];
   onClose: () => void;
   onSave: (code: string, name: string, capacity: number, active: boolean) => Promise<RestaurantTable | null>;
 }) {
@@ -1201,13 +1299,23 @@ function TableEditor({
   const [capacity, setCapacity] = useState((table.capacity ?? 0).toString());
   const [active, setActive] = useState(table.active);
   const [saving, setSaving] = useState(false);
+  const [error, setError] = useState("");
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    const trimmed = code.trim().toUpperCase();
+    const duplicate = tables.some(
+      (t) => t.code.trim().toUpperCase() === trimmed && t.id !== table.id
+    );
+    if (duplicate) {
+      setError(`Ya existe una mesa con el código "${trimmed}". Usa otro código.`);
+      return;
+    }
     setSaving(true);
+    setError("");
     try {
-      await onSave(code.toUpperCase(), name, parseInt(capacity, 10) || 0, active);
-      onClose();
+      const saved = await onSave(trimmed, name, parseInt(capacity, 10) || 0, active);
+      if (saved) onClose();
     } finally {
       setSaving(false);
     }
@@ -1216,18 +1324,24 @@ function TableEditor({
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50 p-4">
       <form
-        className="paper w-full max-w-md rounded-3xl p-8 shadow-2xl"
+        className="paper w-full max-w-md rounded-3xl p-8 shadow-2xl dark:bg-neutral-900 dark:text-neutral-100"
         onSubmit={handleSubmit}
       >
         <h2 className="font-display text-2xl font-bold">
           {table.id ? "Editar mesa" : "Nueva mesa"}
         </h2>
 
+        {error && (
+          <p className="mt-3 rounded-2xl bg-red-50 px-4 py-2.5 text-sm font-bold text-red-700 dark:bg-red-950/40 dark:text-red-400">
+            {error}
+          </p>
+        )}
+
         <div className="mt-4 space-y-4">
           <label className="block text-sm font-bold">
             Código de mesa
             <input
-              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg uppercase outline-none focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               value={code}
               onChange={(e) => setCode(e.target.value.toUpperCase())}
               pattern="[A-Z][0-9]{0,2}"
@@ -1239,7 +1353,7 @@ function TableEditor({
           <label className="block text-sm font-bold">
             Nombre (opcional)
             <input
-              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               value={name}
               onChange={(e) => setName(e.target.value)}
               placeholder="Ej: Mesa de la ventana"
@@ -1250,7 +1364,7 @@ function TableEditor({
             Capacidad
             <input
               type="number"
-              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)]"
+              className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] bg-white px-4 text-lg outline-none focus:border-[var(--green)] dark:border-neutral-700 dark:bg-neutral-800 dark:text-neutral-100"
               value={capacity}
               onChange={(e) => setCapacity(e.target.value)}
               min={0}
@@ -1272,7 +1386,7 @@ function TableEditor({
         <div className="mt-6 flex gap-3">
           <button
             type="button"
-            className="flex-1 rounded-xl border border-[var(--line)] px-4 py-3 font-bold"
+            className="flex-1 rounded-full border border-neutral-200 px-4 py-3 text-xs font-semibold transition-colors hover:bg-neutral-50 disabled:opacity-50 dark:border-neutral-700 dark:text-neutral-200 dark:hover:bg-neutral-800"
             onClick={onClose}
             disabled={saving}
           >
@@ -1281,7 +1395,7 @@ function TableEditor({
           <button
             type="submit"
             disabled={saving}
-            className="focus-ring flex-1 rounded-xl bg-[var(--green)] px-4 py-3 font-bold text-white hover:bg-green-800"
+            className="focus-ring flex-1 rounded-full bg-neutral-900 px-4 py-3 text-xs font-semibold text-white shadow-sm transition-all duration-200 active:scale-95 disabled:opacity-50 dark:bg-white dark:text-neutral-900"
           >
             {saving ? "Guardando…" : table.id ? "Actualizar" : "Crear"}
           </button>
@@ -1446,28 +1560,30 @@ function SalesAdmin({ pin }: { pin: string }) {
           </p>
         </div>
         <button
-          className="focus-ring flex min-h-11 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 font-bold"
+          className={BTN_SECONDARY}
           onClick={() => void load()}
         >
-          <RefreshCw className={loading ? "animate-spin" : ""} size={17} /> Actualizar
+          <RefreshCw className={loading ? "animate-spin" : ""} size={15} /> Actualizar
         </button>
         <button
-          className="focus-ring flex min-h-11 items-center gap-2 rounded-xl bg-[var(--brown)] px-4 font-bold text-white shadow-sm transition hover:bg-[var(--brown-dark)]"
+          className={BTN_PRIMARY}
           onClick={exportPdf}
         >
-          <FileDown size={17} /> Exportar PDF
+          <FileDown size={15} /> Exportar PDF
         </button>
       </div>
 
-      <div className="paper mt-5 inline-flex rounded-2xl p-1.5">
+      <div className="mt-5 inline-flex rounded-full bg-neutral-100 p-1 dark:bg-neutral-800">
         {([
           ["day", "Hoy"],
           ["week", "7 días"],
           ["month", "Este mes"]
         ] as const).map(([value, label]) => (
           <button
-            className={`focus-ring rounded-xl px-4 py-2.5 text-sm font-bold ${
-              period === value ? "bg-[var(--brown)] text-white shadow" : "text-[var(--muted)]"
+            className={`rounded-full px-4 py-2 text-xs font-semibold transition-all duration-200 ${
+              period === value
+                ? "bg-white text-neutral-900 shadow-sm dark:bg-neutral-900 dark:text-white"
+                : "text-neutral-600 hover:text-neutral-900 dark:text-neutral-400 dark:hover:text-white"
             }`}
             key={value}
             onClick={() => setPeriod(value)}
@@ -1484,11 +1600,13 @@ function SalesAdmin({ pin }: { pin: string }) {
       )}
 
       {loading && !report ? (
-        <div className="paper mt-5 grid min-h-64 place-items-center rounded-3xl">
-          <div className="text-center">
-            <RefreshCw className="mx-auto animate-spin text-[var(--brown)]" />
-            <p className="mt-3 text-sm text-[var(--muted)]">Calculando el corte…</p>
+        <div className="mt-5 space-y-5">
+          <div className="grid gap-4 sm:grid-cols-2 xl:grid-cols-3">
+            {Array.from({ length: 6 }).map((_, i) => (
+              <div key={i} className="h-40 animate-pulse rounded-3xl bg-neutral-100 dark:bg-neutral-800" />
+            ))}
           </div>
+          <div className="h-72 animate-pulse rounded-3xl bg-neutral-100 dark:bg-neutral-800" />
         </div>
       ) : report ? (
         <>
@@ -1565,10 +1683,10 @@ function SalesAdmin({ pin }: { pin: string }) {
                 <h2 className="font-display text-2xl font-bold">Ajustes manuales</h2>
               </div>
               <button
-                className="focus-ring flex min-h-10 items-center gap-2 rounded-xl border border-[var(--line)] bg-white px-4 text-sm font-bold"
+                className={BTN_SECONDARY}
                 onClick={() => setAdjustmentOpen((value) => !value)}
               >
-                <Plus size={16} />
+                <Plus size={15} />
                 {adjustmentOpen ? "Cerrar" : "Registrar ajuste"}
               </button>
             </div>
@@ -1611,7 +1729,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                   onChange={(event) => setAdjConcept(event.target.value)}
                 />
                 <button
-                  className="focus-ring flex min-h-10 items-center justify-center gap-2 rounded-xl bg-[var(--brown)] px-4 text-sm font-bold text-white disabled:cursor-not-allowed disabled:opacity-50"
+                  className={BTN_PRIMARY}
                   disabled={savingAdjustment}
                   onClick={() => void submitAdjustment()}
                 >
@@ -1654,7 +1772,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                       {money(adjustment.amount)}
                     </strong>
                     <button
-                      className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full text-[var(--muted)] transition hover:bg-[#f1d0ca] hover:text-[#7a2c22]"
+                      className={BTN_ICON_DANGER}
                       aria-label="Eliminar ajuste"
                       onClick={() => void removeAdjustment(adjustment.id)}
                     >
@@ -1707,20 +1825,22 @@ function SalesAdmin({ pin }: { pin: string }) {
                   <p className="eyebrow text-[var(--terracotta)]">Tendencia</p>
                   <h2 className="font-display text-2xl font-bold">Consumo por día</h2>
                 </div>
-                <BarChart3 className="text-[var(--brown)]" />
+                <BarChart3 className="text-neutral-900 dark:text-neutral-200" />
               </div>
               {report.dailySales.length ? (
-                <div className="mt-6 flex min-h-48 items-end gap-3 overflow-x-auto">
+                <div className="mt-6 flex min-h-48 items-end gap-3 overflow-x-auto pb-1">
                   {report.dailySales.map((day) => (
                     <div className="flex min-w-16 flex-1 flex-col items-center" key={day.day}>
-                      <span className="mb-2 text-xs font-bold">{money(day.total)}</span>
+                      <span className="mb-2 text-xs font-bold text-neutral-800 dark:text-neutral-200">
+                        {money(day.total)}
+                      </span>
                       <div
-                        className="w-full min-w-12 rounded-t-xl bg-gradient-to-t from-[var(--brown-dark)] to-[var(--terracotta)]"
+                        className="w-full min-w-12 rounded-t-2xl bg-neutral-900 transition-opacity hover:opacity-90 dark:bg-white/90"
                         style={{
                           height: `${Math.max(18, (day.total / maximumDaily) * 140)}px`
                         }}
                       />
-                      <span className="mt-2 text-[11px] text-[var(--muted)]">
+                      <span className="mt-2 text-[11px] font-medium text-neutral-500 dark:text-neutral-400">
                         {new Date(`${day.day}T12:00:00`).toLocaleDateString("es-MX", {
                           day: "2-digit",
                           month: "short"
@@ -1730,7 +1850,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                   ))}
                 </div>
               ) : (
-                <EmptySales message="Aún no hay pedidos entregados en este periodo." />
+                <EmptySales message="Sin ventas registradas este periodo." />
               )}
             </section>
 
@@ -1738,26 +1858,29 @@ function SalesAdmin({ pin }: { pin: string }) {
               <p className="eyebrow text-[var(--terracotta)]">Ranking</p>
               <h2 className="font-display text-2xl font-bold">Lo más vendido</h2>
               {report.topProducts.length ? (
-                <div className="mt-5 space-y-4">
+                <div className="mt-5 space-y-3">
                   {report.topProducts.slice(0, 6).map((product, index) => (
-                    <div key={product.name}>
+                    <Card
+                      key={product.name}
+                      className="rounded-2xl border border-neutral-100 p-3.5 dark:border-neutral-800"
+                    >
                       <div className="flex items-center gap-3 text-sm">
-                        <span className="grid h-7 w-7 place-items-center rounded-full bg-[var(--charcoal)] text-xs font-bold text-white">
+                        <span className="grid h-6 w-6 shrink-0 place-items-center rounded-full bg-neutral-900 text-xs font-bold text-white dark:bg-white dark:text-neutral-900">
                           {index + 1}
                         </span>
                         <strong className="min-w-0 flex-1 truncate">{product.name}</strong>
                         <span className="font-bold">{product.quantity}</span>
                       </div>
-                      <div className="ml-10 mt-2 h-2 overflow-hidden rounded-full bg-[var(--mist)]">
+                      <div className="ml-9 mt-2 h-2 overflow-hidden rounded-full bg-neutral-100 dark:bg-neutral-800">
                         <div
-                          className="h-full rounded-full bg-[var(--green)]"
+                          className="h-full rounded-full bg-neutral-900 transition-all dark:bg-white/90"
                           style={{ width: `${(product.quantity / maximumProduct) * 100}%` }}
                         />
                       </div>
-                      <p className="ml-10 mt-1 text-[11px] text-[var(--muted)]">
+                      <p className="ml-9 mt-1 text-[11px] text-neutral-500 dark:text-neutral-400">
                         {money(product.revenue)} registrados
                       </p>
-                    </div>
+                    </Card>
                   ))}
                 </div>
               ) : (
@@ -1790,7 +1913,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                           {order.status === "delivered" ? "Entregado" : "En proceso"}
                         </span>
                         {order.paymentMethod && (
-                          <span className="rounded-full bg-[#eee8dc] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+                          <span className="rounded-full bg-neutral-100 px-2 py-1 text-[10px] font-bold uppercase text-neutral-700 dark:bg-neutral-800 dark:text-neutral-200">
                             {order.paymentMethod === "cash" ? "Efectivo" : "Tarjeta"}
                           </span>
                         )}
@@ -1821,7 +1944,7 @@ function SalesAdmin({ pin }: { pin: string }) {
 
 function EmptySales({ message }: { message: string }) {
   return (
-    <div className="my-6 rounded-2xl border border-dashed border-[#bdb4a5] px-5 py-10 text-center text-sm text-[var(--muted)]">
+    <div className="my-6 rounded-2xl border border-dashed border-neutral-200 px-5 py-10 text-center text-sm text-neutral-500 dark:border-neutral-700 dark:text-neutral-400">
       {message}
     </div>
   );
@@ -1913,11 +2036,11 @@ function BreakfastAdmin({ pin }: { pin: string }) {
           </p>
         </div>
         <button
-          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--brown)] px-4 text-sm font-bold text-white"
+          className={BTN_SECONDARY}
           onClick={() => void loadExtras()}
           disabled={loading}
         >
-          <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
+          <RefreshCw className={loading ? "animate-spin" : ""} size={15} />
           {loading ? "Cargando" : "Actualizar"}
         </button>
       </div>
@@ -1949,11 +2072,11 @@ function BreakfastAdmin({ pin }: { pin: string }) {
           />
         </label>
         <button
-          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--green)] px-4 text-sm font-bold text-white disabled:opacity-50"
+          className={BTN_PRIMARY}
           disabled={!name.trim() || !price}
           onClick={() => void saveExtra()}
         >
-          <Plus size={16} /> Agregar
+          <Plus size={15} /> Agregar
         </button>
       </div>
 
@@ -1983,11 +2106,11 @@ function BreakfastAdmin({ pin }: { pin: string }) {
               <p className="text-xs text-[var(--muted)]">+${extra.price}</p>
             </div>
             <button
-              className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
+              className={BTN_ICON_DANGER}
               onClick={() => void deleteExtra(extra.id)}
-              title="Eliminar"
+              aria-label={`Eliminar extra ${extra.name}`}
             >
-              <Trash2 size={16} />
+              <Trash2 size={14} />
             </button>
           </div>
         ))}

@@ -122,11 +122,11 @@ export function DrinksAdmin({ pin }: { pin: string }) {
           </p>
         </div>
         <button
-          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--brown)] px-4 text-sm font-bold text-white"
+          className="focus-ring inline-flex items-center justify-center gap-2 rounded-full border border-neutral-200 bg-white px-5 py-2.5 text-xs font-semibold text-neutral-700 shadow-sm transition-all duration-200 hover:bg-neutral-50 active:scale-95 dark:border-neutral-700 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"
           onClick={() => void loadFlavors()}
           disabled={loading}
         >
-          <RefreshCw className={loading ? "animate-spin" : ""} size={16} />
+          <RefreshCw className={loading ? "animate-spin" : ""} size={15} />
           {loading ? "Cargando" : "Actualizar"}
         </button>
       </div>
@@ -170,11 +170,11 @@ export function DrinksAdmin({ pin }: { pin: string }) {
           />
         </label>
         <button
-          className="focus-ring flex min-h-10 items-center gap-2 rounded-xl bg-[var(--green)] px-4 text-sm font-bold text-white disabled:opacity-50"
+          className="focus-ring inline-flex items-center justify-center gap-2 rounded-full bg-neutral-900 px-5 py-2.5 text-xs font-semibold text-white shadow-sm transition-all duration-200 hover:bg-neutral-800 active:scale-95 disabled:opacity-50 dark:bg-white dark:text-neutral-900 dark:hover:bg-neutral-200"
           disabled={!newName.trim()}
           onClick={() => void saveFlavor()}
         >
-          <Plus size={16} /> Agregar
+          <Plus size={15} /> Agregar
         </button>
       </div>
 
@@ -221,11 +221,11 @@ export function DrinksAdmin({ pin }: { pin: string }) {
                       )}
                     </div>
                     <button
-                      className="focus-ring grid h-9 w-9 shrink-0 place-items-center rounded-lg bg-[#f8e8e2] text-[#8a3b30]"
+                      className="focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       onClick={() => void deleteFlavor(flavor.id)}
-                      title="Eliminar"
+                      aria-label={`Eliminar sabor ${flavor.name}`}
                     >
-                      <Trash2 size={16} />
+                      <Trash2 size={14} />
                     </button>
                   </div>
                 ))}

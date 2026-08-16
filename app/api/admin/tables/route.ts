@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient } from "@/lib/supabase/server";
+import { createServerClient, createAdminClient } from "@/lib/supabase/server";
 
 const tableSchema = z.object({
   id: z.string().uuid().optional().or(z.literal("").transform(() => undefined)),
@@ -31,6 +31,32 @@ export async function GET(request: NextRequest) {
     );
   }
   return NextResponse.json(data || []);
+}
+
+export async function DELETE(request: NextRequest) {
+  const body = await request.json().catch(() => null);
+  const parsed = z
+    .object({ pin: z.string().min(1).max(20), id: z.string().uuid() })
+    .safeParse(body);
+
+  if (!parsed.success || !authorized(parsed.data.pin)) {
+    return NextResponse.json(
+      { error: parsed.success ? "PIN incorrecto" : "Solicitud inválida" },
+      { status: parsed.success ? 401 : 400 }
+    );
+  }
+
+  const supabase = createAdminClient();
+  const { error } = await supabase.from("tables").delete().eq("id", parsed.data.id);
+
+  if (error) {
+    console.error("delete table failed", error.code, error.message);
+    return NextResponse.json(
+      { error: "No fue posible eliminar la mesa" },
+      { status: 503 }
+    );
+  }
+  return NextResponse.json({ ok: true });
 }
 
 export async function POST(request: NextRequest) {

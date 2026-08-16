@@ -13,6 +13,8 @@ import {
   Trash2,
   X
 } from "lucide-react";
+import { Badge } from "@/components/ui/badge";
+import { Dialog, DialogContent, DialogTitle } from "@/components/ui/dialog";
 import { Drawer, DrawerContent, DrawerTitle } from "@/components/ui/drawer";
 import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
@@ -871,20 +873,20 @@ function ProductCard({
             {product.category}
           </span>
           {promotion && (
-            <span className="animate-pulse absolute right-3 top-3 rounded-full bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#7c2d00] shadow-[0_0_16px_rgba(245,158,11,0.5)]">
+            <Badge className="animate-pulse absolute right-3 top-3 h-auto border border-white/40 bg-gradient-to-r from-[#f59e0b] to-[#fbbf24] px-3 py-1.5 text-[10px] font-extrabold uppercase tracking-[0.12em] text-[#7c2d00] shadow-[0_0_16px_rgba(245,158,11,0.5)]">
               ¡PROMO!
-            </span>
+            </Badge>
           )}
           <div className="absolute bottom-2 left-3 flex flex-wrap gap-1.5">
             {product.popular && (
-              <span className="rounded-full bg-[#f4dfb4]/95 px-2.5 py-1 text-[10px] font-bold uppercase text-[#694500] shadow-md">
+              <Badge variant="outline" className="h-auto border-none bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur-md">
                 🔥 Popular
-              </span>
+              </Badge>
             )}
             {recommended && (
-              <span className="rounded-full bg-[#d9ebe1]/95 px-2.5 py-1 text-[10px] font-bold uppercase text-[var(--green)] shadow-md">
+              <Badge variant="outline" className="h-auto border-none bg-black/60 px-3 py-1 text-[11px] font-medium text-white backdrop-blur-md">
                 ⭐ Recomendado
-              </span>
+              </Badge>
             )}
           </div>
           <div className="absolute inset-x-0 bottom-0 h-16 bg-gradient-to-t from-black/25 to-transparent" />
@@ -892,29 +894,29 @@ function ProductCard({
         <div className="p-5">
           <div className="mb-2 flex min-h-6 flex-wrap gap-2">
             {product.isNew && (
-              <span className="rounded-full bg-[#d9ebe1] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
+              <Badge className="h-auto bg-[#d9ebe1] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
                 Nuevo
-              </span>
+              </Badge>
             )}
             {product.packageIncludes?.length && (
-              <span className="rounded-full bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
+              <Badge className="h-auto bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase text-[var(--green)]">
                 Paquete completo
-              </span>
+              </Badge>
             )}
             {(product.optionGroups?.length || product.options?.length) && (
-              <span className="rounded-full bg-[#efe3d7] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+              <Badge className="h-auto bg-[#efe3d7] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
                 Personalizable
-              </span>
+              </Badge>
             )}
             {product.soldOut && (
-              <span className="rounded-full bg-[#f1d0ca] px-2 py-1 text-[10px] font-bold uppercase text-[#7a2c22]">
+              <Badge className="h-auto bg-[#f1d0ca] px-2 py-1 text-[10px] font-bold uppercase text-[#7a2c22]">
                 Agotado
-              </span>
+              </Badge>
             )}
             {!product.soldOut && !available && (
-              <span className="rounded-full bg-[var(--mist)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
+              <Badge className="h-auto bg-[var(--mist)] px-2 py-1 text-[10px] font-bold uppercase text-[var(--brown)]">
                 Fuera de horario
-              </span>
+              </Badge>
             )}
           </div>
           <h3 className="font-display text-[1.35rem] font-bold leading-[1.05]">{product.name}</h3>
@@ -1119,197 +1121,207 @@ function ProductDialog({
     })
     .join(" · ")
     .slice(0, 80);
+  const totalPrice =
+    (product.price +
+      priceModifier +
+      allExtras
+        .filter((extra) => selectedExtras.includes(extra.name))
+        .reduce((sum, extra) => sum + extra.price, 0)) *
+    quantity;
   return (
-    <div className="animate-fade-in fixed inset-0 z-50 flex items-end overflow-hidden bg-[#171411]/70 backdrop-blur-[3px] lg:items-center lg:justify-center lg:p-5">
-      <section
-        role="dialog"
-        aria-modal="true"
-        aria-labelledby="product-title"
-        className="animate-scale-in max-h-[94dvh] w-full overflow-x-hidden overflow-y-auto rounded-t-[2rem] bg-[var(--paper)] shadow-2xl lg:max-w-5xl lg:rounded-[2rem]"
+    <Dialog open onOpenChange={(open) => { if (!open) onClose(); }}>
+      <DialogContent
+        showCloseButton={false}
+        overlayClassName="bg-[#171411]/60 backdrop-blur-[3px]"
+        className="top-0 left-0 flex h-dvh w-full max-w-none translate-x-0 translate-y-0 flex-col gap-0 overflow-hidden rounded-t-[2rem] rounded-b-none bg-[var(--paper)] p-0 text-[var(--ink)] sm:top-1/2 sm:left-1/2 sm:h-auto sm:max-h-[92dvh] sm:w-full sm:max-w-lg sm:-translate-x-1/2 sm:-translate-y-1/2 sm:rounded-3xl"
       >
-        <div className="relative grid min-w-0 lg:grid-cols-[0.9fr_1.1fr]">
-          <button
-            className="focus-ring absolute left-4 top-4 z-10 grid h-11 w-11 place-items-center rounded-2xl bg-white/90 shadow-lg backdrop-blur"
-            aria-label="Cerrar"
-            onClick={onClose}
-          >
-            <X />
-          </button>
+        <DialogTitle className="sr-only">{product.name}</DialogTitle>
+        <div className="relative shrink-0">
           <ProductImage
             src={product.image}
             alt={product.name}
             category={product.category}
-            className="h-56 w-full sm:h-72 lg:h-full lg:min-h-[34rem]"
+            className="aspect-[4/3] w-full"
           />
-          <div className="min-w-0 p-5 sm:p-7 lg:flex lg:min-h-[34rem] lg:flex-col lg:justify-center lg:p-10">
-            <p className="eyebrow mb-3 text-[var(--brown)]">{product.category}</p>
-            <h2 id="product-title" className="break-words font-display text-3xl font-bold leading-none sm:text-4xl">
+          <div className="absolute inset-x-0 bottom-0 h-24 bg-gradient-to-t from-black/45 to-transparent" />
+          <button
+            className="focus-ring absolute right-4 top-4 z-10 grid h-10 w-10 place-items-center rounded-full bg-black/40 text-white backdrop-blur-md transition active:scale-90"
+            aria-label="Cerrar"
+            onClick={onClose}
+          >
+            <X size={18} />
+          </button>
+          <div className="absolute bottom-3 left-4 right-4">
+            <p className="eyebrow text-[var(--gold-light)]">{product.category}</p>
+            <h2 className="mt-1 font-display text-3xl font-bold leading-none text-white drop-shadow-md">
               {product.name}
             </h2>
-            <p className="mt-3 leading-6 text-[var(--muted)]">{product.description}</p>
-            {product.packageIncludes?.length && (
-              <div className="mt-5 rounded-2xl border border-[#c9d7ca] bg-[#edf3ec] p-4">
-                <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--green)]">
-                  Tu paquete ya incluye
-                </p>
-                <div className="mt-2 flex flex-wrap gap-2">
-                  {product.packageIncludes.map((item) => (
-                    <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold" key={item}>
-                      ✓ {item}
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
-            {groups.map((group, groupIndex) => (
-              <fieldset className="mt-5" key={group.id}>
-                <legend className="flex items-center gap-2 font-bold">
-                  <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--brown)] text-xs text-white">
-                    {groupIndex + 1}
+          </div>
+        </div>
+
+        <div className="min-h-0 flex-1 overflow-y-auto overscroll-contain px-5 py-5">
+          <p className="leading-6 text-[var(--muted)]">{product.description}</p>
+          {product.packageIncludes?.length && (
+            <div className="mt-5 rounded-2xl border border-[#c9d7ca] bg-[#edf3ec] p-4">
+              <p className="text-xs font-extrabold uppercase tracking-wider text-[var(--green)]">
+                Tu paquete ya incluye
+              </p>
+              <div className="mt-2 flex flex-wrap gap-2">
+                {product.packageIncludes.map((item) => (
+                  <span className="rounded-full bg-white px-3 py-1.5 text-xs font-bold" key={item}>
+                    ✓ {item}
                   </span>
-                  {group.label}
-                </legend>
-                <p className="mb-3 ml-8 text-xs text-[var(--muted)]">
-                  Selecciona 1 {group.required !== false && "· Obligatorio"}
-                </p>
-                <div className="grid gap-2 sm:grid-cols-2">
-                  {group.choices.map((item) => (
-                    <label
+                ))}
+              </div>
+            </div>
+          )}
+          {groups.map((group, groupIndex) => (
+            <fieldset className="mt-5" key={group.id}>
+              <legend className="flex items-center gap-2 font-bold">
+                <span className="grid h-6 w-6 place-items-center rounded-full bg-[var(--brown)] text-xs text-white">
+                  {groupIndex + 1}
+                </span>
+                {group.label}
+              </legend>
+              <p className="mb-3 ml-8 text-xs text-[var(--muted)]">
+                Selecciona 1 {group.required !== false && "· Obligatorio"}
+              </p>
+              <div className="flex flex-wrap gap-2">
+                {group.choices.map((item) => {
+                  const unavailable = item.trim() === "";
+                  const selected = selections[group.id] === item;
+                  return (
+                    <button
+                      type="button"
                       key={item}
-                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
-                        selections[group.id] === item
-                          ? "border-[var(--brown)] bg-[#eee2d8] shadow-sm"
-                          : "border-[var(--line)] hover:bg-[var(--cream)]"
+                      disabled={unavailable}
+                      aria-pressed={selected}
+                      className={`focus-ring rounded-full px-4 py-2.5 text-xs font-semibold transition-all ${
+                        unavailable
+                          ? "cursor-not-allowed opacity-40"
+                          : selected
+                            ? "bg-neutral-900 text-white shadow-md"
+                            : "border border-[var(--line)] bg-white text-[var(--ink)] hover:border-[var(--brown)] hover:bg-[var(--cream)] active:scale-95"
                       }`}
+                      onClick={() =>
+                        setSelections((current) => ({ ...current, [group.id]: item }))
+                      }
                     >
-                      {item}
+                      {unavailable ? "No disponible" : item}
+                    </button>
+                  );
+                })}
+              </div>
+            </fieldset>
+          ))}
+          <label className="mt-5 block text-sm font-bold">
+            Observaciones
+            <textarea
+              className="mt-2 min-h-20 w-full resize-none rounded-xl border border-[var(--line)] bg-white p-3 font-normal outline-none transition focus:border-[var(--green)]"
+              maxLength={180}
+              placeholder="Ej. Sin cebolla, salsa aparte…"
+              value={notes}
+              onChange={(event) => setNotes(event.target.value)}
+            />
+          </label>
+          {allExtras.length > 0 && (
+            <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
+              <legend className="font-display text-xl font-bold">
+                {isBreakfast ? "Extras de desayuno" : "Extras con costo"}
+              </legend>
+              <p className="mt-1 text-xs text-[var(--muted)]">
+                Puedes sumar extras y el precio se actualizará al momento.
+              </p>
+              <div className="mt-3 grid gap-2">
+                {allExtras.map((extra) => {
+                  const selected = selectedExtras.includes(extra.name);
+                  return (
+                    <label
+                      className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
+                        selected
+                          ? "border-[var(--brown)] bg-[#f4e6d8] shadow-sm"
+                          : "border-[var(--line)] bg-white hover:bg-[var(--cream)]"
+                      }`}
+                      key={extra.name}
+                    >
+                      <span className="flex items-center gap-2">
+                        <span
+                          className={`grid h-5 w-5 place-items-center rounded border-2 ${
+                            selected
+                              ? "border-[var(--brown)] bg-[var(--brown)] text-white"
+                              : "border-[var(--line)]"
+                          }`}
+                        >
+                          {selected && <Check size={12} strokeWidth={3} />}
+                        </span>
+                        <span className="font-medium">{extra.name}</span>
+                      </span>
+                      <strong className="text-sm text-[var(--brown)]">+{money(extra.price)}</strong>
                       <input
-                        type="radio"
-                        name={group.id}
-                        value={item}
-                        checked={selections[group.id] === item}
+                        checked={selected}
+                        type="checkbox"
+                        className="sr-only"
                         onChange={() =>
-                          setSelections((current) => ({ ...current, [group.id]: item }))
+                          setSelectedExtras((current) =>
+                            selected
+                              ? current.filter((item) => item !== extra.name)
+                              : [...current, extra.name]
+                          )
                         }
                       />
                     </label>
-                  ))}
-                </div>
-              </fieldset>
-            ))}
-            <label className="mt-5 block text-sm font-bold">
-              Observaciones
-              <textarea
-                className="mt-2 min-h-20 w-full resize-none rounded-xl border border-[var(--line)] bg-white p-3 font-normal outline-none focus:border-[var(--green)]"
-                maxLength={180}
-                placeholder="Ej. Sin cebolla, salsa aparte…"
-                value={notes}
-                onChange={(event) => setNotes(event.target.value)}
-              />
-            </label>
-            {allExtras.length > 0 && (
-              <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
-                <legend className="font-display text-xl font-bold">
-                  {isBreakfast ? "Extras de desayuno" : "Extras con costo"}
-                </legend>
-                <p className="mt-1 text-xs text-[var(--muted)]">
-                  Puedes sumar extras y el precio se actualizará al momento.
-                </p>
-                <div className="mt-3 grid gap-2">
-                  {allExtras.map((extra) => {
-                      const selected = selectedExtras.includes(extra.name);
-                      return (
-                        <label
-                          className={`flex cursor-pointer items-center justify-between rounded-xl border p-3 transition ${
-                            selected
-                              ? "border-[var(--brown)] bg-[#f4e6d8] shadow-sm"
-                              : "border-[var(--line)] bg-white hover:bg-[var(--cream)]"
-                          }`}
-                          key={extra.name}
-                        >
-                          <span className="flex items-center gap-2">
-                            <span
-                              className={`grid h-5 w-5 place-items-center rounded border-2 ${
-                                selected
-                                  ? "border-[var(--brown)] bg-[var(--brown)] text-white"
-                                  : "border-[var(--line)]"
-                              }`}
-                            >
-                              {selected && <Check size={12} strokeWidth={3} />}
-                            </span>
-                            <span className="font-medium">{extra.name}</span>
-                          </span>
-                          <strong className="text-sm text-[var(--brown)]">+{money(extra.price)}</strong>
-                          <input
-                            checked={selected}
-                            type="checkbox"
-                            className="sr-only"
-                            onChange={() =>
-                              setSelectedExtras((current) =>
-                                selected
-                                  ? current.filter((item) => item !== extra.name)
-                                  : [...current, extra.name]
-                              )
-                            }
-                          />
-                        </label>
-                      );
-                    })}
-                </div>
-              </fieldset>
-            )}
-            <div className="mt-5 grid gap-3 sm:grid-cols-[auto_1fr]">
-              <div className="flex items-center justify-center rounded-xl border border-[var(--line)]">
-                <button
-                  className="focus-ring grid h-12 w-11 place-items-center"
-                  aria-label="Restar"
-                  onClick={() => setQuantity((value) => Math.max(1, value - 1))}
-                >
-                  <Minus size={18} />
-                </button>
-                <strong className="w-8 text-center">{quantity}</strong>
-                <button
-                  className="focus-ring grid h-12 w-11 place-items-center text-[var(--terracotta)]"
-                  aria-label="Sumar"
-                  onClick={() => setQuantity((value) => Math.min(10, value + 1))}
-                >
-                  <Plus size={18} />
-                </button>
-              </div>
-              <button
-                className="focus-ring flex flex-1 items-center justify-between rounded-xl bg-[var(--brown)] px-5 font-bold text-white shadow-lg transition hover:bg-[var(--brown-dark)] disabled:cursor-not-allowed disabled:opacity-45"
-                disabled={isComidaALaCarta && !hasCompleteSelection}
-                onClick={() => {
-                  const chosenExtras = allExtras
-                    .filter((extra) => selectedExtras.includes(extra.name))
-                    .map((extra) => ({ name: extra.name, price: extra.price }));
-                  onAdd(
-                    product,
-                    quantity,
-                    notes.trim(),
-                    selectionSummary || undefined,
-                    chosenExtras.length > 0 ? chosenExtras : undefined,
-                    priceModifier
                   );
-                  setSelectedExtras([]);
-                }}
+                })}
+              </div>
+            </fieldset>
+          )}
+        </div>
+
+        <div className="shrink-0 border-t border-[var(--line)] bg-[var(--paper)] p-4 pb-6">
+          <div className="flex items-center gap-3">
+            <div className="flex shrink-0 items-center rounded-full border border-[var(--line)] bg-white px-1 py-1">
+              <button
+                className="focus-ring grid h-11 w-11 place-items-center rounded-full transition active:scale-90"
+                aria-label="Restar"
+                onClick={() => setQuantity((value) => Math.max(1, value - 1))}
               >
-                <span>Agregar</span>
-                <span>
-                  {money(
-                    (product.price + priceModifier +
-                      allExtras
-                        .filter((extra) => selectedExtras.includes(extra.name))
-                        .reduce((sum, extra) => sum + extra.price, 0)) *
-                    quantity
-                  )}
-                </span>
+                <Minus size={18} />
+              </button>
+              <strong className="w-9 text-center">{quantity}</strong>
+              <button
+                className="focus-ring grid h-11 w-11 place-items-center rounded-full text-[var(--terracotta)] transition active:scale-90"
+                aria-label="Sumar"
+                onClick={() => setQuantity((value) => Math.min(10, value + 1))}
+              >
+                <Plus size={18} />
               </button>
             </div>
+            <button
+              className="focus-ring flex min-h-14 flex-1 items-center justify-center gap-2 rounded-full bg-neutral-900 py-4 font-semibold text-white transition-transform hover:opacity-90 active:scale-[0.98] disabled:cursor-not-allowed disabled:opacity-45"
+              disabled={isComidaALaCarta && !hasCompleteSelection}
+              onClick={() => {
+                const chosenExtras = allExtras
+                  .filter((extra) => selectedExtras.includes(extra.name))
+                  .map((extra) => ({ name: extra.name, price: extra.price }));
+                onAdd(
+                  product,
+                  quantity,
+                  notes.trim(),
+                  selectionSummary || undefined,
+                  chosenExtras.length > 0 ? chosenExtras : undefined,
+                  priceModifier
+                );
+                setSelectedExtras([]);
+              }}
+            >
+              <ShoppingBag size={19} />
+              Agregar al pedido
+              <span className="font-bold">· {money(totalPrice)}</span>
+            </button>
           </div>
         </div>
-      </section>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }
 

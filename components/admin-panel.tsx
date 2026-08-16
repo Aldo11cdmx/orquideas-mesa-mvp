@@ -932,7 +932,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                     />
                     <button
                       aria-label={drink.active ? "Desactivar bebida" : "Activar bebida"}
-                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e]"
+                      className="focus-ring grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-35 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       type="button"
                       onClick={() => toggleDrink(index)}
                     >
@@ -991,7 +991,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                     />
                     <button
                       aria-label={`Quitar extra ${index + 1}`}
-                      className="focus-ring grid h-11 w-11 place-items-center rounded-xl border border-[#d8b5ad] text-[#9a392e]"
+                      className="focus-ring grid h-9 w-9 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 disabled:opacity-35 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400"
                       type="button"
                       onClick={() => removeExtra(index)}
                     >

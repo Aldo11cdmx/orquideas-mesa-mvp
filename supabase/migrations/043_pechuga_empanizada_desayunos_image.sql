@@ -5,7 +5,7 @@
 
 update public.products
 set
-  image_url = '/menu/imperio/pollo-empanizado.jpg',
+  image_url = '/menu/imperio/pechuga-empanizada.jpg',
   updated_at = now()
 where restaurant_id = '00000000-0000-0000-0000-000000000001'
   and name = 'Pechuga empanizada';

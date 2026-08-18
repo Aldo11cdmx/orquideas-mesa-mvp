@@ -511,7 +511,7 @@ export const products: Product[] = [
     description: "Acompañada de ensalada y frijoles.",
     price: 85,
     category: "Comidas a la carta",
-    image: "/menu/imperio/pollo-empanizado.jpg",
+    image: "/menu/imperio/pechuga-empanizada.jpg",
     extrasConfig: cartaExtras,
     ...lunchHours
   },

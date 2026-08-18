@@ -63,10 +63,10 @@ export function QRGrid({ appUrl, tables }: { appUrl: string; tables: TableEntry[
           </p>
           <h2 className="font-display text-7xl font-bold text-[var(--brown-dark)]">{table.code}</h2>
           {table.name && (
-            <p className="mt-1 text-sm text-[var(--muted)]">{table.name}</p>
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">{table.name}</p>
           )}
           <p className="mt-2 font-bold">Escanea para ver el menú y ordenar</p>
-          <p className="mt-2 break-all text-[9px] text-[var(--muted)]">{url}</p>
+          <p className="mt-2 break-all text-[9px] text-[var(--muted-foreground)]">{url}</p>
         </article>
       ))}
     </div>

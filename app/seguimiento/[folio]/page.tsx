@@ -94,7 +94,7 @@ export default function TrackingPage() {
         <div className="glass-card w-full max-w-sm rounded-[2rem] p-8 text-center">
           <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[#f1d0ca] text-2xl">😕</span>
           <h1 className="mt-4 font-display text-2xl font-bold">Ups</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">{error || "Pedido no encontrado"}</p>
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">{error || "Pedido no encontrado"}</p>
         </div>
       </main>
     );
@@ -128,8 +128,8 @@ export default function TrackingPage() {
 
         <div className="p-6">
           <div className="flex items-center justify-between rounded-2xl bg-[#eee8dc] p-4">
-            <span><span className="block text-xs uppercase text-[var(--muted)]">Total</span><strong className="text-xl">{money(order.total)}</strong></span>
-            <span className="text-right"><span className="block text-xs uppercase text-[var(--muted)]">Items</span><strong>{order.items.length}</strong></span>
+            <span><span className="block text-xs uppercase text-[var(--muted-foreground)]">Total</span><strong className="text-xl">{money(order.total)}</strong></span>
+            <span className="text-right"><span className="block text-xs uppercase text-[var(--muted-foreground)]">Items</span><strong>{order.items.length}</strong></span>
           </div>
 
           {order.status === "cancelled" ? (
@@ -146,7 +146,7 @@ export default function TrackingPage() {
                   </div>
                   <div className="pt-1">
                     <strong className="capitalize">{{ accepted: "Confirmado", preparing: "Preparando", ready: "Listo para recoger", delivered: "Entregado" }[step]}</strong>
-                    {index === current && <p className="text-xs text-[var(--muted)]">Estado actual</p>}
+                    {index === current && <p className="text-xs text-[var(--muted-foreground)]">Estado actual</p>}
                   </div>
                 </li>
               ))}
@@ -169,7 +169,7 @@ export default function TrackingPage() {
             >
               <Share2 size={18} /> Compartir por WhatsApp
             </a>
-            <p className="text-center text-xs text-[var(--muted)]">
+            <p className="text-center text-xs text-[var(--muted-foreground)]">
               Guarda esta página o compártela para seguir tu pedido.<br />
               Se actualiza solo.
             </p>

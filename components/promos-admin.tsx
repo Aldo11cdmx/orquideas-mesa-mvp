@@ -132,7 +132,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
       <div className="flex items-center justify-between gap-3">
         <div>
           <h2 className="font-display text-2xl font-bold">Promociones</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Enciende o apaga ofertas en un toque. Se reflejan al instante en el menú público.
           </p>
         </div>
@@ -157,7 +157,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
         </h3>
         <form className="grid gap-3 sm:grid-cols-2" onSubmit={create}>
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-xs font-bold text-[var(--muted)]">Título</span>
+            <span className="mb-1.5 block text-xs font-bold text-[var(--muted-foreground)]">Título</span>
             <input
               className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 outline-none focus:border-[var(--brown)]"
               placeholder="Ej. Jueves de Tacos Dorados"
@@ -167,7 +167,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
             />
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-[var(--muted)]">Tipo de descuento</span>
+            <span className="mb-1.5 block text-xs font-bold text-[var(--muted-foreground)]">Tipo de descuento</span>
             <select
               className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 font-bold outline-none"
               value={form.discountType}
@@ -180,7 +180,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
             </select>
           </label>
           <label className="block">
-            <span className="mb-1.5 block text-xs font-bold text-[var(--muted)]">
+            <span className="mb-1.5 block text-xs font-bold text-[var(--muted-foreground)]">
               {form.discountType === "percent" ? "Porcentaje" : "Descuento ($)"}
             </span>
             <input
@@ -193,7 +193,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
             />
           </label>
           <label className="block sm:col-span-2">
-            <span className="mb-1.5 block text-xs font-bold text-[var(--muted)]">Producto</span>
+            <span className="mb-1.5 block text-xs font-bold text-[var(--muted-foreground)]">Producto</span>
             <select
               className="w-full rounded-xl border border-[var(--line)] bg-white px-3 py-2.5 font-bold outline-none"
               value={form.targetProductId}
@@ -229,11 +229,11 @@ export function PromosAdmin({ pin }: { pin: string }) {
       <section className="paper rounded-[1.75rem] p-5">
         <h3 className="mb-4 font-display text-lg font-bold">Promociones existentes</h3>
         {loading ? (
-          <p className="py-8 text-center text-sm text-[var(--muted)]">Cargando promociones…</p>
+          <p className="py-8 text-center text-sm text-[var(--muted-foreground)]">Cargando promociones…</p>
         ) : promotions.length === 0 ? (
           <div className="rounded-2xl border border-dashed border-[#b9b2a5] py-10 text-center">
             <p className="font-display text-xl font-bold">Aún no hay promociones</p>
-            <p className="mt-1 text-sm text-[var(--muted)]">
+            <p className="mt-1 text-sm text-[var(--muted-foreground)]">
               Crea la primera arriba y aparecerá en el menú público con su badge de ¡PROMO!.
             </p>
           </div>
@@ -261,7 +261,7 @@ export function PromosAdmin({ pin }: { pin: string }) {
                     <p className="font-display text-lg font-bold leading-tight">
                       {promotion.title}
                     </p>
-                    <p className="text-sm text-[var(--muted)]">
+                    <p className="text-sm text-[var(--muted-foreground)]">
                       {promotion.productSlug
                         ? product
                           ? `${product.name} · ${money(base)} → ${money(finalPrice ?? base)}`

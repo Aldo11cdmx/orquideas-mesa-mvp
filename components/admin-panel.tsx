@@ -176,7 +176,7 @@ export function AdminPanel() {
             <Settings2 size={28} />
           </div>
           <h1 className="mt-4 font-display text-3xl font-bold">Administración</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Configura el menú y consulta el resumen del servicio.
           </p>
           <label className="mt-6 block text-sm font-bold">
@@ -309,7 +309,7 @@ function MenuAdmin({
             Menú fijo
           </p>
           <h1 className="font-display text-4xl font-bold">Productos</h1>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Este es el mismo menú que ven las mesas. Los cambios se publican para todos.
           </p>
         </div>
@@ -331,7 +331,7 @@ function MenuAdmin({
             <div className="min-w-0 flex-1">
               <h2 className="truncate font-bold">{product.name || "Producto nuevo"}</h2>
               <p className="mt-1 text-sm">{money(product.price)}</p>
-              <p className="mt-1 truncate text-xs text-[var(--muted)]">{product.category}</p>
+              <p className="mt-1 truncate text-xs text-[var(--muted-foreground)]">{product.category}</p>
               <div className="mt-3 flex items-center justify-between gap-2">
                 <button
                   className={BTN_ICON}
@@ -474,7 +474,7 @@ function EditProduct({
 
         <fieldset className="mt-5 rounded-2xl border border-[var(--line)] p-4">
           <legend className="px-1 font-display text-xl font-bold">Horario de venta</legend>
-          <p className="mb-3 text-xs text-[var(--muted)]">
+          <p className="mb-3 text-xs text-[var(--muted-foreground)]">
             Vacío = disponible todo el día. Fuera de este horario el platillo se oculta del menú.
           </p>
           <div className="grid gap-4 sm:grid-cols-2">
@@ -515,14 +515,14 @@ function EditProduct({
         {product.extrasConfig && product.extrasConfig.length > 0 && (
           <fieldset className="mt-4 rounded-2xl border border-[var(--line)] p-4">
             <legend className="px-1 font-display text-xl font-bold">Extras disponibles</legend>
-            <p className="mb-3 text-xs text-[var(--muted)]">
+            <p className="mb-3 text-xs text-[var(--muted-foreground)]">
               Estos extras se ofrecen al cliente al agregar este producto.
             </p>
             <div className="grid gap-2">
               {(draft.extrasConfig || []).map((extra) => (
                 <div className="flex items-center justify-between rounded-xl border border-[var(--line)] px-3 py-2" key={extra.name}>
                   <span className="font-medium">{extra.name}</span>
-                  <span className="text-sm text-[var(--muted)]">{money(extra.price)}</span>
+                  <span className="text-sm text-[var(--muted-foreground)]">{money(extra.price)}</span>
                   <label className="flex items-center gap-1 text-xs font-bold">
                     <input
                       type="checkbox"
@@ -816,13 +816,13 @@ function DailyAdmin({ pin }: { pin: string }) {
         Configuración del día
       </p>
       <h1 className="font-display text-4xl font-bold">Comida corrida</h1>
-      <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+      <p className="mt-2 max-w-2xl text-sm text-[var(--muted-foreground)]">
         Agrega todas las opciones disponibles de cada tiempo. El cliente elegirá una opción de
         cada grupo antes de agregar la comida corrida.
       </p>
       <form className="paper mt-5 max-w-3xl rounded-3xl p-5 sm:p-6" onSubmit={save}>
         {loading ? (
-          <p className="py-12 text-center text-[var(--muted)]">Cargando configuración…</p>
+          <p className="py-12 text-center text-[var(--muted-foreground)]">Cargando configuración…</p>
         ) : (
           <>
             <button
@@ -909,7 +909,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                 return (
                   <fieldset className="rounded-2xl border border-[var(--line)] p-4" key={course}>
                     <legend className="px-1 font-display text-xl font-bold">{course}</legend>
-                    <p className="mb-3 text-xs text-[var(--muted)]">
+                    <p className="mb-3 text-xs text-[var(--muted-foreground)]">
                       El cliente elegirá 1 de estas opciones.
                     </p>
                     <div className="grid gap-2">
@@ -953,7 +953,7 @@ function DailyAdmin({ pin }: { pin: string }) {
 
             <fieldset className="mt-6 rounded-2xl border border-[var(--line)] p-4">
               <legend className="px-1 font-display text-xl font-bold">Bebidas</legend>
-              <p className="mb-3 text-xs text-[var(--muted)]">
+              <p className="mb-3 text-xs text-[var(--muted-foreground)]">
                 El cliente elegirá 1 de estas bebidas. Activa o desactiva cada una según disponibilidad.
               </p>
               <div className="grid gap-2">
@@ -977,7 +977,7 @@ function DailyAdmin({ pin }: { pin: string }) {
                       {drink.active ? (
                         <ToggleRight size={20} className="text-[var(--green)]" />
                       ) : (
-                        <ToggleLeft size={20} className="text-[var(--muted)]" />
+                        <ToggleLeft size={20} className="text-[var(--muted-foreground)]" />
                       )}
                     </button>
                     <button
@@ -1004,7 +1004,7 @@ function DailyAdmin({ pin }: { pin: string }) {
 
             <fieldset className="mt-6 rounded-2xl border border-[var(--line)] p-4">
               <legend className="px-1 font-display text-xl font-bold">Extras con costo</legend>
-              <p className="mb-3 text-xs text-[var(--muted)]">
+              <p className="mb-3 text-xs text-[var(--muted-foreground)]">
                 El cliente podrÃ¡ elegir varios extras y su total subirÃ¡ automÃ¡ticamente.
               </p>
               <div className="grid gap-3">
@@ -1167,7 +1167,7 @@ function TablesAdmin({ pin }: { pin: string }) {
         <div>
           <p className="eyebrow text-[var(--terracotta)]">Gestión de mesas</p>
           <h1 className="font-display text-4xl font-bold">Mesas</h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Configura mesas, activa/desactiva y consulta el estado de pedidos en tiempo real.
           </p>
         </div>
@@ -1204,10 +1204,10 @@ function TablesAdmin({ pin }: { pin: string }) {
                   <div className="min-w-0">
                     <h2 className="font-display text-4xl font-bold text-[var(--brown-dark)]">{table.code}</h2>
                     {table.name && (
-                      <p className="mt-1 truncate text-sm text-[var(--muted)]">{table.name}</p>
+                      <p className="mt-1 truncate text-sm text-[var(--muted-foreground)]">{table.name}</p>
                     )}
                     {table.capacity > 0 && (
-                      <p className="mt-1 text-xs text-[var(--muted)]">Capacidad: {table.capacity} personas</p>
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">Capacidad: {table.capacity} personas</p>
                     )}
                   </div>
                   <div className="flex shrink-0 items-center gap-1.5">
@@ -1247,7 +1247,7 @@ function TablesAdmin({ pin }: { pin: string }) {
                       </Badge>
                       <strong className="text-sm text-[var(--ink)]">{money(table.tableTotal ?? 0)}</strong>
                       {(table.orderCount ?? 0) > 0 && (
-                        <span className="text-xs text-[var(--muted)]">· {table.orderCount} pedido(s)</span>
+                        <span className="text-xs text-[var(--muted-foreground)]">· {table.orderCount} pedido(s)</span>
                       )}
                     </>
                   ) : (
@@ -1258,8 +1258,8 @@ function TablesAdmin({ pin }: { pin: string }) {
                 </div>
 
                 <div className="mt-3 flex items-center justify-between border-t border-[var(--line)] pt-2.5">
-                  <span className="text-[10px] text-[var(--muted)]">QR → /mesa/{table.code}</span>
-                  <span className="text-[10px] text-[var(--muted)]">
+                  <span className="text-[10px] text-[var(--muted-foreground)]">QR → /mesa/{table.code}</span>
+                  <span className="text-[10px] text-[var(--muted-foreground)]">
                     {table.active ? "Activa" : "Desactivada"}
                   </span>
                 </div>
@@ -1267,7 +1267,7 @@ function TablesAdmin({ pin }: { pin: string }) {
             );
           })}
           {tables.length === 0 && !loading && (
-            <p className="mt-6 text-sm text-[var(--muted)]">No hay mesas configuradas.</p>
+            <p className="mt-6 text-sm text-[var(--muted-foreground)]">No hay mesas configuradas.</p>
           )}
         </div>
       )}
@@ -1592,7 +1592,7 @@ function SalesAdmin({ pin }: { pin: string }) {
         <div>
           <p className="eyebrow text-[var(--terracotta)]">Pedidos realmente entregados</p>
           <h1 className="font-display text-4xl font-bold">Corte de caja</h1>
-          <p className="mt-2 max-w-2xl text-sm text-[var(--muted)]">
+          <p className="mt-2 max-w-2xl text-sm text-[var(--muted-foreground)]">
             Este cálculo registra lo pedido en la app. El cobro continúa realizándose directamente
             en el restaurante.
           </p>
@@ -1705,11 +1705,11 @@ function SalesAdmin({ pin }: { pin: string }) {
                     {badge.text}
                   </Badge>
                 </div>
-                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                <p className="mt-4 text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                   {label}
                 </p>
                 <strong className="mt-1 block font-display text-3xl">{value}</strong>
-                <span className="mt-1 block text-xs text-[var(--muted)]">{detail}</span>
+                <span className="mt-1 block text-xs text-[var(--muted-foreground)]">{detail}</span>
               </Card>
             ))}
           </div>
@@ -1740,7 +1740,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                           ? type === "income"
                             ? "bg-[var(--green)] text-white"
                             : "bg-[#b3261e] text-white"
-                          : "text-[var(--muted)]"
+                          : "text-[var(--muted-foreground)]"
                       }`}
                       onClick={() => setAdjType(type)}
                     >
@@ -1793,7 +1793,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                     <span className="min-w-0 flex-1 truncate text-sm font-medium">
                       {adjustment.concept}
                     </span>
-                    <time className="shrink-0 text-xs text-[var(--muted)]">
+                    <time className="shrink-0 text-xs text-[var(--muted-foreground)]">
                       {new Date(adjustment.createdAt).toLocaleString("es-MX", {
                         day: "2-digit",
                         month: "short",
@@ -1825,19 +1825,19 @@ function SalesAdmin({ pin }: { pin: string }) {
 
             <div className="mt-4 grid gap-3 sm:grid-cols-2">
               <div className="rounded-2xl bg-[#e4ece6] p-4">
-                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                   Efectivo esperado en caja
                 </p>
                 <strong className="mt-1 block font-display text-3xl text-[var(--green)]">
                   {money(cashExpected)}
                 </strong>
-                <span className="mt-1 block text-xs text-[var(--muted)]">
+                <span className="mt-1 block text-xs text-[var(--muted-foreground)]">
                   Efectivo vendido + entradas − salidas
                 </span>
               </div>
               <div className="grid grid-cols-2 gap-3">
                 <div className="rounded-2xl border border-[var(--line)] p-4">
-                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                     Entradas
                   </span>
                   <strong className="mt-1 block text-lg text-[var(--green)]">
@@ -1845,7 +1845,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                   </strong>
                 </div>
                 <div className="rounded-2xl border border-[var(--line)] p-4">
-                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted)]">
+                  <span className="block text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">
                     Salidas
                   </span>
                   <strong className="mt-1 block text-lg text-[#b3261e]">
@@ -1947,7 +1947,7 @@ function SalesAdmin({ pin }: { pin: string }) {
                         <span className="rounded-full bg-[#e4ece6] px-2 py-1 text-[10px] font-bold uppercase">
                           Mesa {order.tableCode}
                         </span>
-                        <span className="text-xs text-[var(--muted)]">
+                        <span className="text-xs text-[var(--muted-foreground)]">
                           {order.status === "delivered" ? "Entregado" : "En proceso"}
                         </span>
                         {order.paymentMethod && (
@@ -1956,10 +1956,10 @@ function SalesAdmin({ pin }: { pin: string }) {
                           </span>
                         )}
                       </div>
-                      <p className="mt-1 line-clamp-1 text-sm text-[var(--muted)]">
+                      <p className="mt-1 line-clamp-1 text-sm text-[var(--muted-foreground)]">
                         {order.items.map((item) => `${item.quantity}× ${item.name}`).join(" · ")}
                       </p>
-                      <time className="mt-1 block text-xs text-[var(--muted)]">
+                      <time className="mt-1 block text-xs text-[var(--muted-foreground)]">
                         {new Date(order.createdAt).toLocaleString("es-MX", {
                           dateStyle: "medium",
                           timeStyle: "short"
@@ -2069,7 +2069,7 @@ function BreakfastAdmin({ pin }: { pin: string }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-3xl font-bold">Extras de Desayunos</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Estos extras aparecen en todos los productos de la categoría Desayunos.
           </p>
         </div>
@@ -2090,7 +2090,7 @@ function BreakfastAdmin({ pin }: { pin: string }) {
       {/* Add new */}
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--line)] bg-white p-4">
         <label className="flex-1">
-          <span className="text-xs font-bold text-[var(--muted)]">Nombre</span>
+          <span className="text-xs font-bold text-[var(--muted-foreground)]">Nombre</span>
           <input
             className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
             placeholder="Ej: Bistec asado"
@@ -2099,7 +2099,7 @@ function BreakfastAdmin({ pin }: { pin: string }) {
           />
         </label>
         <label className="w-28">
-          <span className="text-xs font-bold text-[var(--muted)]">Precio ($)</span>
+          <span className="text-xs font-bold text-[var(--muted-foreground)]">Precio ($)</span>
           <input
             className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
             type="number"
@@ -2121,7 +2121,7 @@ function BreakfastAdmin({ pin }: { pin: string }) {
       {/* List */}
       <div className="mt-5 space-y-2">
         {extras.length === 0 && !loading && (
-          <p className="rounded-2xl border border-dashed border-[#bdb4a5] py-10 text-center text-sm text-[var(--muted)]">
+          <p className="rounded-2xl border border-dashed border-[#bdb4a5] py-10 text-center text-sm text-[var(--muted-foreground)]">
             No hay extras configurados. Agrega el primero arriba.
           </p>
         )}
@@ -2137,11 +2137,11 @@ function BreakfastAdmin({ pin }: { pin: string }) {
               onClick={() => void saveExtra(extra)}
               title={extra.active ? "Desactivar" : "Activar"}
             >
-              {extra.active ? <ToggleRight size={20} className="text-[var(--green)]" /> : <ToggleLeft size={20} className="text-[var(--muted)]" />}
+              {extra.active ? <ToggleRight size={20} className="text-[var(--green)]" /> : <ToggleLeft size={20} className="text-[var(--muted-foreground)]" />}
             </button>
             <div className="min-w-0 flex-1">
               <p className="font-bold">{extra.name}</p>
-              <p className="text-xs text-[var(--muted)]">+${extra.price}</p>
+              <p className="text-xs text-[var(--muted-foreground)]">+${extra.price}</p>
             </div>
             <button
               className={BTN_ICON_DANGER}

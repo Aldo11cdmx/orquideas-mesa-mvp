@@ -16,14 +16,14 @@ export default function LlevarPage() {
           <div className="text-center">
             <span className="inline-grid h-14 w-14 place-items-center rounded-2xl bg-[var(--green)] text-[var(--gold)] text-2xl shadow-lg">🥡</span>
             <h1 className="mt-5 font-display text-3xl font-bold">Pedido para llevar</h1>
-            <p className="mt-2 text-sm text-[var(--muted)]">
+            <p className="mt-2 text-sm text-[var(--muted-foreground)]">
               Arma tu pedido y pasa a recoger. Tienes el mismo menú completo del restaurante.
             </p>
           </div>
 
           <div className="mt-7 space-y-4">
             <label className="block">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--muted)] mb-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--muted-foreground)] mb-1.5">
                 <User size={14} /> Tu nombre
               </span>
               <input
@@ -35,7 +35,7 @@ export default function LlevarPage() {
               />
             </label>
             <label className="block">
-              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--muted)] mb-1.5">
+              <span className="flex items-center gap-1.5 text-xs font-bold text-[var(--muted-foreground)] mb-1.5">
                 <Phone size={14} /> Teléfono (opcional, para avisarte)
               </span>
               <input

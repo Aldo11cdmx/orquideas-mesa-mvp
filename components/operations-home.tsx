@@ -98,10 +98,10 @@ export function OperationsHome() {
               <QrCode size={20} className="text-[var(--terracotta)]" />
               <span>
                 <span className="block font-semibold">Códigos QR de mesa</span>
-                <span className="text-sm text-[var(--muted)]">Imprimir hoja A1–B3</span>
+                <span className="text-sm text-[var(--muted-foreground)]">Imprimir hoja A1–B3</span>
               </span>
             </span>
-            <ArrowRight size={18} className="text-[var(--muted)]" />
+            <ArrowRight size={18} className="text-[var(--muted-foreground)]" />
           </Link>
 
           <Link
@@ -112,10 +112,10 @@ export function OperationsHome() {
               <ShieldCheck size={20} className="text-[var(--terracotta)]" />
               <span>
                 <span className="block font-semibold">Administración</span>
-                <span className="text-sm text-[var(--muted)]">Productos, extras y reportes</span>
+                <span className="text-sm text-[var(--muted-foreground)]">Productos, extras y reportes</span>
               </span>
             </span>
-            <ArrowRight size={18} className="text-[var(--muted)]" />
+            <ArrowRight size={18} className="text-[var(--muted-foreground)]" />
           </Link>
         </div>
       </div>
@@ -142,7 +142,7 @@ function QuickCard({
       <Icon size={22} className="text-[var(--terracotta)]" />
       <div>
         <p className="font-semibold">{title}</p>
-        <p className="text-sm text-[var(--muted)]">{subtitle}</p>
+        <p className="text-sm text-[var(--muted-foreground)]">{subtitle}</p>
       </div>
     </Link>
   );

@@ -65,6 +65,11 @@
 
 * {
   box-sizing: border-box;
+  -webkit-tap-highlight-color: transparent;
+}
+
+::selection {
+  background: rgb(138 82 54 / 22%);
 }
 
 html {

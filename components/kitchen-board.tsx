@@ -536,7 +536,7 @@ function StaffBoard({ role }: { role: StaffRole }) {
           <h1 className="mt-5 font-display text-3xl font-bold">
             Acceso para {role === "kitchen" ? "cocina" : "meseros"}
           </h1>
-          <p className="mt-2 text-sm text-[var(--muted)]">
+          <p className="mt-2 text-sm text-[var(--muted-foreground)]">
             Ingresa el PIN del personal para ver los pedidos de todas las mesas.
           </p>
           <label className="mt-6 block text-sm font-bold">
@@ -1188,7 +1188,7 @@ function SessionAccountModal({
               <h2 id="session-title" className="mt-1 font-display text-2xl font-bold">
                 Cuenta de sesión
               </h2>
-              <p className="mt-1 text-xs text-[var(--muted)]">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Sesión #{sessionId.slice(0, 8)} · {allOrders.length} pedidos
               </p>
             </div>
@@ -1204,7 +1204,7 @@ function SessionAccountModal({
 
         <div className="max-h-[60dvh] overflow-y-auto p-5 sm:p-7">
           {allOrders.length === 0 ? (
-            <p className="text-center text-sm text-[var(--muted)]">
+            <p className="text-center text-sm text-[var(--muted-foreground)]">
               Esta sesión aún no tiene pedidos.
             </p>
           ) : (
@@ -1214,7 +1214,7 @@ function SessionAccountModal({
                   <div className="flex items-start justify-between gap-3">
                     <div>
                       <strong className="font-display">{order.folio}</strong>
-                      <p className="mt-1 text-xs text-[var(--muted)]">
+                      <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                         {new Date(order.createdAt).toLocaleTimeString("es-MX", {
                           hour: "2-digit",
                           minute: "2-digit"
@@ -1223,7 +1223,7 @@ function SessionAccountModal({
                     </div>
                     <div className="text-right">
                       <strong
-                        className={`text-lg ${order.status === "cancelled" ? "text-[var(--muted)] line-through" : ""}`}
+                        className={`text-lg ${order.status === "cancelled" ? "text-[var(--muted-foreground)] line-through" : ""}`}
                       >
                         {money(order.total)}
                       </strong>
@@ -1235,19 +1235,19 @@ function SessionAccountModal({
                       <li key={item.itemId || `${item.productId}-${index}`} className="flex justify-between">
                         <span>
                           {item.quantity}× {item.name}
-                          {item.option && <span className="text-[var(--muted)]"> · {item.option}</span>}
+                          {item.option && <span className="text-[var(--muted-foreground)]"> · {item.option}</span>}
                           {item.extras && item.extras.length > 0 && (
                             <span className="block text-xs text-[var(--terracotta)]">
                               Extras: {item.extras.map((e) => e.name).join(", ")}
                             </span>
                           )}
                         </span>
-                        <span className="text-[var(--muted)]">{money(item.unitPrice * item.quantity)}</span>
+                        <span className="text-[var(--muted-foreground)]">{money(item.unitPrice * item.quantity)}</span>
                       </li>
                     ))}
                   </ul>
                   {order.notes && (
-                    <p className="mt-2 text-xs text-[var(--muted)]">Nota: {order.notes}</p>
+                    <p className="mt-2 text-xs text-[var(--muted-foreground)]">Nota: {order.notes}</p>
                   )}
                 </article>
               ))}
@@ -1258,17 +1258,17 @@ function SessionAccountModal({
         <div className="border-t border-[var(--line)] bg-[#faf7f3] p-5 sm:p-7">
           <div className="mb-4 space-y-2 text-sm">
             <div className="flex justify-between">
-              <span className="text-[var(--muted)]">Pedidos pendientes</span>
+              <span className="text-[var(--muted-foreground)]">Pedidos pendientes</span>
               <strong>{pendingOrdersCount}</strong>
             </div>
             <div className="flex justify-between">
-              <span className="text-[var(--muted)]">Total acumulado</span>
+              <span className="text-[var(--muted-foreground)]">Total acumulado</span>
               <strong className="text-xl text-[var(--brown)]">{money(allTotal)}</strong>
             </div>
 
             {/* ── Dividir cuenta ── */}
             <div className="rounded-2xl border border-[var(--line)] bg-white p-4">
-              <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted)]">Dividir cuenta</p>
+              <p className="text-xs font-bold uppercase tracking-wider text-[var(--muted-foreground)]">Dividir cuenta</p>
               <div className="mt-3 flex items-center gap-3">
                 <button
                   className="focus-ring grid h-9 w-9 place-items-center rounded-xl border border-[var(--line)] bg-white font-bold"
@@ -1285,7 +1285,7 @@ function SessionAccountModal({
                 >
                   <Plus size={16} />
                 </button>
-                <span className="text-sm text-[var(--muted)]">personas</span>
+                <span className="text-sm text-[var(--muted-foreground)]">personas</span>
                 <span className="ml-auto font-display text-xl font-bold text-[var(--brown)]">
                   {money(splitAmount)} c/u
                 </span>

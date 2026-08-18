@@ -9,7 +9,7 @@ export default function TableNotFound() {
         <Brand />
         <CircleX className="mx-auto mt-12 text-[var(--terracotta)]" size={52} />
         <h1 className="mt-5 font-display text-4xl font-bold">Esta mesa no existe</h1>
-        <p className="mt-3 text-[var(--muted)]">
+        <p className="mt-3 text-[var(--muted-foreground)]">
           Escanea nuevamente el código colocado en tu mesa o solicita ayuda al personal.
         </p>
         <Link

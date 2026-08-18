@@ -31,7 +31,7 @@ export function LlevarQR({ url }: { url: string }) {
         src={image}
         alt="QR para pedidos para llevar"
       />
-      <p className="mt-2 break-all text-[9px] text-[var(--muted)]">{url}</p>
+      <p className="mt-2 break-all text-[9px] text-[var(--muted-foreground)]">{url}</p>
     </>
   );
 }

@@ -742,7 +742,7 @@ export function MenuClient({
                 <h3 className="mt-5 font-display text-2xl font-bold">
                   No encontramos platillos que coincidan
                 </h3>
-                <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+                <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
                   Intenta con otro nombre o cambia de categoría.
                 </p>
                 <button
@@ -1239,7 +1239,7 @@ function ProductDialog({
                 </span>
                 {group.label}
               </legend>
-              <p className="mb-3 ml-8 text-xs text-[var(--muted)]">
+              <p className="mb-3 ml-8 text-xs text-[var(--muted-foreground)]">
                 Selecciona 1 {group.required !== false && "· Obligatorio"}
               </p>
               <div className="flex flex-wrap gap-2">
@@ -1285,7 +1285,7 @@ function ProductDialog({
               <legend className="font-display text-xl font-bold">
                 {isBreakfast ? "Extras de desayuno" : "Extras con costo"}
               </legend>
-              <p className="mt-1 text-xs text-[var(--muted)]">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Puedes sumar extras y el precio se actualizará al momento.
               </p>
               <div className="mt-3 grid gap-2">
@@ -1514,7 +1514,7 @@ function CartDrawer({
       </div>
       <div className="border-t border-[var(--line)] p-4 pb-6">
         <div className="mb-4 flex items-center justify-between text-lg">
-          <span className="text-[var(--muted)]">Total estimado</span>
+          <span className="text-[var(--muted-foreground)]">Total estimado</span>
           <strong className="text-xl">{money(subtotal)}</strong>
         </div>
         <button
@@ -1618,13 +1618,13 @@ function OrderTracking({
         <div className="p-6">
           <div className="flex items-center justify-between rounded-2xl bg-[#eee8dc] p-4">
             <span>
-              <span className="block text-xs uppercase text-[var(--muted)]">
+              <span className="block text-xs uppercase text-[var(--muted-foreground)]">
                 {tableCode === "LLEVAR" ? "Para llevar" : "Mesa"}
               </span>
               <strong className="text-2xl">{tableCode === "LLEVAR" ? "🥡" : tableCode}</strong>
             </span>
             <span className="text-right">
-              <span className="block text-xs uppercase text-[var(--muted)]">Total</span>
+              <span className="block text-xs uppercase text-[var(--muted-foreground)]">Total</span>
               <strong className="text-xl">{money(order.total)}</strong>
             </span>
           </div>
@@ -1666,7 +1666,7 @@ function OrderTracking({
                       }
                     </strong>
                     {index === current && (
-                      <p className="text-xs text-[var(--muted)]">Estado actual</p>
+                      <p className="text-xs text-[var(--muted-foreground)]">Estado actual</p>
                     )}
                   </div>
                 </li>
@@ -1680,10 +1680,10 @@ function OrderTracking({
           {session && session.status === "active" && (
             <div className="mt-4 rounded-2xl bg-[#eee8dc] p-4">
               <div className="flex items-center justify-between">
-                <span className="text-xs uppercase text-[var(--muted)]">Mesa en sesión</span>
+                <span className="text-xs uppercase text-[var(--muted-foreground)]">Mesa en sesión</span>
                 <span className="text-xs font-bold text-[var(--brown)]">#{session.id?.slice(0, 8)}</span>
               </div>
-              <p className="mt-1 text-xs text-[var(--muted)]">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Puedes seguir ordenando y acumularemos todo en una sola cuenta.
               </p>
             </div>
@@ -1752,7 +1752,7 @@ function LunchMenu({
           <Clock3 className="text-[var(--terracotta)]" size={30} />
         </div>
         <h2 className="mt-5 font-display text-3xl font-bold">Hoy no hay comida corrida</h2>
-        <p className="mt-2 text-sm leading-6 text-[var(--muted)]">
+        <p className="mt-2 text-sm leading-6 text-[var(--muted-foreground)]">
           Puedes ordenar cualquiera de los productos del menú fijo.
         </p>
         <button
@@ -1836,7 +1836,7 @@ function ConfiguredLunchMenu({
             <fieldset className="border-b border-[var(--line)] py-4 last:border-0" key={course}>
               <legend className="font-display text-xl font-bold">
                 {course}
-                <span className="ml-2 font-sans text-xs font-bold text-[var(--muted)]">
+                <span className="ml-2 font-sans text-xs font-bold text-[var(--muted-foreground)]">
                   Elige 1 de {options.length}
                 </span>
               </legend>
@@ -1868,7 +1868,7 @@ function ConfiguredLunchMenu({
           {extras.length > 0 && (
             <fieldset className="mt-5 rounded-2xl border border-[var(--line)] bg-[#fbf7f1] p-4">
               <legend className="font-display text-xl font-bold">Extras con costo</legend>
-              <p className="mt-1 text-xs text-[var(--muted)]">
+              <p className="mt-1 text-xs text-[var(--muted-foreground)]">
                 Puedes sumar extras y el precio se actualizará al momento.
               </p>
               <div className="mt-3 grid gap-2">

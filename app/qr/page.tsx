@@ -57,12 +57,12 @@ export default async function QRPage() {
               <span className="text-xs font-bold uppercase tracking-wider text-[var(--brown)]">Para llevar</span>
             </div>
             <LlevarQR url={`${appUrl}/llevar`} />
-            <p className="mt-3 text-xs text-[var(--muted)]">
+            <p className="mt-3 text-xs text-[var(--muted-foreground)]">
               Escanea para ordenar y recoger
             </p>
           </div>
         </div>
-        <p className="no-print mt-6 flex items-center justify-center gap-2 text-sm text-[var(--muted)]">
+        <p className="no-print mt-6 flex items-center justify-center gap-2 text-sm text-[var(--muted-foreground)]">
           <Printer size={16} /> Imprime en tamaño carta al 100%.
         </p>
       </div>

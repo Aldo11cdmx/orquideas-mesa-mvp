@@ -116,7 +116,7 @@ export function DrinksAdmin({ pin }: { pin: string }) {
       <div className="flex items-center justify-between">
         <div>
           <h2 className="font-display text-3xl font-bold">Sabores de Bebidas</h2>
-          <p className="mt-1 text-sm text-[var(--muted)]">
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
             Configura los sabores disponibles de café, malteada, licuado y agua de fruta.
             Desactiva los que no haya hoy.
           </p>
@@ -138,7 +138,7 @@ export function DrinksAdmin({ pin }: { pin: string }) {
       {/* Add new */}
       <div className="mt-5 flex flex-wrap items-end gap-3 rounded-2xl border border-[var(--line)] bg-white p-4">
         <label className="min-w-32">
-          <span className="text-xs font-bold text-[var(--muted)]">Bebida</span>
+          <span className="text-xs font-bold text-[var(--muted-foreground)]">Bebida</span>
           <select
             className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
             value={newType}
@@ -150,7 +150,7 @@ export function DrinksAdmin({ pin }: { pin: string }) {
           </select>
         </label>
         <label className="flex-1">
-          <span className="text-xs font-bold text-[var(--muted)]">Sabor / Opción</span>
+          <span className="text-xs font-bold text-[var(--muted-foreground)]">Sabor / Opción</span>
           <input
             className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
             placeholder="Ej: Fresa, Horchata…"
@@ -159,7 +159,7 @@ export function DrinksAdmin({ pin }: { pin: string }) {
           />
         </label>
         <label className="w-28">
-          <span className="text-xs font-bold text-[var(--muted)]">Costo extra ($)</span>
+          <span className="text-xs font-bold text-[var(--muted-foreground)]">Costo extra ($)</span>
           <input
             className="mt-1 block w-full rounded-xl border border-[var(--line)] px-3 py-2.5 text-sm outline-none focus:border-[var(--brown)]"
             type="number"
@@ -187,12 +187,12 @@ export function DrinksAdmin({ pin }: { pin: string }) {
               <legend className="px-1 font-display text-xl font-bold">
                 {DRINK_LABELS[drinkType]}
               </legend>
-              <p className="mb-3 text-xs text-[var(--muted)]">
+              <p className="mb-3 text-xs text-[var(--muted-foreground)]">
                 {typeFlavors.filter((f) => f.active).length} sabores activos
               </p>
               <div className="space-y-2">
                 {typeFlavors.length === 0 && (
-                  <p className="rounded-xl border border-dashed border-[#bdb4a5] py-6 text-center text-sm text-[var(--muted)]">
+                  <p className="rounded-xl border border-dashed border-[#bdb4a5] py-6 text-center text-sm text-[var(--muted-foreground)]">
                     Sin sabores. Agrega el primero arriba.
                   </p>
                 )}
@@ -212,12 +212,12 @@ export function DrinksAdmin({ pin }: { pin: string }) {
                     >
                       {flavor.active
                         ? <ToggleRight size={20} className="text-[var(--green)]" />
-                        : <ToggleLeft size={20} className="text-[var(--muted)]" />}
+                        : <ToggleLeft size={20} className="text-[var(--muted-foreground)]" />}
                     </button>
                     <div className="min-w-0 flex-1">
                       <p className="font-bold">{flavor.name}</p>
                       {flavor.priceModifier > 0 && (
-                        <p className="text-xs text-[var(--muted)]">+${flavor.priceModifier}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">+${flavor.priceModifier}</p>
                       )}
                     </div>
                     <button

@@ -21,20 +21,6 @@ const allDayHours = {
   availableUntil: "17:00"
 };
 
-// Productos de desayuno que pueden permanecer disponibles hasta el cierre
-const extendedBreakfastSlugs = [
-  "chilaquiles-sencillos",
-  "chilaquiles-huevo",
-  "chilaquiles-carne",
-  "chilaquiles-pechuga",
-  "chilaquiles-divorciados",
-  "chilaquiles-suizos",
-  "enchiladas-verdes",
-  "enchiladas-suizas",
-  "enmoladas",
-  "club-sandwich"
-];
-
 const breakfastPackage = ["Fruta de temporada", "Café de la casa"];
 const cartaExtras: ProductExtra[] = [
   { name: "Café", price: 15, active: true },
@@ -646,52 +632,22 @@ export function timeToMinutes(value: string) {
   return hour * 60 + minute;
 }
 
-function isTemporaryAvailabilityBypass(): boolean {
-  return true;
-}
-
 export function isProductAvailable(
   product: Product,
   currentMinutes: number | null,
   availableFrom?: string,
   availableUntil?: string
 ) {
-  if (process.env.NODE_ENV === "development") return true;
   if (currentMinutes === null) return true;
 
   const effectiveFrom = availableFrom ?? product.availableFrom;
   const effectiveUntil = availableUntil ?? product.availableUntil;
 
+  // Sin horario configurado = disponible todo el día.
   if (!effectiveFrom || !effectiveUntil) return true;
-
-  // Bypass temporal de horarios para pruebas funcionales.
-  // Eliminar esta línea antes del commit final de producción.
-  if (isTemporaryAvailabilityBypass()) return true;
 
   const fromMinutes = timeToMinutes(effectiveFrom);
   const untilMinutes = timeToMinutes(effectiveUntil);
 
-  // Si el producto tiene horario personalizado, usarlo directamente
-  if (effectiveFrom !== "09:00" || effectiveUntil !== "17:00") {
-    return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
-  }
-
-  // Solo los productos de la categoría Desayunos aplican la regla especial de horario
-  if (product.category !== "Desayunos") {
-    return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
-  }
-
-  const now = new Date();
-  const dayOfWeek = now.getDay(); // 0 = Sunday, 6 = Saturday
-  const isWeekend = dayOfWeek === 0 || dayOfWeek === 6;
-
-  const hasExtendedHours = extendedBreakfastSlugs.includes(product.id);
-
-  if (hasExtendedHours) {
-    const closingTime = isWeekend ? 900 : 1080; // 15:00 o 18:00
-    return currentMinutes >= fromMinutes && currentMinutes < closingTime;
-  }
-
-  // Desayunos normales: disponibles hasta 13:00 (780 minutos)
-  return currentMinutes >= fromMinutes && currentMinutes < 780;
+  return currentMinutes >= fromMinutes && currentMinutes < untilMinutes;
 }

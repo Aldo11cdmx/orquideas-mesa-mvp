@@ -472,6 +472,46 @@ function EditProduct({
           </label>
         </div>
 
+        <fieldset className="mt-5 rounded-2xl border border-[var(--line)] p-4">
+          <legend className="px-1 font-display text-xl font-bold">Horario de venta</legend>
+          <p className="mb-3 text-xs text-[var(--muted)]">
+            Vacío = disponible todo el día. Fuera de este horario el platillo se oculta del menú.
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <label className="text-sm font-bold">
+              Desde
+              <input
+                className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] px-3 font-normal outline-none focus:border-[var(--green)]"
+                type="time"
+                value={draft.availableFrom || ""}
+                onChange={(event) =>
+                  setDraft({ ...draft, availableFrom: event.target.value || undefined })
+                }
+              />
+            </label>
+            <label className="text-sm font-bold">
+              Hasta
+              <input
+                className="mt-2 h-12 w-full rounded-xl border border-[var(--line)] px-3 font-normal outline-none focus:border-[var(--green)]"
+                type="time"
+                value={draft.availableUntil || ""}
+                onChange={(event) =>
+                  setDraft({ ...draft, availableUntil: event.target.value || undefined })
+                }
+              />
+            </label>
+          </div>
+          <button
+            type="button"
+            className="mt-3 rounded-full bg-neutral-100 px-3 py-1.5 text-xs font-semibold text-neutral-700 transition active:scale-95 dark:bg-neutral-800 dark:text-neutral-200"
+            onClick={() =>
+              setDraft({ ...draft, availableFrom: undefined, availableUntil: undefined })
+            }
+          >
+            Todo el día
+          </button>
+        </fieldset>
+
         {product.extrasConfig && product.extrasConfig.length > 0 && (
           <fieldset className="mt-4 rounded-2xl border border-[var(--line)] p-4">
             <legend className="px-1 font-display text-xl font-bold">Extras disponibles</legend>

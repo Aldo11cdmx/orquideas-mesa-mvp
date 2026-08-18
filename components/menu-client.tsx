@@ -917,7 +917,7 @@ function ProductCard({
   const recommended =
     !product.popular && product.category === "Comidas a la carta" && !product.soldOut && available;
   return (
-    <Card className="menu-card group relative overflow-hidden rounded-3xl border-neutral-100 bg-white shadow-[0_4px_20px_rgba(0,0,0,0.02)] dark:border-neutral-800 dark:bg-neutral-900">
+    <Card className="menu-card group relative overflow-hidden rounded-3xl border-neutral-100 bg-white dark:border-neutral-800 dark:bg-neutral-900">
       <button
         className="focus-ring block w-full text-left disabled:opacity-65"
         onClick={() => onOpen(product)}
@@ -976,7 +976,7 @@ function ProductCard({
             )}
           </div>
           <h3 className="font-display text-[1.35rem] font-bold leading-[1.05]">{product.name}</h3>
-          <p className="mt-2 line-clamp-2 min-h-10 text-xs font-medium leading-5 text-neutral-600 dark:text-neutral-300">
+          <p className="mt-2 line-clamp-2 min-h-10 text-sm font-medium leading-5 text-neutral-600 dark:text-neutral-300">
             {product.description}
           </p>
           {product.packageIncludes && product.packageIncludes.length > 0 && (
@@ -1009,8 +1009,8 @@ function ProductCard({
                 {effectiveFrom}–{effectiveUntil}
               </span>
             ) : (
-              <span className="grid h-9 w-9 place-items-center rounded-full bg-neutral-900 text-white shadow-md transition group-hover:scale-110 active:scale-90 dark:bg-white dark:text-neutral-900">
-                <Plus size={18} />
+              <span className="grid h-11 w-11 place-items-center rounded-full bg-neutral-900 text-white shadow-md transition group-hover:scale-110 active:scale-90 dark:bg-white dark:text-neutral-900">
+                <Plus size={20} />
               </span>
             )}
           </div>

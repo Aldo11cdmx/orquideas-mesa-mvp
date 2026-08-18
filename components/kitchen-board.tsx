@@ -1123,7 +1123,7 @@ function KitchenCard({
         ) : null}
         {role === "waiter" && ["sent", "accepted", "preparing", "ready"].includes(order.status) && (
           <button
-            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full text-xs font-bold text-red-700 transition active:scale-95 dark:text-red-400"
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full text-sm font-bold text-red-700 transition active:scale-95 dark:text-red-400"
             onClick={() => onStatus(order, "cancelled")}
           >
             <XCircle size={15} /> Cancelar pedido completo
@@ -1131,7 +1131,7 @@ function KitchenCard({
         )}
         {role === "waiter" && order.sessionId && (
           <button
-            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-neutral-100 px-4 text-xs font-bold text-neutral-800 transition hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
+            className="focus-ring mt-2 flex min-h-10 w-full items-center justify-center gap-2 rounded-full bg-neutral-100 px-4 text-sm font-bold text-neutral-800 transition hover:bg-neutral-200 active:scale-95 dark:bg-neutral-800 dark:text-neutral-200 dark:hover:bg-neutral-700"
             onClick={onViewSession}
           >
             <Search size={15} /> Ver cuenta de mesa

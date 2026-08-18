@@ -9,6 +9,7 @@ import {
   Banknote,
   CalendarDays,
   CircleDollarSign,
+  CircleHelp,
   Clock3,
   CreditCard,
   FileDown,
@@ -49,12 +50,22 @@ const BTN_ICON =
 const BTN_ICON_DANGER =
   "focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400";
 
+const helpSections = [
+  { icon: LayoutGrid, title: "Menú", text: "Agrega, edita o desactiva los platillos del menú fijo." },
+  { icon: Coffee, title: "Desayunos, Bebidas y Comida corrida", text: "Configura extras y opciones de cada sección (proteína, sabor, etc.)." },
+  { icon: BadgePercent, title: "Promos", text: "Crea ofertas: elige un platillo y ponle descuento o precio especial." },
+  { icon: Settings2, title: "Mesas", text: "Crea mesas con su código y el QR que escanea el cliente." },
+  { icon: Clock3, title: "Horarios", text: "Define a qué hora se vende cada grupo. Aplica a toda la categoría o cambia un platillo puntual." },
+  { icon: BarChart3, title: "Corte de caja", text: "Ventas del día, ajustes y el reporte en PDF." }
+];
+
 export function AdminPanel() {
   const [pin, setPin] = useState("");
   const [ready, setReady] = useState(false);
   const [tab, setTab] = useState("menu");
   const [products, setProducts] = useState<Product[]>(seedProducts);
   const [editing, setEditing] = useState<Product | null>(null);
+  const [helpOpen, setHelpOpen] = useState(false);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
 
   useEffect(() => {
@@ -261,9 +272,20 @@ export function AdminPanel() {
       <header className="sticky top-0 z-30 border-b border-[var(--line)] bg-[var(--paper)]/92 px-5 py-4 shadow-sm backdrop-blur-xl">
         <div className="mx-auto flex max-w-7xl items-center justify-between">
           <Brand compact />
-          <span className="rounded-full bg-[#e4ece6] px-4 py-2 text-xs font-bold">
-            Panel administrativo
-          </span>
+          <div className="flex items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setHelpOpen(true)}
+              aria-label="Abrir ayuda"
+              className="focus-ring inline-flex items-center gap-1.5 rounded-full border border-[var(--line)] bg-[var(--paper)] px-4 py-2 text-xs font-semibold text-[var(--muted-foreground)] shadow-sm transition-colors hover:bg-[var(--gold-light)] hover:text-[var(--charcoal)] dark:bg-neutral-900 dark:text-neutral-300 dark:hover:bg-neutral-800"
+            >
+              <CircleHelp size={16} />
+              Ayuda
+            </button>
+            <span className="rounded-full bg-[#e4ece6] px-4 py-2 text-xs font-bold">
+              Panel administrativo
+            </span>
+          </div>
         </div>
       </header>
       <div className="mx-auto max-w-7xl p-4 md:p-6">
@@ -342,6 +364,52 @@ export function AdminPanel() {
           }}
         />
       )}
+
+      {/* Guía de ayuda (onboarding) */}
+      <Dialog open={helpOpen} onOpenChange={setHelpOpen}>
+        <DialogContent className="max-h-[85vh] max-w-md overflow-y-auto rounded-3xl p-6 dark:bg-neutral-900 dark:text-neutral-100">
+          <DialogTitle className="flex items-center gap-2 font-display text-xl font-bold">
+            <CircleHelp size={20} />
+            Guía rápida del panel
+          </DialogTitle>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Un vistazo simple a cada sección y a lo que más se usa en el día a día.
+          </p>
+
+          <div className="mt-4 space-y-4">
+            {helpSections.map(({ icon: Icon, title, text }) => (
+              <div key={title} className="flex items-start gap-3">
+                <span className="mt-0.5 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-neutral-100 text-[var(--charcoal)] dark:bg-neutral-800 dark:text-neutral-200">
+                  <Icon size={17} />
+                </span>
+                <div className="min-w-0">
+                  <p className="text-sm font-bold">{title}</p>
+                  <p className="text-sm text-[var(--muted-foreground)]">{text}</p>
+                </div>
+              </div>
+            ))}
+          </div>
+
+          <div className="mt-5 rounded-2xl bg-[var(--gold-light)] p-4 dark:bg-neutral-800">
+            <p className="text-sm font-bold">Los 3 pasos más comunes</p>
+            <ol className="mt-2 list-inside list-decimal space-y-1.5 text-sm text-[var(--muted-foreground)]">
+              <li><span className="font-semibold text-[var(--charcoal)] dark:text-neutral-100">Poner horario:</span> entra a Horarios, elige la categoría, pon desde/hasta y toca Aplicar.</li>
+              <li><span className="font-semibold text-[var(--charcoal)] dark:text-neutral-100">Crear promo:</span> entra a Promos, toca nueva, elige el platillo y el descuento.</li>
+              <li><span className="font-semibold text-[var(--charcoal)] dark:text-neutral-100">Nueva mesa:</span> entra a Mesas, toca agregar, ponle un código (ej. A1) y guarda. El QR se genera solo.</li>
+            </ol>
+          </div>
+
+          <div className="mt-5 flex justify-end">
+            <button
+              type="button"
+              onClick={() => setHelpOpen(false)}
+              className="rounded-full bg-neutral-900 px-5 py-2.5 text-xs font-semibold text-white transition-all active:scale-95 dark:bg-white dark:text-neutral-900"
+            >
+              Entendido
+            </button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </main>
   );
 }

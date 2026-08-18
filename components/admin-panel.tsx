@@ -8,6 +8,7 @@ import {
   BadgePercent,
   Banknote,
   CalendarDays,
+  Check,
   CircleDollarSign,
   CircleHelp,
   Clock3,
@@ -49,6 +50,8 @@ const BTN_ICON =
   "focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-neutral-200 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-neutral-700";
 const BTN_ICON_DANGER =
   "focus-ring grid h-8 w-8 shrink-0 place-items-center rounded-full bg-neutral-100 text-neutral-600 transition-colors hover:bg-red-50 hover:text-red-600 dark:bg-neutral-800 dark:text-neutral-300 dark:hover:bg-red-950/40 dark:hover:text-red-400";
+const TIME_INPUT =
+  "focus-ring h-11 rounded-xl border border-[var(--line)] bg-white px-2.5 text-sm font-medium tabular-nums text-[var(--charcoal)] shadow-sm transition-colors hover:border-neutral-300 dark:bg-neutral-800 dark:text-neutral-100 dark:hover:border-neutral-600";
 
 const helpSections = [
   { icon: LayoutGrid, title: "Menú", text: "Agrega, edita o desactiva los platillos del menú fijo." },
@@ -555,7 +558,7 @@ function ScheduleAdmin({
           </p>
           <h1 className="font-display text-4xl font-bold">Horarios del menú</h1>
           <p className="mt-1 text-sm text-[var(--muted-foreground)]">
-            Define a qué hora se vende cada categoría y haz excepciones por platillo.
+            Define a qué hora se vende cada categoría. Aplica a todos los platillos o ajusta uno por separado.
           </p>
         </div>
       </div>
@@ -563,32 +566,40 @@ function ScheduleAdmin({
       <div className="mt-6 space-y-5">
         {groups.map(([category, items], gi) => {
           const b = bulk[category] || { from: "", until: "" };
+          const customCount = items.filter((p) => {
+            const d = drafts[p.id];
+            return Boolean(d && d.from && d.until);
+          }).length;
           return (
             <section
               key={category}
               className="paper card-enter overflow-hidden rounded-3xl"
               style={{ animationDelay: `${gi * 45}ms` }}
             >
-              <div className="border-b border-[var(--line)] p-5">
-                <div className="flex items-center justify-between gap-3">
-                  <div>
-                    <h2 className="font-display text-2xl font-bold">{category}</h2>
-                    <p className="text-sm text-[var(--muted-foreground)]">
-                      {items.length} {items.length === 1 ? "producto" : "productos"}
+              <div className="flex items-center gap-3.5 border-b border-[var(--line)] p-5">
+                <span className="grid h-11 w-11 shrink-0 place-items-center rounded-2xl bg-[var(--gold-light)] text-[var(--charcoal)] dark:bg-neutral-800 dark:text-neutral-100">
+                  <Clock3 size={20} />
+                </span>
+                <div className="min-w-0 flex-1">
+                  <h2 className="font-display text-xl font-bold">{category}</h2>
+                  <p className="text-sm text-[var(--muted-foreground)]">
+                    {items.length} {items.length === 1 ? "producto" : "productos"}
+                    {customCount > 0 ? ` · ${customCount} con horario propio` : ""}
+                  </p>
+                </div>
+              </div>
+
+              <div className="border-b border-[var(--line)] bg-neutral-50/70 p-5 dark:bg-neutral-900/40">
+                <div className="flex flex-col gap-4 lg:flex-row lg:items-center lg:justify-between">
+                  <div className="max-w-sm">
+                    <p className="text-sm font-bold">Aplicar a toda la categoría</p>
+                    <p className="mt-0.5 text-xs text-[var(--muted-foreground)]">
+                      El horario se copia a todos los platillos de esta sección.
                     </p>
                   </div>
-                  <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
-                    Categoría
-                  </span>
-                </div>
-
-                <div className="mt-4 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
-                  <p className="text-xs font-bold text-[var(--muted-foreground)]">
-                    Aplicar a toda la categoría
-                  </p>
-                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                  <div className="flex flex-wrap items-center gap-2">
                     <input
-                      className="h-11 rounded-xl border border-[var(--line)] bg-white px-3 text-sm dark:bg-neutral-800"
+                      className={`${TIME_INPUT} w-[8.25rem]`}
                       type="time"
                       aria-label={`${category} desde`}
                       value={b.from}
@@ -596,9 +607,9 @@ function ScheduleAdmin({
                         setBulk({ ...bulk, [category]: { ...b, from: event.target.value } })
                       }
                     />
-                    <span className="text-sm text-[var(--muted-foreground)]">a</span>
+                    <span className="text-sm font-medium text-[var(--muted-foreground)]">a</span>
                     <input
-                      className="h-11 rounded-xl border border-[var(--line)] bg-white px-3 text-sm dark:bg-neutral-800"
+                      className={`${TIME_INPUT} w-[8.25rem]`}
                       type="time"
                       aria-label={`${category} hasta`}
                       value={b.until}
@@ -630,36 +641,47 @@ function ScheduleAdmin({
               <ul className="divide-y divide-[var(--line)]">
                 {items.map((product) => {
                   const d = drafts[product.id] || { from: "", until: "" };
+                  const hasRange = Boolean(d.from && d.until);
                   return (
                     <li
                       key={product.id}
-                      className="flex flex-wrap items-center gap-3 px-5 py-3"
+                      className="flex flex-wrap items-center gap-3 px-5 py-3.5"
                     >
                       <div className="min-w-0 flex-1">
                         <p className="truncate font-medium">{product.name}</p>
-                        <p className="text-xs text-[var(--muted-foreground)]">
-                          {d.from && d.until ? `${d.from} - ${d.until}` : "Todo el día"}
+                        <p className="mt-0.5 flex items-center gap-1.5 text-xs text-[var(--muted-foreground)]">
+                          {hasRange ? (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[var(--gold-light)] px-2 py-0.5 font-semibold text-[var(--charcoal)] dark:bg-neutral-800 dark:text-neutral-100">
+                              <Clock3 size={11} /> {d.from} - {d.until}
+                            </span>
+                          ) : (
+                            <span className="inline-flex items-center gap-1 rounded-full bg-[#e4ece6] px-2 py-0.5 font-semibold text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-300">
+                              <Check size={11} /> Todo el día
+                            </span>
+                          )}
                         </p>
                       </div>
-                      <input
-                        className="h-10 rounded-xl border border-[var(--line)] bg-white px-2.5 text-sm dark:bg-neutral-800"
-                        type="time"
-                        aria-label={`${product.name} desde`}
-                        value={d.from}
-                        onChange={(event) =>
-                          setProductDraft(product.id, { from: event.target.value })
-                        }
-                      />
-                      <span className="text-sm text-[var(--muted-foreground)]">a</span>
-                      <input
-                        className="h-10 rounded-xl border border-[var(--line)] bg-white px-2.5 text-sm dark:bg-neutral-800"
-                        type="time"
-                        aria-label={`${product.name} hasta`}
-                        value={d.until}
-                        onChange={(event) =>
-                          setProductDraft(product.id, { until: event.target.value })
-                        }
-                      />
+                      <div className="flex items-center gap-2">
+                        <input
+                          className={`${TIME_INPUT} w-[7.75rem]`}
+                          type="time"
+                          aria-label={`${product.name} desde`}
+                          value={d.from}
+                          onChange={(event) =>
+                            setProductDraft(product.id, { from: event.target.value })
+                          }
+                        />
+                        <span className="text-sm font-medium text-[var(--muted-foreground)]">a</span>
+                        <input
+                          className={`${TIME_INPUT} w-[7.75rem]`}
+                          type="time"
+                          aria-label={`${product.name} hasta`}
+                          value={d.until}
+                          onChange={(event) =>
+                            setProductDraft(product.id, { until: event.target.value })
+                          }
+                        />
+                      </div>
                     </li>
                   );
                 })}

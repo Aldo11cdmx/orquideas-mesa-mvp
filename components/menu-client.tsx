@@ -697,7 +697,7 @@ export function MenuClient({
                   <button
                     key={item}
                     data-category-pill={item}
-                    className={`focus-ring shrink-0 rounded-full px-5 py-2.5 text-xs whitespace-nowrap transition-all duration-200 active:scale-95 ${
+                    className={`focus-ring shrink-0 rounded-full px-5 py-3 text-sm font-semibold whitespace-nowrap transition-all duration-200 active:scale-95 ${
                       category === item
                         ? "bg-neutral-900 text-white shadow-sm dark:bg-white dark:text-neutral-900 dark:shadow-none"
                         : "border border-neutral-200/80 bg-white text-neutral-800 hover:bg-neutral-100 dark:border-neutral-800 dark:bg-neutral-900 dark:text-neutral-200 dark:hover:bg-neutral-800"

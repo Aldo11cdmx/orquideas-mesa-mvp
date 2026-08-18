@@ -30,7 +30,7 @@ export function OperationsHome() {
           <p className="text-xs font-semibold uppercase tracking-[0.2em] text-[var(--gold)]">
             Cocina de barrio
           </p>
-          <h1 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-[1.05] sm:text-6xl">
+          <h1 className="mt-3 max-w-2xl font-display text-4xl font-bold leading-[1.05] text-pretty sm:text-6xl">
             Pide desde la mesa.<br />Sigue tu pedido en tiempo real.
           </h1>
           <p className="mt-5 max-w-xl text-base leading-7 text-white/60">
@@ -136,10 +136,12 @@ function QuickCard({
 }) {
   return (
     <Link
-      className="focus-ring group flex flex-col gap-2 rounded-xl border border-[var(--line)] bg-[var(--paper)] px-5 py-4 transition hover:border-[var(--terracotta)]/30 hover:shadow-sm"
+      className="focus-ring card-hover group flex flex-col gap-3 rounded-2xl border border-[var(--line)] bg-[var(--paper)] px-5 py-5"
       href={href}
     >
-      <Icon size={22} className="text-[var(--terracotta)]" />
+      <span className="flex h-11 w-11 items-center justify-center rounded-xl bg-[var(--mist)] text-[var(--terracotta)] transition-colors duration-200 group-hover:bg-[var(--gold-light)]">
+        <Icon size={21} />
+      </span>
       <div>
         <p className="font-semibold">{title}</p>
         <p className="text-sm text-[var(--muted-foreground)]">{subtitle}</p>

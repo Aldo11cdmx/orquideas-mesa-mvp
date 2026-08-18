@@ -9,6 +9,7 @@ import {
   Banknote,
   CalendarDays,
   CircleDollarSign,
+  Clock3,
   CreditCard,
   FileDown,
   LayoutGrid,
@@ -135,6 +136,53 @@ export function AdminPanel() {
     return saved;
   }
 
+  async function saveProductInPlace(product: Product) {
+    const response = await fetch("/api/admin/products", {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({ pin, product })
+    });
+    const payload = await response.json().catch(() => null);
+    if (!response.ok) {
+      window.alert(payload?.error || "No fue posible guardar el producto");
+      return;
+    }
+    const saved = payload as Product;
+    setProducts((current) =>
+      current.map((item) => (item.id === saved.id ? saved : item))
+    );
+    await channelRef.current?.send({ type: "menu", product: saved });
+  }
+
+  async function bulkSchedule(
+    category: string,
+    from: string | undefined,
+    until: string | undefined
+  ) {
+    const targets = products.filter((p) => p.category === category);
+    const results = new Map<string, Product>();
+    for (const p of targets) {
+      const response = await fetch("/api/admin/products", {
+        method: "PUT",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({
+          pin,
+          product: { ...p, availableFrom: from, availableUntil: until }
+        })
+      });
+      const payload = await response.json().catch(() => null);
+      if (!response.ok) {
+        window.alert(payload?.error || `No fue posible guardar "${p.name}"`);
+        return;
+      }
+      results.set(p.id, payload as Product);
+      await channelRef.current?.send({ type: "menu", product: payload as Product });
+    }
+    setProducts((current) =>
+      current.map((item) => results.get(item.id) ?? item)
+    );
+  }
+
   async function deleteProduct(product: Product) {
     if (
       !window.confirm(
@@ -204,7 +252,8 @@ export function AdminPanel() {
     ["daily", "Comida corrida", Store],
     ["promos", "Promos", BadgePercent],
     ["tables", "Mesas", Settings2],
-    ["sales", "Corte de caja", BarChart3]
+    ["sales", "Corte de caja", BarChart3],
+    ["schedule", "Horarios", Clock3]
   ] as const;
 
   return (
@@ -270,6 +319,15 @@ export function AdminPanel() {
               </TabsContent>
               <TabsContent value="sales">
                 <SalesAdmin pin={pin} />
+              </TabsContent>
+              <TabsContent value="schedule">
+                <ScheduleAdmin
+                  products={products}
+                  onSave={saveProductInPlace}
+                  onApplyCategory={(category, from, until) =>
+                    bulkSchedule(category, from, until)
+                  }
+                />
               </TabsContent>
             </div>
           </section>
@@ -366,6 +424,183 @@ function MenuAdmin({
         ))}
       </div>
     </>
+  );
+}
+
+function ScheduleAdmin({
+  products,
+  onSave,
+  onApplyCategory
+}: {
+  products: Product[];
+  onSave: (product: Product) => Promise<void>;
+  onApplyCategory: (
+    category: string,
+    from: string | undefined,
+    until: string | undefined
+  ) => Promise<void>;
+}) {
+  const [drafts, setDrafts] = useState<Record<string, { from: string; until: string }>>({});
+  const [bulk, setBulk] = useState<Record<string, { from: string; until: string }>>({});
+
+  // Mantener los borradores al día cuando cambian los productos (p. ej. tras aplicar en bloque)
+  useEffect(() => {
+    const next: Record<string, { from: string; until: string }> = {};
+    for (const p of products) {
+      next[p.id] = { from: p.availableFrom || "", until: p.availableUntil || "" };
+    }
+    setDrafts(next);
+  }, [products]);
+
+  // Agrupar por categoría (valores reales, orden estable)
+  const groups = (() => {
+    const map = new Map<string, Product[]>();
+    for (const p of products) {
+      const key = p.category || "Sin categoría";
+      const list = map.get(key);
+      if (list) list.push(p);
+      else map.set(key, [p]);
+    }
+    return Array.from(map.entries()).sort((a, b) => a[0].localeCompare(b[0], "es"));
+  })();
+
+  function setProductDraft(id: string, patch: { from?: string; until?: string }) {
+    const d = drafts[id] || { from: "", until: "" };
+    const next = { from: patch.from ?? d.from, until: patch.until ?? d.until };
+    setDrafts({ ...drafts, [id]: next });
+    const product = products.find((p) => p.id === id);
+    if (product) {
+      void onSave({
+        ...product,
+        availableFrom: next.from || undefined,
+        availableUntil: next.until || undefined
+      });
+    }
+  }
+
+  return (
+    <div>
+      <div className="flex flex-wrap items-end justify-between gap-4">
+        <div>
+          <p className="text-xs font-bold uppercase tracking-wider text-[var(--terracotta)]">
+            Horarios
+          </p>
+          <h1 className="font-display text-4xl font-bold">Horarios del menú</h1>
+          <p className="mt-1 text-sm text-[var(--muted-foreground)]">
+            Define a qué hora se vende cada categoría y haz excepciones por platillo.
+          </p>
+        </div>
+      </div>
+
+      <div className="mt-6 space-y-5">
+        {groups.map(([category, items], gi) => {
+          const b = bulk[category] || { from: "", until: "" };
+          return (
+            <section
+              key={category}
+              className="paper card-enter overflow-hidden rounded-3xl"
+              style={{ animationDelay: `${gi * 45}ms` }}
+            >
+              <div className="border-b border-[var(--line)] p-5">
+                <div className="flex items-center justify-between gap-3">
+                  <div>
+                    <h2 className="font-display text-2xl font-bold">{category}</h2>
+                    <p className="text-sm text-[var(--muted-foreground)]">
+                      {items.length} {items.length === 1 ? "producto" : "productos"}
+                    </p>
+                  </div>
+                  <span className="rounded-full bg-neutral-100 px-3 py-1 text-xs font-semibold text-neutral-600 dark:bg-neutral-800 dark:text-neutral-300">
+                    Categoría
+                  </span>
+                </div>
+
+                <div className="mt-4 rounded-2xl bg-neutral-50 p-4 dark:bg-neutral-900/60">
+                  <p className="text-xs font-bold text-[var(--muted-foreground)]">
+                    Aplicar a toda la categoría
+                  </p>
+                  <div className="mt-3 flex flex-wrap items-center gap-2">
+                    <input
+                      className="h-11 rounded-xl border border-[var(--line)] bg-white px-3 text-sm dark:bg-neutral-800"
+                      type="time"
+                      aria-label={`${category} desde`}
+                      value={b.from}
+                      onChange={(event) =>
+                        setBulk({ ...bulk, [category]: { ...b, from: event.target.value } })
+                      }
+                    />
+                    <span className="text-sm text-[var(--muted-foreground)]">a</span>
+                    <input
+                      className="h-11 rounded-xl border border-[var(--line)] bg-white px-3 text-sm dark:bg-neutral-800"
+                      type="time"
+                      aria-label={`${category} hasta`}
+                      value={b.until}
+                      onChange={(event) =>
+                        setBulk({ ...bulk, [category]: { ...b, until: event.target.value } })
+                      }
+                    />
+                    <button
+                      className={BTN_PRIMARY}
+                      onClick={() => {
+                        void onApplyCategory(category, b.from || undefined, b.until || undefined);
+                        setBulk({ ...bulk, [category]: { from: "", until: "" } });
+                      }}
+                    >
+                      <Clock3 size={15} /> Aplicar
+                    </button>
+                    <button
+                      className={BTN_SECONDARY}
+                      onClick={() =>
+                        void onApplyCategory(category, undefined, undefined)
+                      }
+                    >
+                      Todo el día
+                    </button>
+                  </div>
+                </div>
+              </div>
+
+              <ul className="divide-y divide-[var(--line)]">
+                {items.map((product) => {
+                  const d = drafts[product.id] || { from: "", until: "" };
+                  return (
+                    <li
+                      key={product.id}
+                      className="flex flex-wrap items-center gap-3 px-5 py-3"
+                    >
+                      <div className="min-w-0 flex-1">
+                        <p className="truncate font-medium">{product.name}</p>
+                        <p className="text-xs text-[var(--muted-foreground)]">
+                          {d.from && d.until ? `${d.from} - ${d.until}` : "Todo el día"}
+                        </p>
+                      </div>
+                      <input
+                        className="h-10 rounded-xl border border-[var(--line)] bg-white px-2.5 text-sm dark:bg-neutral-800"
+                        type="time"
+                        aria-label={`${product.name} desde`}
+                        value={d.from}
+                        onChange={(event) =>
+                          setProductDraft(product.id, { from: event.target.value })
+                        }
+                      />
+                      <span className="text-sm text-[var(--muted-foreground)]">a</span>
+                      <input
+                        className="h-10 rounded-xl border border-[var(--line)] bg-white px-2.5 text-sm dark:bg-neutral-800"
+                        type="time"
+                        aria-label={`${product.name} hasta`}
+                        value={d.until}
+                        onChange={(event) =>
+                          setProductDraft(product.id, { until: event.target.value })
+                        }
+                      />
+                    </li>
+                  );
+                })}
+              </ul>
+            </section>
+          );
+        })}
+      </div>
+    </div>
   );
 }
 

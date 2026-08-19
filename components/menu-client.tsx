@@ -1688,15 +1688,17 @@ function OrderTracking({
               </p>
             </div>
           )}
-          {(order.status === "delivered" || order.status === "cancelled") && (
-            <button
-              className="focus-ring mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--terracotta)] px-5 font-bold text-white"
-              onClick={onOrderAgain}
-            >
-              <Plus size={20} />
-              {order.status === "delivered" ? "Pedir algo más" : "Volver al menú"}
-            </button>
-          )}
+          <button
+            className="focus-ring mt-4 flex min-h-14 w-full items-center justify-center gap-2 rounded-2xl bg-[var(--terracotta)] px-5 font-bold text-white"
+            onClick={onOrderAgain}
+          >
+            <Plus size={20} />
+            {order.status === "cancelled"
+              ? "Volver al menú"
+              : order.status === "delivered"
+                ? "Pedir algo más"
+                : "Seguir pidiendo"}
+          </button>
         </div>
       </section>
     </main>

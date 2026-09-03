@@ -108,6 +108,7 @@ export function MenuClient({
   const [promotions, setPromotions] = useState<Promotion[]>([]);
   const channelRef = useRef<ReturnType<typeof connectOrderChannel> | null>(null);
   const latestOrderRef = useRef<Order | null>(null);
+  const dismissedOrderRef = useRef<string | null>(null);
 
   useEffect(() => {
     latestOrderRef.current = order;
@@ -178,7 +179,9 @@ export function MenuClient({
           const mostRecent = activeOrders.reduce((a, b) =>
             +new Date(a.updatedAt) >= +new Date(b.updatedAt) ? a : b
           );
+          const isDismissed = dismissedOrderRef.current === mostRecent.id;
           setOrder((current) => {
+            if (isDismissed) return current;
             if (!current) return mostRecent;
             if (current.id !== mostRecent.id) return mostRecent;
             return +new Date(mostRecent.updatedAt) >= +new Date(current.updatedAt)
@@ -300,7 +303,9 @@ export function MenuClient({
         );
         if (response.ok) {
           const updated = await response.json();
-          if (updated && updated.id === orderId) setOrder(updated);
+          if (updated && updated.id === orderId && updated.id !== dismissedOrderRef.current) {
+            setOrder(updated);
+          }
         }
       } catch {
         // ignore polling errors
@@ -420,6 +425,7 @@ export function MenuClient({
       setCartOpen(false);
       setGeneralNotes("");
       if (created) {
+        dismissedOrderRef.current = null;
         setOrder(created);
       }
     } catch {
@@ -446,6 +452,7 @@ export function MenuClient({
     setPendingOrders([]);
     setSending(false);
     if (successCount > 0) {
+      dismissedOrderRef.current = null;
       setOrder({ id: "batch", folio: `${successCount} pedidos`, tableCode, status: "accepted", items: [], notes: "", subtotal: 0, total: 0, createdAt: new Date().toISOString(), updatedAt: new Date().toISOString(), source: "supabase" });
     }
   }
@@ -520,6 +527,7 @@ export function MenuClient({
         customerName={customerName}
         customerPhone={customerPhone}
         onOrderAgain={() => {
+          dismissedOrderRef.current = order?.id ?? null;
           setOrder(null);
           setMode("fixed");
           setCategory("Desayunos");

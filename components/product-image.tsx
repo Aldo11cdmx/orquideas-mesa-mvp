@@ -8,6 +8,7 @@ const categoryIcons: Record<string, { emoji: string; bg: string }> = {
   "Panes y más": { emoji: "🥐", bg: "#e4ece6" },
   Bebidas: { emoji: "🥤", bg: "#d9ebe1" },
   "Comidas a la carta": { emoji: "🍖", bg: "#f4dfb4" },
+  Extras: { emoji: "➕", bg: "#e8e4db" },
   "Comida corrida": { emoji: "🍲", bg: "#eee2d8" }
 };
 

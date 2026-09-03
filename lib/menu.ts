@@ -592,6 +592,46 @@ export const products: Product[] = [
     image: "/menu/imperio/enmoladas.jpg",
     optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
     extrasConfig: cartaExtras
+  },
+  {
+    id: "extra-5",
+    slug: "extra-5",
+    name: "$5",
+    description: "",
+    price: 5,
+    category: "Extras",
+    image: "",
+    ...allDayHours
+  },
+  {
+    id: "extra-10",
+    slug: "extra-10",
+    name: "$10",
+    description: "",
+    price: 10,
+    category: "Extras",
+    image: "",
+    ...allDayHours
+  },
+  {
+    id: "extra-15",
+    slug: "extra-15",
+    name: "$15",
+    description: "",
+    price: 15,
+    category: "Extras",
+    image: "",
+    ...allDayHours
+  },
+  {
+    id: "extra-20",
+    slug: "extra-20",
+    name: "$20",
+    description: "",
+    price: 20,
+    category: "Extras",
+    image: "",
+    ...allDayHours
   }
 ];
 
@@ -601,7 +641,8 @@ export const categories = [
   "A la carta",
   "Panes y más",
   "Bebidas",
-  "Comidas a la carta"
+  "Comidas a la carta",
+  "Extras"
 ];
 
 export const activeTables = ["A1", "A2", "A3", "B1", "B2", "B3", "LLEVAR"];

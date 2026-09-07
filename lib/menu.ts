@@ -572,6 +572,16 @@ export const products: Product[] = [
     extrasConfig: cartaExtras
   },
   {
+    id: "enchiladas-verdes-comida",
+    slug: "enchiladas-verdes-comida",
+    name: "Enchiladas verdes",
+    description: "Tres piezas rellenas de pollo.",
+    price: 70,
+    category: "Comidas a la carta",
+    image: "/menu/imperio/enchiladas-verdes-nuevas.jpg",
+    ...lunchHours
+  },
+  {
     id: "arrachera-comida",
     slug: "arrachera-comida",
     name: "200 g de arrachera",

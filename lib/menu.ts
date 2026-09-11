@@ -604,6 +604,28 @@ export const products: Product[] = [
     extrasConfig: cartaExtras
   },
   {
+    id: "enchiladas-verdes-comida-2",
+    slug: "enchiladas-verdes-comida-2",
+    name: "Enchiladas verdes",
+    description: "Tres piezas rellenas de pollo.",
+    price: 85,
+    category: "Comidas a la carta",
+    image: "/menu/imperio/enchiladas-verdes.jpg",
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
+    extrasConfig: cartaExtras
+  },
+  {
+    id: "chilaquiles-suizos-comida",
+    slug: "chilaquiles-suizos-comida",
+    name: "Chilaquiles suizos",
+    description: "Con fajitas de pechuga, queso manchego gratinado y bañados en nuestra salsa suiza.",
+    price: 100,
+    category: "Comidas a la carta",
+    image: "/menu/imperio/chilaquiles-suizos.jpg",
+    optionGroups: [firstCourseGroup, sideGroup, drinkGroup],
+    extrasConfig: cartaExtras
+  },
+  {
     id: "extra-5",
     slug: "extra-5",
     name: "$5",

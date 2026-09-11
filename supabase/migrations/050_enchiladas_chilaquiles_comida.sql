@@ -37,7 +37,7 @@ select
   '17:00'::time
 from (
   values
-    ('enchiladas-verdes-comida-2', 'Enchiladas verdes', 'Tres piezas rellenas de pollo.', 85, '/menu/imperio/enchiladas-verdes.jpg'),
+    ('enchiladas-verdes-comida', 'Enchiladas verdes', 'Tres piezas rellenas de pollo.', 85, '/menu/imperio/enchiladas-verdes.jpg'),
     ('chilaquiles-suizos-comida', 'Chilaquiles suizos', 'Con fajitas de pechuga, queso manchego gratinado y bañados en nuestra salsa suiza.', 100, '/menu/imperio/chilaquiles-suizos.jpg')
 ) as ps(slug, name, description, price, image)
 join public.categories c

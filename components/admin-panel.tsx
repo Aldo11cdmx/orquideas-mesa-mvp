@@ -1791,7 +1791,7 @@ type CashAdjustment = {
   createdAt: string;
 };
 
-type SalesPeriod = "day" | "week" | "month";
+type SalesPeriod = "day" | "yesterday" | "week" | "month";
 
 function salesRange(period: SalesPeriod) {
   const now = new Date();
@@ -1801,6 +1801,11 @@ function salesRange(period: SalesPeriod) {
 
   if (period === "day") {
     from.setHours(0, 0, 0, 0);
+  } else if (period === "yesterday") {
+    from.setDate(from.getDate() - 1);
+    from.setHours(0, 0, 0, 0);
+    to.setDate(to.getDate() - 1);
+    to.setHours(24, 0, 0, 0);
   } else if (period === "week") {
     from.setDate(from.getDate() - 6);
     from.setHours(0, 0, 0, 0);
@@ -1902,7 +1907,7 @@ function SalesAdmin({ pin }: { pin: string }) {
       pin,
       from: range.from,
       to: range.to,
-      period: period === "day" ? "day" : "week"
+      period: period === "day" || period === "yesterday" ? "day" : "week"
     });
     window.open(`/api/admin/sales/pdf?${params.toString()}`, "_blank");
   }
@@ -1954,6 +1959,7 @@ function SalesAdmin({ pin }: { pin: string }) {
       <div className="mt-5 inline-flex rounded-full bg-neutral-100 p-1 dark:bg-neutral-800">
         {([
           ["day", "Hoy"],
+          ["yesterday", "Ayer"],
           ["week", "7 días"],
           ["month", "Este mes"]
         ] as const).map(([value, label]) => (

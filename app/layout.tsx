@@ -2,6 +2,7 @@ import type { Metadata, Viewport } from "next";
 import "./globals.css";
 import { Geist } from "next/font/google";
 import { cn } from "@/lib/utils";
+import { ToastViewport } from "@/components/ui/toast";
 
 const geist = Geist({subsets:['latin'],variable:'--font-sans'});
 
@@ -35,8 +36,8 @@ export const metadata: Metadata = {
 export const viewport: Viewport = {
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
+  maximumScale: 5,
+  userScalable: true,
   themeColor: "#5c3d2e",
   viewportFit: "cover"
 };
@@ -52,7 +53,10 @@ export default function RootLayout({ children }: Readonly<{ children: React.Reac
           }}
         />
       </head>
-      <body>{children}</body>
+      <body>
+        {children}
+        <ToastViewport position="bottom-right" />
+      </body>
     </html>
   );
 }

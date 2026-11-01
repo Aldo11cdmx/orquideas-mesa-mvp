@@ -41,13 +41,25 @@ export function PromosAdmin({ pin }: { pin: string }) {
   }, [pin]);
 
   useEffect(() => {
-    void load();
-    void fetch(`/api/admin/products?pin=${encodeURIComponent(pin)}`, { cache: "no-store" })
-      .then((r) => (r.ok ? r.json() : []))
-      .then((rows) => {
-        if (Array.isArray(rows) && rows.length) setProducts(rows);
-      })
-      .catch(() => {});
+    let active = true;
+    const fetchData = async () => {
+      if (!active) return;
+      void load();
+      try {
+        const r = await fetch(`/api/admin/products?pin=${encodeURIComponent(pin)}`, { cache: "no-store" });
+        if (!active) return;
+        if (r.ok) {
+          const rows = await r.json();
+          if (Array.isArray(rows) && rows.length && active) {
+            setProducts(rows);
+          }
+        }
+      } catch {
+        // ignore
+      }
+    };
+    void fetchData();
+    return () => { active = false; };
   }, [load, pin]);
 
   async function toggle(promotion: Promotion) {

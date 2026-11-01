@@ -110,7 +110,7 @@ export async function POST(request: NextRequest) {
       url: data.init_point || data.sandbox_init_point || null,
       preferenceId: data.id
     });
-  } catch (err) {
+  } catch {
     console.error("Mercado Pago request failed");
     return NextResponse.json(
       { error: "Servicio de pago no disponible", url: null },

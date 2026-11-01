@@ -511,7 +511,13 @@ function ScheduleAdmin({
     until: string | undefined
   ) => Promise<void>;
 }) {
-  const [drafts, setDrafts] = useState<Record<string, { from: string; until: string }>>({});
+  const [drafts, setDrafts] = useState<Record<string, { from: string; until: string }>>(() => {
+    const initial: Record<string, { from: string; until: string }> = {};
+    for (const p of products) {
+      initial[p.id] = { from: p.availableFrom || "", until: p.availableUntil || "" };
+    }
+    return initial;
+  });
   const [bulk, setBulk] = useState<Record<string, { from: string; until: string }>>({});
 
   // Mantener los borradores al día cuando cambian los productos (p. ej. tras aplicar en bloque)
@@ -520,7 +526,9 @@ function ScheduleAdmin({
     for (const p of products) {
       next[p.id] = { from: p.availableFrom || "", until: p.availableUntil || "" };
     }
-    setDrafts(next);
+    // Avoid setState sync in effect body; schedule next tick
+    const id = setTimeout(() => setDrafts(next), 0);
+    return () => clearTimeout(id);
   }, [products]);
 
   // Agrupar por categoría (valores reales, orden estable)
@@ -1476,7 +1484,14 @@ function TablesAdmin({ pin }: { pin: string }) {
       });
       const payload = await response.json().catch(() => null);
       if (!response.ok) {
-        setNotice(payload?.error || "No fue posible eliminar la mesa");
+        if (response.status === 409 && payload?.details) {
+          const d = payload.details;
+          setNotice(
+            `No se puede eliminar la mesa ${deleting.code}: tiene ${d.active_orders ?? 0} pedido(s) activo(s) y ${d.open_sessions ?? 0} sesi\u00f3n(es) abierta(s). Cierre o cancele los pedidos antes de eliminarla.`
+          );
+        } else {
+          setNotice(payload?.error || "No fue posible eliminar la mesa");
+        }
         return;
       }
       setDeleting(null);
@@ -2343,7 +2358,16 @@ function BreakfastAdmin({ pin }: { pin: string }) {
     }
   }, [pin]);
 
-  useEffect(() => { void loadExtras(); }, [loadExtras]);
+  useEffect(() => {
+    let active = true;
+    const run = async () => {
+      if (active) {
+        await loadExtras();
+      }
+    };
+    void run();
+    return () => { active = false; };
+  }, [loadExtras]);
 
   async function saveExtra(extra?: BreakfastExtra) {
     const trimmedName = name.trim() || (extra?.name ?? "");

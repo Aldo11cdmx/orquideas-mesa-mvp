@@ -26,10 +26,18 @@ export function TableQrModal({
   const url = table ? `${appUrl}/mesa/${encodeURIComponent(table.code)}` : "";
 
   useEffect(() => {
-    if (!table) return;
+    if (!table) {
+      const id = setTimeout(() => {
+        setImage(null);
+        setFailed(false);
+      }, 0);
+      return () => clearTimeout(id);
+    }
     let active = true;
-    setImage(null);
-    setFailed(false);
+    const id = setTimeout(() => {
+      setImage(null);
+      setFailed(false);
+    }, 0);
     QRCode.toDataURL(url, {
       errorCorrectionLevel: "H",
       margin: 1,
@@ -37,13 +45,17 @@ export function TableQrModal({
       color: { dark: "#111111", light: "#FFFFFF" }
     })
       .then((dataUrl) => {
-        if (active) setImage(dataUrl);
+        if (active) {
+          setImage(dataUrl);
+          setFailed(false);
+        }
       })
       .catch(() => {
         if (active) setFailed(true);
       });
     return () => {
       active = false;
+      clearTimeout(id);
     };
   }, [table, url]);
 

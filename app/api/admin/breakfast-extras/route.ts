@@ -35,7 +35,7 @@ export async function GET(request: NextRequest) {
   }
 
   // Map sort_order → sortOrder for frontend
-  const mapped = (data || []).map((row: any) => ({
+  const mapped = ((data as Record<string, unknown>[]) || []).map((row) => ({
     id: row.id,
     name: row.name,
     price: row.price,

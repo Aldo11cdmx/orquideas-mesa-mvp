@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
+import { NextResponse } from "next/server";
 import { createServerClient } from "@/lib/supabase/server";
 
 // Public: returns active breakfast extras for the menu
-export async function GET(_request: NextRequest) {
+export async function GET() {
   const supabase = createServerClient();
   const { data, error } = await supabase.rpc("get_breakfast_extras");
 

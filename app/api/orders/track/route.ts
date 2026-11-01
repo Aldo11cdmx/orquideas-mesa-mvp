@@ -54,7 +54,9 @@ export async function GET(request: NextRequest) {
   }
 
   // No exponer el access token (secreto para la API get_order_status)
-  const { accessToken, ...safe } = order as Record<string, unknown>;
+  const orderObj = order as Record<string, unknown>;
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
+  const { accessToken, ...safe } = orderObj;
 
   return NextResponse.json(safe, {
     headers: {

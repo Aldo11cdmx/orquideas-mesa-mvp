@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-import { createServerClient, createAdminClient } from "@/lib/supabase/server";
+import { createServerClient } from "@/lib/supabase/server";
 
 const tableSchema = z.object({
   id: z.string().uuid().optional().or(z.literal("").transform(() => undefined)),
@@ -46,17 +46,34 @@ export async function DELETE(request: NextRequest) {
     );
   }
 
-  const supabase = createAdminClient();
-  const { error } = await supabase.from("tables").delete().eq("id", parsed.data.id);
+  const supabase = createServerClient();
+  const { data, error } = await supabase.rpc("delete_admin_table", {
+    p_pin: parsed.data.pin,
+    p_table_id: parsed.data.id,
+  });
 
   if (error) {
+    // 409 = the table still has orders / open sessions — caller must clear them first.
+    if (error.code === "P0001" || /table_has_dependencies/i.test(error.message)) {
+      const detail = (error as { details?: unknown }).details ?? null;
+      return NextResponse.json(
+        {
+          error: "No se puede eliminar la mesa: tiene pedidos o sesiones activas.",
+          details: detail,
+        },
+        { status: 409 }
+      );
+    }
+    if (/table_not_found/i.test(error.message)) {
+      return NextResponse.json({ error: "Mesa no encontrada" }, { status: 404 });
+    }
     console.error("delete table failed", error.code, error.message);
     return NextResponse.json(
       { error: "No fue posible eliminar la mesa" },
       { status: 503 }
     );
   }
-  return NextResponse.json({ ok: true });
+  return NextResponse.json(data ?? { ok: true });
 }
 
 export async function POST(request: NextRequest) {

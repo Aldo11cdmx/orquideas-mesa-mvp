@@ -36,7 +36,7 @@ export async function GET(request: NextRequest) {
     return NextResponse.json([]);
   }
 
-  const mapped = (data || []).map((row: any) => ({
+  const mapped = ((data as Record<string, unknown>[]) || []).map((row) => ({
     id: row.id,
     drinkType: row.drink_type,
     name: row.name,

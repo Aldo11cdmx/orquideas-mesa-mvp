@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { getCourseOptions, normalizeDailyMenuConfig, resolveDailyCourseGroups, serializeDailyMenuCourses } from "@/lib/daily-menu";
+import { getCourseOptions, isComidaCorridaAvailable, normalizeDailyMenuConfig, resolveDailyCourseGroups, serializeDailyMenuCourses } from "@/lib/daily-menu";
 import type { DailyMenuConfig, ProductOptionGroup } from "@/lib/types";
 
 const seedGroups: ProductOptionGroup[] = [
@@ -141,5 +141,39 @@ describe("resolveDailyCourseGroups", () => {
     };
     const resolved = resolveDailyCourseGroups(seedGroups, courses);
     expect(resolved[2].choices).toEqual([]);
+  });
+});
+
+
+describe("isComidaCorridaAvailable", () => {
+  it("retorna true de lunes a viernes entre 9am y 6pm", () => {
+    const monday10am = new Date("2026-11-02T10:00:00");
+    expect(isComidaCorridaAvailable(monday10am)).toBe(true);
+    const friday559pm = new Date("2026-11-06T17:59:00");
+    expect(isComidaCorridaAvailable(friday559pm)).toBe(true);
+  });
+
+  it("retorna false de lunes a viernes fuera de horario", () => {
+    const monday859am = new Date("2026-11-02T08:59:00");
+    expect(isComidaCorridaAvailable(monday859am)).toBe(false);
+    const wednesday6pm = new Date("2026-11-04T18:00:00");
+    expect(isComidaCorridaAvailable(wednesday6pm)).toBe(false);
+  });
+
+  it("retorna true los sábados entre 9am y 3pm", () => {
+    const saturday9am = new Date("2026-11-07T09:00:00");
+    expect(isComidaCorridaAvailable(saturday9am)).toBe(true);
+    const saturday259pm = new Date("2026-11-07T14:59:00");
+    expect(isComidaCorridaAvailable(saturday259pm)).toBe(true);
+  });
+
+  it("retorna false los sábados fuera de horario", () => {
+    const saturday3pm = new Date("2026-11-07T15:00:00");
+    expect(isComidaCorridaAvailable(saturday3pm)).toBe(false);
+  });
+
+  it("retorna false los domingos en cualquier horario", () => {
+    const sunday1pm = new Date("2026-11-01T13:00:00");
+    expect(isComidaCorridaAvailable(sunday1pm)).toBe(false);
   });
 });

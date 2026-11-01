@@ -131,3 +131,33 @@ export function resolveDailyCourseGroups(
     return { ...group, choices: activeOptions };
   });
 }
+
+/**
+ * Valida si la comida corrida está disponible según el día y la hora actual.
+ * - Lunes a Viernes: 9:00 AM - 6:00 PM (18:00 hrs)
+ * - Sábados: 9:00 AM - 3:00 PM (15:00 hrs)
+ * - Domingos: No disponible
+ */
+export function isComidaCorridaAvailable(date: Date = new Date()): boolean {
+  const day = date.getDay(); // 0 = Domingo, 1 = Lunes, ..., 6 = Sábado
+  const hours = date.getHours();
+  const minutes = date.getMinutes();
+  const timeInMinutes = hours * 60 + minutes;
+
+  const startMinutes = 9 * 60; // 9:00 AM (540 min)
+  const endWeekdayMinutes = 18 * 60; // 6:00 PM (1080 min)
+  const endSaturdayMinutes = 15 * 60; // 3:00 PM (900 min)
+
+  // Lunes (1) a Viernes (5)
+  if (day >= 1 && day <= 5) {
+    return timeInMinutes >= startMinutes && timeInMinutes < endWeekdayMinutes;
+  }
+
+  // Sábado (6)
+  if (day === 6) {
+    return timeInMinutes >= startMinutes && timeInMinutes < endSaturdayMinutes;
+  }
+
+  // Domingo (0) o fuera de horario
+  return false;
+}

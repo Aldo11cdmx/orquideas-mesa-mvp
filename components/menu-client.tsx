@@ -21,7 +21,7 @@ import { Brand } from "@/components/brand";
 import { ProductImage } from "@/components/product-image";
 import { StatusPill } from "@/components/status-pill";
 import { ThemeToggle } from "@/components/theme-toggle";
-import { dailyCourseOrder, getCourseOptions, resolveDailyCourseGroups } from "@/lib/daily-menu";
+import { dailyCourseOrder, getCourseOptions, isComidaCorridaAvailable, resolveDailyCourseGroups } from "@/lib/daily-menu";
 import {
   categories,
   isProductAvailable,
@@ -654,7 +654,7 @@ export function MenuClient({
                 >
                   {label}{" "}
                   <span className="font-normal opacity-80">
-                    · {value === "fixed" ? "9 a 5" : "1 a 5"}
+                    · {value === "fixed" ? "9 a 5" : (isComidaCorridaAvailable() ? "9 a.m.–6 p.m. (lun–vie) / 9 a.m.–3 p.m. (sáb)" : "Cerrado")}
                   </span>
                 </button>
               ))}
@@ -1955,7 +1955,7 @@ function ConfiguredLunchMenu({
             >
               <span>
                 {!isOpen
-                  ? "Disponible de 1 a 5"
+                  ? "Comida corrida · L-V 9:00 a.m.–6:00 p.m. | Sáb 9:00 a.m.–3:00 p.m. | Dom cerrado"
                   : hasCompleteSelection
                     ? "Agregar al pedido"
                     : "Elige una opción de cada tiempo"}
